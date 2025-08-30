@@ -1,0 +1,216 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Make in India Theme - Light Mode */
+    --background: 0 0% 96%;
+    --foreground: 0 0% 29%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 29%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 29%;
+
+    --primary: 213 60% 25%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 213 60% 35%;
+
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 29%;
+
+    --muted: 0 0% 94%;
+    --muted-foreground: 0 0% 46%;
+
+    --accent: 27 100% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --warning: 40 95% 55%;
+    --warning-foreground: 0 0% 100%;
+
+    --success: 109 90% 29%;
+    --success-foreground: 0 0% 100%;
+
+    --border: 0 0% 88%;
+    --input: 0 0% 91%;
+    --ring: 213 60% 25%;
+
+    --radius: 0.5rem;
+
+    /* Make in India Brand Colors */
+    --saffron: 27 100% 50%;
+    --saffron-foreground: 0 0% 100%;
+
+    --pipeline-blue: 213 60% 25%;
+    --pipeline-blue-foreground: 0 0% 100%;
+
+    --graphite-gray: 0 0% 29%;
+    --graphite-gray-foreground: 0 0% 100%;
+
+    --panel-bg: 0 0% 96%;
+    --panel-bg-foreground: 0 0% 29%;
+
+    --india-green: 109 90% 29%;
+    --india-green-foreground: 0 0% 100%;
+
+    --catastrophe-red: 0 70% 50%;
+    --catastrophe-red-foreground: 0 0% 100%;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    /* Make in India Theme - Dark Mode */
+    --background: 0 0% 8%;
+    --foreground: 0 0% 92%;
+
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 92%;
+
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 92%;
+
+    --primary: 213 60% 40%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 213 60% 50%;
+
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 92%;
+
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 65%;
+
+    --accent: 27 100% 55%;
+    --accent-foreground: 0 0% 8%;
+
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --warning: 40 95% 60%;
+    --warning-foreground: 0 0% 8%;
+
+    --success: 109 90% 35%;
+    --success-foreground: 0 0% 100%;
+
+    --border: 0 0% 18%;
+    --input: 0 0% 15%;
+    --ring: 213 60% 40%;
+
+    /* Make in India Brand Colors - Dark Mode */
+    --saffron: 27 100% 55%;
+    --saffron-foreground: 0 0% 8%;
+
+    --pipeline-blue: 213 60% 40%;
+    --pipeline-blue-foreground: 0 0% 100%;
+
+    --graphite-gray: 0 0% 40%;
+    --graphite-gray-foreground: 0 0% 100%;
+
+    --panel-bg: 0 0% 12%;
+    --panel-bg-foreground: 0 0% 92%;
+
+    --india-green: 109 90% 35%;
+    --india-green-foreground: 0 0% 100%;
+
+    --catastrophe-red: 0 70% 55%;
+    --catastrophe-red-foreground: 0 0% 100%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .hover-scale {
+    @apply transition-transform duration-200 hover:scale-105;
+  }
+}
+
+/* Fix Leaflet z-index conflicts with modals and toasts */
+.leaflet-pane,
+.leaflet-tile,
+.leaflet-layer,
+.leaflet-control-zoom-in,
+.leaflet-control-zoom-out,
+.leaflet-control-attribution {
+  z-index: 1 !important;
+}
+
+.leaflet-popup-pane {
+  z-index: 700 !important;
+}
+
+.leaflet-tooltip-pane {
+  z-index: 650 !important;
+}
+
+.leaflet-shadow-pane {
+  z-index: 500 !important;
+}
+
+.leaflet-marker-pane {
+  z-index: 600 !important;
+}
+
+.leaflet-tile-pane {
+  z-index: 200 !important;
+}
+
+.leaflet-overlay-pane {
+  z-index: 400 !important;
+}
+
+.leaflet-map-pane {
+  z-index: auto !important;
+}
+
+/* Ensure toast and modal z-indexes are higher than Leaflet */
+[data-radix-toast-viewport] {
+  z-index: 2147483647 !important;
+}
+
+[data-radix-dialog-overlay] {
+  z-index: 9999 !important;
+}
+
+[data-radix-dialog-content] {
+  z-index: 10000 !important;
+}

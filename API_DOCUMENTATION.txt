@@ -1,0 +1,869 @@
+PIPELINE MANAGEMENT API - COMPLETE DOCUMENTATION
+=====================================================
+
+BASE URL: http://localhost:3001 (Development) or https://api.your-domain.com (Production)
+
+=====================================
+DEVICES API (/api/devices)
+=====================================
+
+1. GET /api/devices
+   PATH: /api/devices
+   METHOD: GET
+   QUERY PARAMETERS:
+     - page: number (default: 1) - Page number
+     - limit: number (default: 10) - Items per page
+     - status: string - Filter by status (ACTIVE, INACTIVE, MAINTENANCE, ERROR)
+     - type: string - Filter by type (TRIMBLE_SPS986, MONITORING_STATION, SURVEY_EQUIPMENT)
+   
+   RESPONSE:
+   {
+     "success": true,
+     "data": [
+       {
+         "id": "TRIMBLE_001",
+         "name": "Trimble SPS986 Unit 001",
+         "type": "TRIMBLE_SPS986",
+         "status": "ACTIVE",
+         "coordinates": { "lat": 19.076, "lng": 72.8777 },
+         "surveyor": "Rajesh Kumar",
+         "batteryLevel": 89,
+         "lastSeen": "2023-12-01T10:30:00Z",
+         "accuracy": 0.02
+       }
+     ],
+     "pagination": {
+       "page": 1,
+       "limit": 10,
+       "total": 3,
+       "totalPages": 1
+     },
+     "timestamp": "2023-12-01T10:30:00Z"
+   }
+
+2. GET /api/devices/{id}
+   PATH: /api/devices/TRIMBLE_001
+   METHOD: GET
+   
+   RESPONSE:
+   {
+     "success": true,
+     "data": {
+       "id": "TRIMBLE_001",
+       "name": "Trimble SPS986 Unit 001",
+       "type": "TRIMBLE_SPS986",
+       "status": "ACTIVE",
+       "coordinates": { "lat": 19.076, "lng": 72.8777 },
+       "surveyor": "Rajesh Kumar",
+       "batteryLevel": 89,
+       "lastSeen": "2023-12-01T10:30:00Z",
+       "accuracy": 0.02
+     },
+     "timestamp": "2023-12-01T10:30:00Z"
+   }
+
+3. POST /api/devices
+   PATH: /api/devices
+   METHOD: POST
+   PAYLOAD:
+   {
+     "name": "New Device",
+     "type": "TRIMBLE_SPS986",
+     "status": "ACTIVE",
+     "coordinates": { "lat": 19.076, "lng": 72.8777 },
+     "surveyor": "John Doe",
+     "batteryLevel": 100,
+     "accuracy": 0.02
+   }
+   
+   RESPONSE:
+   {
+     "success": true,
+     "data": {
+       "id": "DEVICE_1701234567890",
+       "name": "New Device",
+       "type": "TRIMBLE_SPS986",
+       "status": "ACTIVE",
+       "coordinates": { "lat": 19.076, "lng": 72.8777 },
+       "surveyor": "John Doe",
+       "batteryLevel": 100,
+       "lastSeen": "2023-12-01T10:30:00Z",
+       "accuracy": 0.02
+     },
+     "message": "Device created successfully",
+     "timestamp": "2023-12-01T10:30:00Z"
+   }
+
+4. PUT /api/devices/{id}
+   PATH: /api/devices/TRIMBLE_001
+   METHOD: PUT
+   PAYLOAD: (Same as POST, all fields optional)
+   {
+     "name": "Updated Device Name",
+     "status": "MAINTENANCE"
+   }
+   
+   RESPONSE:
+   {
+     "success": true,
+     "data": {
+       "id": "TRIMBLE_001",
+       "name": "Updated Device Name",
+       "type": "TRIMBLE_SPS986",
+       "status": "MAINTENANCE",
+       "coordinates": { "lat": 19.076, "lng": 72.8777 },
+       "surveyor": "Rajesh Kumar",
+       "batteryLevel": 89,
+       "lastSeen": "2023-12-01T10:30:00Z",
+       "accuracy": 0.02
+     },
+     "message": "Device updated successfully",
+     "timestamp": "2023-12-01T10:30:00Z"
+   }
+
+5. DELETE /api/devices/{id}
+   PATH: /api/devices/TRIMBLE_001
+   METHOD: DELETE
+   
+   RESPONSE:
+   {
+     "success": true,
+     "message": "Device deleted successfully",
+     "timestamp": "2023-12-01T10:30:00Z"
+   }
+
+=====================================
+PIPELINES API (/api/pipelines)
+=====================================
+
+1. GET /api/pipelines
+   PATH: /api/pipelines
+   METHOD: GET
+   QUERY PARAMETERS:
+     - page: number (default: 1)
+     - limit: number (default: 10)
+     - status: string (OPERATIONAL, MAINTENANCE, DAMAGED, INACTIVE)
+     - material: string (STEEL, HDPE, PVC, CONCRETE)
+   
+   RESPONSE:
+   {
+     "success": true,
+     "data": [
+       {
+         "id": "PIPELINE_001",
+         "name": "Main Distribution Line A",
+         "diameter": 300,
+         "material": "STEEL",
+         "depth": 1.5,
+         "pressure": 10,
+         "installDate": "2020-01-15",
+         "status": "OPERATIONAL",
+         "coordinates": [
+           { "lat": 19.076, "lng": 72.8777 },
+           { "lat": 19.078, "lng": 72.879 }
+         ]
+       }
+     ],
+     "pagination": {
+       "page": 1,
+       "limit": 10,
+       "total": 3,
+       "totalPages": 1
+     },
+     "timestamp": "2023-12-01T10:30:00Z"
+   }
+
+2. GET /api/pipelines/{id}
+   PATH: /api/pipelines/PIPELINE_001
+   METHOD: GET
+   
+   RESPONSE:
+   {
+     "success": true,
+     "data": {
+       "id": "PIPELINE_001",
+       "name": "Main Distribution Line A",
+       "diameter": 300,
+       "material": "STEEL",
+       "depth": 1.5,
+       "pressure": 10,
+       "installDate": "2020-01-15",
+       "status": "OPERATIONAL",
+       "coordinates": [
+         { "lat": 19.076, "lng": 72.8777 },
+         { "lat": 19.078, "lng": 72.879 }
+       ]
+     },
+     "timestamp": "2023-12-01T10:30:00Z"
+   }
+
+3. POST /api/pipelines
+   PATH: /api/pipelines
+   METHOD: POST
+   PAYLOAD:
+   {
+     "name": "New Pipeline Segment",
+     "diameter": 250,
+     "material": "HDPE",
+     "depth": 1.2,
+     "pressure": 8,
+     "installDate": "2023-12-01",
+     "coordinates": [
+       { "lat": 19.076, "lng": 72.8777 },
+       { "lat": 19.078, "lng": 72.879 }
+     ],
+     "status": "OPERATIONAL"
+   }
+   
+   RESPONSE:
+   {
+     "success": true,
+     "data": {
+       "id": "PIPELINE_1701234567890",
+       "name": "New Pipeline Segment",
+       "diameter": 250,
+       "material": "HDPE",
+       "depth": 1.2,
+       "pressure": 8,
+       "installDate": "2023-12-01",
+       "coordinates": [
+         { "lat": 19.076, "lng": 72.8777 },
+         { "lat": 19.078, "lng": 72.879 }
+       ],
+       "status": "OPERATIONAL"
+     },
+     "message": "Pipeline segment created successfully",
+     "timestamp": "2023-12-01T10:30:00Z"
+   }
+
+4. PUT /api/pipelines/{id}
+   PATH: /api/pipelines/PIPELINE_001
+   METHOD: PUT
+   PAYLOAD: (Same as POST, all fields optional)
+   
+   RESPONSE: (Same structure as POST response)
+
+5. DELETE /api/pipelines/{id}
+   PATH: /api/pipelines/PIPELINE_001
+   METHOD: DELETE
+   
+   RESPONSE:
+   {
+     "success": true,
+     "message": "Pipeline segment deleted successfully",
+     "timestamp": "2023-12-01T10:30:00Z"
+   }
+
+=====================================
+VALVES API (/api/valves)
+=====================================
+
+1. GET /api/valves
+   PATH: /api/valves
+   METHOD: GET
+   QUERY PARAMETERS:
+     - page: number (default: 1)
+     - limit: number (default: 10)
+     - status: string (OPEN, CLOSED, PARTIALLY_OPEN, FAULT)
+     - type: string (GATE, BALL, BUTTERFLY, CHECK, RELIEF)
+   
+   RESPONSE:
+   {
+     "success": true,
+     "data": [
+       {
+         "id": "VALVE_001",
+         "name": "Main Gate Valve A1",
+         "type": "GATE",
+         "status": "OPEN",
+         "coordinates": { "lat": 19.076, "lng": 72.8777 },
+         "diameter": 300,
+         "pressure": 10,
+         "installDate": "2020-01-15",
+         "lastMaintenance": "2023-06-15",
+         "pipelineId": "PIPELINE_001"
+       }
+     ],
+     "pagination": {
+       "page": 1,
+       "limit": 10,
+       "total": 2,
+       "totalPages": 1
+     },
+     "timestamp": "2023-12-01T10:30:00Z"
+   }
+
+2. GET /api/valves/{id}
+   PATH: /api/valves/VALVE_001
+   METHOD: GET
+   
+   RESPONSE:
+   {
+     "success": true,
+     "data": {
+       "id": "VALVE_001",
+       "name": "Main Gate Valve A1",
+       "type": "GATE",
+       "status": "OPEN",
+       "coordinates": { "lat": 19.076, "lng": 72.8777 },
+       "diameter": 300,
+       "pressure": 10,
+       "installDate": "2020-01-15",
+       "lastMaintenance": "2023-06-15",
+       "pipelineId": "PIPELINE_001"
+     },
+     "timestamp": "2023-12-01T10:30:00Z"
+   }
+
+3. POST /api/valves
+   PATH: /api/valves
+   METHOD: POST
+   PAYLOAD:
+   {
+     "name": "New Control Valve",
+     "type": "BALL",
+     "status": "CLOSED",
+     "coordinates": { "lat": 19.076, "lng": 72.8777 },
+     "diameter": 200,
+     "pressure": 8,
+     "installDate": "2023-12-01",
+     "lastMaintenance": "2023-12-01",
+     "pipelineId": "PIPELINE_002"
+   }
+   
+   RESPONSE:
+   {
+     "success": true,
+     "data": {
+       "id": "VALVE_1701234567890",
+       "name": "New Control Valve",
+       "type": "BALL",
+       "status": "CLOSED",
+       "coordinates": { "lat": 19.076, "lng": 72.8777 },
+       "diameter": 200,
+       "pressure": 8,
+       "installDate": "2023-12-01",
+       "lastMaintenance": "2023-12-01",
+       "pipelineId": "PIPELINE_002"
+     },
+     "message": "Valve created successfully",
+     "timestamp": "2023-12-01T10:30:00Z"
+   }
+
+4. PUT /api/valves/{id}
+   PATH: /api/valves/VALVE_001
+   METHOD: PUT
+   PAYLOAD: (Same as POST, all fields optional)
+   
+   RESPONSE: (Same structure as POST response)
+
+5. DELETE /api/valves/{id}
+   PATH: /api/valves/VALVE_001
+   METHOD: DELETE
+   
+   RESPONSE:
+   {
+     "success": true,
+     "message": "Valve deleted successfully",
+     "timestamp": "2023-12-01T10:30:00Z"
+   }
+
+=====================================
+CATASTROPHES API (/api/catastrophes)
+=====================================
+
+1. GET /api/catastrophes
+   PATH: /api/catastrophes
+   METHOD: GET
+   QUERY PARAMETERS:
+     - page: number (default: 1)
+     - limit: number (default: 10)
+     - status: string (REPORTED, INVESTIGATING, IN_PROGRESS, RESOLVED, CLOSED)
+     - severity: string (LOW, MEDIUM, HIGH, CRITICAL)
+     - type: string (LEAK, BURST, BLOCKAGE, CORROSION, SUBSIDENCE, THIRD_PARTY_DAMAGE)
+   
+   RESPONSE:
+   {
+     "success": true,
+     "data": [
+       {
+         "id": "CATASTROPHE_001",
+         "type": "LEAK",
+         "severity": "HIGH",
+         "status": "IN_PROGRESS",
+         "coordinates": { "lat": 19.076, "lng": 72.8777 },
+         "description": "Major water leak detected in main distribution line",
+         "reportedAt": "2023-12-01T10:30:00Z",
+         "reportedBy": "Rajesh Kumar",
+         "assignedTo": "Emergency Response Team A",
+         "estimatedCost": 50000,
+         "pipelineId": "PIPELINE_001"
+       }
+     ],
+     "pagination": {
+       "page": 1,
+       "limit": 10,
+       "total": 2,
+       "totalPages": 1
+     },
+     "timestamp": "2023-12-01T10:30:00Z"
+   }
+
+2. GET /api/catastrophes/{id}
+   PATH: /api/catastrophes/CATASTROPHE_001
+   METHOD: GET
+   
+   RESPONSE:
+   {
+     "success": true,
+     "data": {
+       "id": "CATASTROPHE_001",
+       "type": "LEAK",
+       "severity": "HIGH",
+       "status": "IN_PROGRESS",
+       "coordinates": { "lat": 19.076, "lng": 72.8777 },
+       "description": "Major water leak detected in main distribution line",
+       "reportedAt": "2023-12-01T10:30:00Z",
+       "reportedBy": "Rajesh Kumar",
+       "assignedTo": "Emergency Response Team A",
+       "estimatedCost": 50000,
+       "pipelineId": "PIPELINE_001"
+     },
+     "timestamp": "2023-12-01T10:30:00Z"
+   }
+
+3. POST /api/catastrophes
+   PATH: /api/catastrophes
+   METHOD: POST
+   PAYLOAD:
+   {
+     "type": "BURST",
+     "severity": "CRITICAL",
+     "coordinates": { "lat": 19.076, "lng": 72.8777 },
+     "description": "Pipeline burst causing service disruption",
+     "reportedBy": "Emergency Responder",
+     "assignedTo": "Emergency Response Team B",
+     "estimatedCost": 75000,
+     "pipelineId": "PIPELINE_002"
+   }
+   
+   RESPONSE:
+   {
+     "success": true,
+     "data": {
+       "id": "CATASTROPHE_1701234567890",
+       "type": "BURST",
+       "severity": "CRITICAL",
+       "status": "REPORTED",
+       "coordinates": { "lat": 19.076, "lng": 72.8777 },
+       "description": "Pipeline burst causing service disruption",
+       "reportedAt": "2023-12-01T10:30:00Z",
+       "reportedBy": "Emergency Responder",
+       "assignedTo": "Emergency Response Team B",
+       "estimatedCost": 75000,
+       "pipelineId": "PIPELINE_002"
+     },
+     "message": "Catastrophe reported successfully",
+     "timestamp": "2023-12-01T10:30:00Z"
+   }
+
+4. PUT /api/catastrophes/{id}
+   PATH: /api/catastrophes/CATASTROPHE_001
+   METHOD: PUT
+   PAYLOAD: (Same as POST, all fields optional)
+   
+   RESPONSE: (Same structure as POST response)
+
+5. DELETE /api/catastrophes/{id}
+   PATH: /api/catastrophes/CATASTROPHE_001
+   METHOD: DELETE
+   
+   RESPONSE:
+   {
+     "success": true,
+     "message": "Catastrophe deleted successfully",
+     "timestamp": "2023-12-01T10:30:00Z"
+   }
+
+=====================================
+SURVEYS API (/api/surveys)
+=====================================
+
+1. GET /api/surveys
+   PATH: /api/surveys
+   METHOD: GET
+   QUERY PARAMETERS:
+     - page: number (default: 1)
+     - limit: number (default: 10)
+     - deviceId: string - Filter by device ID
+     - surveyor: string - Filter by surveyor name
+     - startDate: string (date format) - Filter from date
+     - endDate: string (date format) - Filter to date
+   
+   RESPONSE:
+   {
+     "success": true,
+     "data": [
+       {
+         "id": "SURVEY_001",
+         "deviceId": "TRIMBLE_001",
+         "timestamp": "2023-12-01T08:30:00Z",
+         "coordinates": { "lat": 19.076, "lng": 72.8777, "elevation": 15.5 },
+         "accuracy": 0.02,
+         "surveyor": "Rajesh Kumar",
+         "notes": "Daily pipeline inspection - Section A",
+         "temperature": 28,
+         "weather": "Clear skies"
+       }
+     ],
+     "pagination": {
+       "page": 1,
+       "limit": 10,
+       "total": 2,
+       "totalPages": 1
+     },
+     "timestamp": "2023-12-01T10:30:00Z"
+   }
+
+2. GET /api/surveys/{id}
+   PATH: /api/surveys/SURVEY_001
+   METHOD: GET
+   
+   RESPONSE:
+   {
+     "success": true,
+     "data": {
+       "id": "SURVEY_001",
+       "deviceId": "TRIMBLE_001",
+       "timestamp": "2023-12-01T08:30:00Z",
+       "coordinates": { "lat": 19.076, "lng": 72.8777, "elevation": 15.5 },
+       "accuracy": 0.02,
+       "surveyor": "Rajesh Kumar",
+       "notes": "Daily pipeline inspection - Section A",
+       "temperature": 28,
+       "weather": "Clear skies"
+     },
+     "timestamp": "2023-12-01T10:30:00Z"
+   }
+
+
+   PATH: /api/surveys
+   METHOD: POST
+   PAYLOAD:
+   {
+     "deviceId": "TRIMBLE_002",
+     "coordinates": { "lat": 19.080, "lng": 72.881, "elevation": 12.8 },
+     "accuracy": 0.03,
+     "surveyor": "Priya Sharma",
+     "notes": "Routine survey data collection",
+     "temperature": 27,
+     "weather": "Partly cloudy"
+   }
+   
+   RESPONSE:
+   {
+     "success": true,
+     "data": {
+       "id": "SURVEY_1701234567890",
+       "deviceId": "TRIMBLE_002",
+       "timestamp": "2023-12-01T10:30:00Z",
+       "coordinates": { "lat": 19.080, "lng": 72.881, "elevation": 12.8 },
+       "accuracy": 0.03,
+       "surveyor": "Priya Sharma",
+       "notes": "Routine survey data collection",
+       "temperature": 27,
+       "weather": "Partly cloudy"
+     },
+     "message": "Survey data created successfully",
+     "timestamp": "2023-12-01T10:30:00Z"
+   }
+
+4. PUT /api/surveys/{id}
+   PATH: /api/surveys/SURVEY_001
+   METHOD: PUT
+   PAYLOAD: (Same as POST, all fields optional)
+   
+   RESPONSE: (Same structure as POST response)
+
+5. DELETE /api/surveys/{id}
+   PATH: /api/surveys/SURVEY_001
+   METHOD: DELETE
+   
+   RESPONSE:
+   {
+     "success": true,
+     "message": "Survey data deleted successfully",
+     "timestamp": "2023-12-01T10:30:00Z"
+   }
+
+=====================================
+CONFIGURATION API (/api/config)
+=====================================
+
+1. GET /api/config
+   PATH: /api/config
+   METHOD: GET
+   
+   RESPONSE:
+   {
+     "success": true,
+     "data": {
+       "catastropheTypes": [
+         { "value": "LEAK", "label": "Water Leak", "color": "#3B82F6" },
+         { "value": "BURST", "label": "Pipeline Burst", "color": "#EF4444" }
+       ],
+       "severityLevels": [
+         { "value": "LOW", "label": "Low", "color": "#10B981" },
+         { "value": "MEDIUM", "label": "Medium", "color": "#F59E0B" }
+       ],
+       "deviceTypes": [
+         { "value": "TRIMBLE_SPS986", "label": "Trimble SPS986" },
+         { "value": "MONITORING_STATION", "label": "Monitoring Station" }
+       ],
+       "pipelineMaterials": [
+         { "value": "STEEL", "label": "Steel" },
+         { "value": "HDPE", "label": "HDPE" }
+       ],
+       "valveTypes": [
+         { "value": "GATE", "label": "Gate Valve" },
+         { "value": "BALL", "label": "Ball Valve" }
+       ],
+       "statusOptions": {
+         "device": [
+           { "value": "ACTIVE", "label": "Active", "color": "#10B981" },
+           { "value": "INACTIVE", "label": "Inactive", "color": "#6B7280" }
+         ],
+         "pipeline": [
+           { "value": "OPERATIONAL", "label": "Operational", "color": "#10B981" },
+           { "value": "MAINTENANCE", "label": "Maintenance", "color": "#F59E0B" }
+         ],
+         "valve": [
+           { "value": "OPEN", "label": "Open", "color": "#10B981" },
+           { "value": "CLOSED", "label": "Closed", "color": "#EF4444" }
+         ],
+         "catastrophe": [
+           { "value": "REPORTED", "label": "Reported", "color": "#F59E0B" },
+           { "value": "INVESTIGATING", "label": "Investigating", "color": "#3B82F6" }
+         ]
+       },
+       "operationTypes": [
+         { "value": "OPEN", "label": "Open Valve" },
+         { "value": "CLOSE", "label": "Close Valve" }
+       ]
+     },
+     "timestamp": "2023-12-01T10:30:00Z"
+   }
+
+2. GET /api/config/catastrophe-types
+   PATH: /api/config/catastrophe-types
+   METHOD: GET
+   
+   RESPONSE:
+   {
+     "success": true,
+     "data": [
+       { "value": "LEAK", "label": "Water Leak", "color": "#3B82F6" },
+       { "value": "BURST", "label": "Pipeline Burst", "color": "#EF4444" },
+       { "value": "BLOCKAGE", "label": "Blockage", "color": "#F59E0B" },
+       { "value": "CORROSION", "label": "Corrosion", "color": "#8B5CF6" },
+       { "value": "SUBSIDENCE", "label": "Ground Subsidence", "color": "#10B981" },
+       { "value": "THIRD_PARTY_DAMAGE", "label": "Third Party Damage", "color": "#F97316" }
+     ],
+     "timestamp": "2023-12-01T10:30:00Z"
+   }
+
+3. GET /api/config/device-types
+   PATH: /api/config/device-types
+   METHOD: GET
+   
+   RESPONSE:
+   {
+     "success": true,
+     "data": [
+       { "value": "TRIMBLE_SPS986", "label": "Trimble SPS986" },
+       { "value": "MONITORING_STATION", "label": "Monitoring Station" },
+       { "value": "SURVEY_EQUIPMENT", "label": "Survey Equipment" }
+     ],
+     "timestamp": "2023-12-01T10:30:00Z"
+   }
+
+4. GET /api/config/valve-types
+   PATH: /api/config/valve-types
+   METHOD: GET
+   
+   RESPONSE:
+   {
+     "success": true,
+     "data": [
+       { "value": "GATE", "label": "Gate Valve" },
+       { "value": "BALL", "label": "Ball Valve" },
+       { "value": "BUTTERFLY", "label": "Butterfly Valve" },
+       { "value": "CHECK", "label": "Check Valve" },
+       { "value": "RELIEF", "label": "Relief Valve" }
+     ],
+     "timestamp": "2023-12-01T10:30:00Z"
+   }
+
+5. GET /api/config/pipeline-materials
+   PATH: /api/config/pipeline-materials
+   METHOD: GET
+   
+   RESPONSE:
+   {
+     "success": true,
+     "data": [
+       { "value": "STEEL", "label": "Steel" },
+       { "value": "HDPE", "label": "HDPE" },
+       { "value": "PVC", "label": "PVC" },
+       { "value": "CONCRETE", "label": "Concrete" }
+     ],
+     "timestamp": "2023-12-01T10:30:00Z"
+   }
+
+6. GET /api/config/status-options/{type}
+   PATH: /api/config/status-options/device
+   METHOD: GET
+   PATH PARAMETERS:
+     - type: string (device, pipeline, valve, catastrophe)
+   
+   RESPONSE:
+   {
+     "success": true,
+     "data": [
+       { "value": "ACTIVE", "label": "Active", "color": "#10B981" },
+       { "value": "INACTIVE", "label": "Inactive", "color": "#6B7280" },
+       { "value": "MAINTENANCE", "label": "Maintenance", "color": "#F59E0B" },
+       { "value": "ERROR", "label": "Error", "color": "#EF4444" }
+     ],
+     "timestamp": "2023-12-01T10:30:00Z"
+   }
+
+=====================================
+ADDITIONAL ENDPOINTS
+=====================================
+
+1. GET /health
+   PATH: /health
+   METHOD: GET
+   
+   RESPONSE:
+   {
+     "status": "OK",
+     "timestamp": "2023-12-01T10:30:00Z",
+     "uptime": 123456.789
+   }
+
+2. GET /api-docs
+   PATH: /api-docs
+   METHOD: GET
+   DESCRIPTION: Swagger API Documentation UI
+
+=====================================
+ERROR RESPONSES
+=====================================
+
+All endpoints may return error responses in the following format:
+
+400 Bad Request:
+{
+  "error": "Bad Request",
+  "message": "Missing required fields: name, type, status, coordinates",
+  "statusCode": 400
+}
+
+404 Not Found:
+{
+  "error": "Not Found",
+  "message": "Device not found",
+  "statusCode": 404
+}
+
+500 Internal Server Error:
+{
+  "error": "Internal Server Error",
+  "message": "Something went wrong",
+  "statusCode": 500
+}
+
+=====================================
+DATA TYPES & ENUMS
+=====================================
+
+Device Types:
+- TRIMBLE_SPS986
+- MONITORING_STATION
+- SURVEY_EQUIPMENT
+
+Device Status:
+- ACTIVE
+- INACTIVE
+- MAINTENANCE
+- ERROR
+
+Pipeline Materials:
+- STEEL
+- HDPE
+- PVC
+- CONCRETE
+
+Pipeline Status:
+- OPERATIONAL
+- MAINTENANCE
+- DAMAGED
+- INACTIVE
+
+Valve Types:
+- GATE
+- BALL
+- BUTTERFLY
+- CHECK
+- RELIEF
+
+Valve Status:
+- OPEN
+- CLOSED
+- PARTIALLY_OPEN
+- FAULT
+
+Catastrophe Types:
+- LEAK
+- BURST
+- BLOCKAGE
+- CORROSION
+- SUBSIDENCE
+- THIRD_PARTY_DAMAGE
+
+Catastrophe Severity:
+- LOW
+- MEDIUM
+- HIGH
+- CRITICAL
+
+Catastrophe Status:
+- REPORTED
+- INVESTIGATING
+- IN_PROGRESS
+- RESOLVED
+- CLOSED
+
+Operation Types:
+- OPEN
+- CLOSE
+- MAINTAIN
+- INSPECT
+- REPAIR
+
+Operation Status:
+- COMPLETED
+- FAILED
+- IN_PROGRESS
+- SCHEDULED
+
+=====================================
+AUTHENTICATION & HEADERS
+=====================================
+
+Content-Type: application/json (for POST/PUT requests)
+Accept: application/json
+
+Note: Currently no authentication is required. In production, implement JWT or API key authentication.

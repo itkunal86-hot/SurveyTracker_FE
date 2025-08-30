@@ -1,0 +1,436 @@
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { 
+  Monitor,
+  Search,
+  Download,
+  RefreshCw,
+  Wifi,
+  WifiOff,
+  Clock,
+  Filter,
+  MapPin,
+  User,
+  ExternalLink
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { LeafletMap } from "@/components/LeafletMap";
+
+interface Device {
+  id: string;
+  name: string;
+  type: string;
+  serialNumber: string;
+  status: 'active' | 'offline' | 'maintenance';
+  lastSeen: string;
+  location: string;
+  batteryLevel: number;
+  coordinates: [number, number];
+  surveyor?: {
+    id: string;
+    name: string;
+    phone: string;
+    email: string;
+  };
+}
+
+export const DeviceStatus = () => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const navigate = useNavigate();
+
+  // Mock device data
+  const devices: Device[] = [
+    {
+      id: 'T001',
+      name: 'Trimble R12i Unit 1',
+      type: 'GNSS Receiver',
+      serialNumber: 'TR-2024-001',
+      status: 'active',
+      lastSeen: '2 seconds ago',
+      location: 'Zone A - Main Pipeline',
+      batteryLevel: 85,
+      coordinates: [40.7589, -73.9851], // New York area
+      surveyor: {
+        id: 'S001',
+        name: 'John Smith',
+        phone: '+1-555-0123',
+        email: 'john.smith@company.com'
+      }
+    },
+    {
+      id: 'T002',
+      name: 'Trimble R12i Unit 2',
+      type: 'GNSS Receiver',
+      serialNumber: 'TR-2024-002',
+      status: 'active',
+      lastSeen: '5 seconds ago',
+      location: 'Zone B - Distribution',
+      batteryLevel: 92,
+      coordinates: [40.7505, -73.9934], // Near Times Square
+      surveyor: {
+        id: 'S002',
+        name: 'Maria Garcia',
+        phone: '+1-555-0124',
+        email: 'maria.garcia@company.com'
+      }
+    },
+    {
+      id: 'T003',
+      name: 'Trimble R12i Unit 3',
+      type: 'GNSS Receiver',
+      serialNumber: 'TR-2024-003',
+      status: 'offline',
+      lastSeen: '15 minutes ago',
+      location: 'Zone C - Terminal',
+      batteryLevel: 23,
+      coordinates: [40.7614, -73.9776] // Near Central Park
+    },
+    {
+      id: 'T004',
+      name: 'Trimble TSC7 Controller',
+      type: 'Field Computer',
+      serialNumber: 'TC-2024-001',
+      status: 'maintenance',
+      lastSeen: '2 hours ago',
+      location: 'Service Center',
+      batteryLevel: 0,
+      coordinates: [40.7282, -74.0776] // Lower Manhattan
+    },
+    {
+      id: 'T005',
+      name: 'Trimble SX12 Scanner',
+      type: 'Scanning Total Station',
+      serialNumber: 'TS-2024-001',
+      status: 'active',
+      lastSeen: '30 seconds ago',
+      location: 'Zone A - Main Pipeline',
+      batteryLevel: 76,
+      coordinates: [40.7831, -73.9712], // Upper East Side
+      surveyor: {
+        id: 'S003',
+        name: 'David Chen',
+        phone: '+1-555-0125',
+        email: 'david.chen@company.com'
+      }
+    }
+  ];
+
+  const filteredDevices = devices.filter(device => {
+    const matchesSearch = device.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         device.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         device.serialNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         device.surveyor?.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || device.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    setTimeout(() => setIsRefreshing(false), 2000);
+  };
+
+  const handleExport = () => {
+    // Mock export functionality
+    const csvData = devices.map(device => 
+      `${device.id},${device.name},${device.type},${device.serialNumber},${device.status},${device.lastSeen},${device.location},${device.batteryLevel}%`
+    ).join('\n');
+    
+    const csvHeader = 'Device ID,Name,Type,Serial Number,Status,Last Seen,Location,Battery Level\n';
+    const csvContent = csvHeader + csvData;
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `device-status-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'active':
+        return <Wifi className="w-4 h-4 text-success" />;
+      case 'offline':
+        return <WifiOff className="w-4 h-4 text-destructive" />;
+      case 'maintenance':
+        return <Clock className="w-4 h-4 text-warning" />;
+      default:
+        return <Monitor className="w-4 h-4 text-muted-foreground" />;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'bg-success text-success-foreground';
+      case 'offline':
+        return 'bg-destructive text-destructive-foreground';
+      case 'maintenance':
+        return 'bg-warning text-warning-foreground';
+      default:
+        return 'bg-muted text-muted-foreground';
+    }
+  };
+
+  const getBatteryColor = (level: number) => {
+    if (level > 50) return 'text-success';
+    if (level > 20) return 'text-warning';
+    return 'text-destructive';
+  };
+
+  const handleSurveyorClick = (surveyor: Device['surveyor'], deviceId: string) => {
+    if (surveyor) {
+      navigate(`/daily-personal-maps?surveyor=${surveyor.id}&device=${deviceId}&date=${new Date().toISOString().split('T')[0]}`);
+    }
+  };
+
+  const statusCounts = {
+    total: devices.length,
+    active: devices.filter(d => d.status === 'active').length,
+    offline: devices.filter(d => d.status === 'offline').length,
+    maintenance: devices.filter(d => d.status === 'maintenance').length,
+  };
+
+  return (
+    <div className="space-y-6 p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Device Status</h1>
+          <p className="text-muted-foreground">Monitor all connected Trimble survey devices</p>
+        </div>
+        <div className="flex space-x-2">
+          <Button onClick={handleRefresh} disabled={isRefreshing}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Refreshing...' : 'Refresh'}
+          </Button>
+          <Button onClick={handleExport} variant="outline">
+            <Download className="w-4 h-4 mr-2" />
+            Export CSV
+          </Button>
+        </div>
+      </div>
+
+      {/* Device Location Map */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <MapPin className="w-5 h-5 mr-2" />
+            Device Locations
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[400px] w-full rounded-lg overflow-hidden">
+            <LeafletMap
+              devices={devices.map(device => ({
+                id: device.id,
+                name: device.name,
+                lat: device.coordinates[0],
+                lng: device.coordinates[1],
+                status: device.status === 'maintenance' ? 'offline' : device.status,
+                lastPing: device.lastSeen
+              }))}
+              pipelines={[]}
+              valves={[]}
+              showDevices={true}
+              showPipelines={false}
+              showValves={false}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Status Overview Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-2">
+              <Monitor className="w-5 h-5 text-primary" />
+              <div>
+                <p className="text-2xl font-bold">{statusCounts.total}</p>
+                <p className="text-sm text-muted-foreground">Total Devices</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-2">
+              <Wifi className="w-5 h-5 text-success" />
+              <div>
+                <p className="text-2xl font-bold text-success">{statusCounts.active}</p>
+                <p className="text-sm text-muted-foreground">Active</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-2">
+              <WifiOff className="w-5 h-5 text-destructive" />
+              <div>
+                <p className="text-2xl font-bold text-destructive">{statusCounts.offline}</p>
+                <p className="text-sm text-muted-foreground">Offline</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-2">
+              <Clock className="w-5 h-5 text-warning" />
+              <div>
+                <p className="text-2xl font-bold text-warning">{statusCounts.maintenance}</p>
+                <p className="text-sm text-muted-foreground">Maintenance</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Filter className="w-5 h-5 mr-2" />
+            Filters & Search
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex space-x-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by device name, ID, serial number, or surveyor..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="offline">Offline</SelectItem>
+                <SelectItem value="maintenance">Maintenance</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Device Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Device List ({filteredDevices.length} devices)</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="p-6 pb-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Device</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Serial Number</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Surveyor</TableHead>
+                  <TableHead>Last Seen</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Battery</TableHead>
+                </TableRow>
+              </TableHeader>
+            </Table>
+          </div>
+          <ScrollArea className="h-[400px] px-6">
+            <Table>
+              <TableBody>
+                {filteredDevices.map((device) => (
+                  <TableRow key={device.id}>
+                    <TableCell>
+                      <div className="flex items-center space-x-3">
+                        {getStatusIcon(device.status)}
+                        <div>
+                          <p className="font-medium">{device.name}</p>
+                          <p className="text-sm text-muted-foreground">{device.id}</p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>{device.type}</TableCell>
+                    <TableCell className="font-mono text-sm">{device.serialNumber}</TableCell>
+                    <TableCell>
+                      <Badge className={getStatusColor(device.status)}>
+                        {device.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {device.surveyor ? (
+                        <div className="flex items-center space-x-2">
+                          <div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleSurveyorClick(device.surveyor, device.id)}
+                              className="h-auto p-0 text-left hover:text-primary"
+                            >
+                              <div className="flex items-center space-x-2">
+                                <User className="w-4 h-4" />
+                                <div>
+                                  <p className="font-medium text-sm">{device.surveyor.name}</p>
+                                  <p className="text-xs text-muted-foreground">{device.surveyor.phone}</p>
+                                </div>
+                                <ExternalLink className="w-3 h-3 opacity-50" />
+                              </div>
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">Not assigned</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-sm">{device.lastSeen}</TableCell>
+                    <TableCell className="text-sm">{device.location}</TableCell>
+                    <TableCell>
+                      <span className={getBatteryColor(device.batteryLevel)}>
+                        {device.batteryLevel}%
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </ScrollArea>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};

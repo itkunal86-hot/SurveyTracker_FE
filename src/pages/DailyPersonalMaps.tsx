@@ -1,0 +1,767 @@
+import { useState, useEffect, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { LeafletMap } from "@/components/LeafletMap";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { SortableTableHead } from "@/components/ui/sortable-table-head";
+import { TablePagination } from "@/components/ui/table-pagination";
+import { Pagination } from "@/components/ui/pagination";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { useTable } from "@/hooks/use-table";
+import {
+  Calendar as CalendarIcon,
+  Download,
+  MapPin,
+  Clock,
+  Gauge,
+  Filter,
+  RefreshCw,
+  User,
+  Activity,
+  Layers,
+  Settings,
+} from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+
+interface Device {
+  id: string;
+  name: string;
+  type: string;
+}
+
+interface SurveySnapshot {
+  id: string;
+  timestamp: string;
+  coordinates: [number, number];
+  pipelineId: string;
+  pipelineName: string;
+  valveId?: string;
+  valveName?: string;
+  pipeDepth: number;
+  pipeDiameter: number;
+  perimeter: number;
+  activity:
+    | "enter_pipeline"
+    | "exit_pipeline"
+    | "valve_operation"
+    | "depth_measurement"
+    | "perimeter_survey";
+}
+
+interface SurveyData {
+  totalDataPoints: number;
+  startTime: string;
+  endTime: string;
+  pipeDiameters: number[];
+  averageDepth: number;
+  locationsCovered: string[];
+  snapshots: SurveySnapshot[];
+  pipelineEntries: number;
+  valveOperations: number;
+  totalPerimeterSurveyed: number;
+}
+
+export const DailyPersonalMaps = () => {
+  const [searchParams] = useSearchParams();
+  const [selectedDevice, setSelectedDevice] = useState<string>("");
+  const [selectedDate, setSelectedDate] = useState<Date>();
+  const [isLoading, setIsLoading] = useState(false);
+  const [surveyData, setSurveyData] = useState<SurveyData | null>(null);
+
+  // Table functionality for survey snapshots
+  const snapshots = useMemo(() => surveyData?.snapshots || [], [surveyData]);
+
+  const { tableConfig, sortedAndPaginatedData } = useTable(
+    snapshots,
+    10, // Initial page size
+    "timestamp", // Initial sort key
+  );
+
+  // Read URL parameters and set initial values
+  useEffect(() => {
+    const deviceParam = searchParams.get("device");
+    const dateParam = searchParams.get("date");
+
+    if (deviceParam) {
+      setSelectedDevice(deviceParam);
+    }
+
+    if (dateParam) {
+      setSelectedDate(new Date(dateParam));
+    }
+
+    // Auto-load data if both device and date are provided
+    if (deviceParam && dateParam) {
+      setTimeout(() => {
+        handleLoadSurveyData(deviceParam, new Date(dateParam));
+      }, 500);
+    }
+  }, [searchParams]);
+
+  // Mock device data
+  const devices: Device[] = [
+    { id: "T001", name: "Trimble R12i Unit 1", type: "GNSS Receiver" },
+    { id: "T002", name: "Trimble R12i Unit 2", type: "GNSS Receiver" },
+    { id: "T003", name: "Trimble R12i Unit 3", type: "GNSS Receiver" },
+    { id: "T004", name: "Trimble TSC7 Controller", type: "Field Computer" },
+    {
+      id: "T005",
+      name: "Trimble SX12 Scanner",
+      type: "Scanning Total Station",
+    },
+  ];
+
+  // Mock survey data with detailed snapshots
+  const mockSurveyData: SurveyData = {
+    totalDataPoints: 47,
+    startTime: "08:15 AM",
+    endTime: "04:30 PM",
+    pipeDiameters: [150, 200, 300, 400],
+    averageDepth: 2.4,
+    locationsCovered: [
+      "Zone A - Main Pipeline",
+      "Zone B - Distribution",
+      "Zone C - Terminal",
+    ],
+    pipelineEntries: 8,
+    valveOperations: 5,
+    totalPerimeterSurveyed: 1250.5,
+    snapshots: [
+      {
+        id: "SS001",
+        timestamp: "08:15:23",
+        coordinates: [40.7589, -73.9851],
+        pipelineId: "PL-001",
+        pipelineName: "Main Distribution Line A",
+        pipeDepth: 2.1,
+        pipeDiameter: 200,
+        perimeter: 125.5,
+        activity: "enter_pipeline",
+      },
+      {
+        id: "SS002",
+        timestamp: "08:32:15",
+        coordinates: [40.7592, -73.9848],
+        pipelineId: "PL-001",
+        pipelineName: "Main Distribution Line A",
+        valveId: "VLV-001",
+        valveName: "Control Valve Alpha",
+        pipeDepth: 2.3,
+        pipeDiameter: 200,
+        perimeter: 85.2,
+        activity: "valve_operation",
+      },
+      {
+        id: "SS003",
+        timestamp: "09:15:45",
+        coordinates: [40.7605, -73.9934],
+        pipelineId: "PL-002",
+        pipelineName: "Secondary Distribution Line B",
+        pipeDepth: 1.8,
+        pipeDiameter: 150,
+        perimeter: 95.8,
+        activity: "depth_measurement",
+      },
+      {
+        id: "SS004",
+        timestamp: "10:22:18",
+        coordinates: [40.7614, -73.9776],
+        pipelineId: "PL-003",
+        pipelineName: "Terminal Connection Line C",
+        pipeDepth: 2.8,
+        pipeDiameter: 300,
+        perimeter: 165.3,
+        activity: "perimeter_survey",
+      },
+      {
+        id: "SS005",
+        timestamp: "11:45:32",
+        coordinates: [40.7581, -73.9712],
+        pipelineId: "PL-002",
+        pipelineName: "Secondary Distribution Line B",
+        valveId: "VLV-002",
+        valveName: "Emergency Shutoff Beta",
+        pipeDepth: 2.0,
+        pipeDiameter: 150,
+        perimeter: 110.7,
+        activity: "valve_operation",
+      },
+    ],
+  };
+
+  const handleLoadSurveyData = (deviceId?: string, date?: Date) => {
+    const targetDevice = deviceId || selectedDevice;
+    const targetDate = date || selectedDate;
+
+    if (!targetDevice || !targetDate) return;
+
+    setIsLoading(true);
+    // Simulate API call
+    setTimeout(() => {
+      setSurveyData(mockSurveyData);
+      setIsLoading(false);
+    }, 1500);
+  };
+
+  const handleExportPDF = () => {
+    // Mock PDF export
+    const blob = new Blob(
+      ["PDF export functionality would be implemented here"],
+      { type: "application/pdf" },
+    );
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `survey-trail-${selectedDevice}-${selectedDate ? format(selectedDate, "yyyy-MM-dd") : "unknown"}.pdf`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const handleExportShapefile = () => {
+    // Mock Shapefile export
+    const blob = new Blob(
+      ["Shapefile export functionality would be implemented here"],
+      { type: "application/zip" },
+    );
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `survey-trail-${selectedDevice}-${selectedDate ? format(selectedDate, "yyyy-MM-dd") : "unknown"}.zip`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const canLoadData = selectedDevice && selectedDate;
+  const hasData = surveyData !== null;
+
+  // Demo data for map
+  const demoDevices = [
+    {
+      id: "T001",
+      name: "Trimble R12i Unit 1",
+      lat: 40.7589,
+      lng: -73.9851,
+      status: "active" as const,
+      lastPing: "2 min ago",
+    },
+    {
+      id: "T002",
+      name: "Trimble R12i Unit 2",
+      lat: 40.7614,
+      lng: -73.9776,
+      status: "active" as const,
+      lastPing: "1 min ago",
+    },
+    {
+      id: "T003",
+      name: "Trimble TSC7 Controller",
+      lat: 40.7505,
+      lng: -73.9934,
+      status: "offline" as const,
+      lastPing: "15 min ago",
+    },
+  ];
+
+  const demoPipelines = [
+    { id: "PS-001", diameter: 200, depth: 1.5, status: "normal" as const },
+    { id: "PS-002", diameter: 150, depth: 2.0, status: "normal" as const },
+    { id: "PS-003", diameter: 300, depth: 1.8, status: "normal" as const },
+  ];
+
+  const demoValves = [
+    {
+      id: "VLV-001",
+      type: "control" as const,
+      status: "open" as const,
+      segmentId: "PS-001",
+    },
+    {
+      id: "VLV-002",
+      type: "emergency" as const,
+      status: "closed" as const,
+      segmentId: "PS-002",
+    },
+    {
+      id: "VLV-003",
+      type: "isolation" as const,
+      status: "maintenance" as const,
+      segmentId: "PS-003",
+    },
+  ];
+
+  const getActivityIcon = (activity: SurveySnapshot["activity"]) => {
+    switch (activity) {
+      case "enter_pipeline":
+        return <Layers className="w-4 h-4 text-primary" />;
+      case "exit_pipeline":
+        return <Layers className="w-4 h-4 text-muted-foreground" />;
+      case "valve_operation":
+        return <Settings className="w-4 h-4 text-warning" />;
+      case "depth_measurement":
+        return <Gauge className="w-4 h-4 text-success" />;
+      case "perimeter_survey":
+        return <Activity className="w-4 h-4 text-blue-500" />;
+      default:
+        return <MapPin className="w-4 h-4 text-muted-foreground" />;
+    }
+  };
+
+  const getActivityLabel = (activity: SurveySnapshot["activity"]) => {
+    switch (activity) {
+      case "enter_pipeline":
+        return "Pipeline Entry";
+      case "exit_pipeline":
+        return "Pipeline Exit";
+      case "valve_operation":
+        return "Valve Operation";
+      case "depth_measurement":
+        return "Depth Measurement";
+      case "perimeter_survey":
+        return "Perimeter Survey";
+      default:
+        return "Unknown Activity";
+    }
+  };
+
+  return (
+    <div className="space-y-6 p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">
+            Daily Personal Maps
+          </h1>
+          <p className="text-muted-foreground">
+            View detailed survey activity trails for any Trimble device
+            {searchParams.get("surveyor") && (
+              <span className="ml-2">
+                • Surveyor: <strong>{searchParams.get("surveyor")}</strong>
+              </span>
+            )}
+          </p>
+        </div>
+        {hasData && (
+          <div className="flex space-x-2">
+            <Button onClick={handleExportPDF} variant="outline">
+              <Download className="w-4 h-4 mr-2" />
+              Export PDF
+            </Button>
+            <Button onClick={handleExportShapefile} variant="outline">
+              <Download className="w-4 h-4 mr-2" />
+              Export Shapefile
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Filter Panel */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Filter className="w-5 h-5 mr-2" />
+            Filter & Selection
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Device Selection */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Select Device</label>
+              <Select value={selectedDevice} onValueChange={setSelectedDevice}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a device..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {devices.map((device) => (
+                    <SelectItem key={device.id} value={device.id}>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{device.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {device.type}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Date Selection */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Select Date</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !selectedDate && "text-muted-foreground",
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {selectedDate ? format(selectedDate, "PPP") : "Pick a date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    disabled={(date) =>
+                      date > new Date() || date < new Date("2020-01-01")
+                    }
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Load Button */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium invisible">Load</label>
+              <Button
+                onClick={() => handleLoadSurveyData()}
+                disabled={!canLoadData || isLoading}
+                className="w-full"
+              >
+                <RefreshCw
+                  className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin" : ""}`}
+                />
+                {isLoading ? "Loading..." : "Load Survey Data"}
+              </Button>
+            </div>
+          </div>
+
+          {!canLoadData && (
+            <div className="mt-4 p-4 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                Please select both a device and date to load survey trail data.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Map View */}
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <MapPin className="w-5 h-5 mr-2" />
+                Survey Trail Map
+                {selectedDevice && selectedDate && (
+                  <Badge variant="secondary" className="ml-2">
+                    {selectedDevice} - {format(selectedDate, "MMM dd, yyyy")}
+                  </Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[500px]">
+                <LeafletMap
+                  devices={demoDevices}
+                  pipelines={demoPipelines}
+                  valves={demoValves}
+                  showDevices={true}
+                  showPipelines={hasData}
+                  showValves={hasData}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Summary Panel */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Clock className="w-5 h-5 mr-2" />
+                Survey Summary
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {!hasData ? (
+                <div className="text-center text-muted-foreground py-8">
+                  <Clock className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No data to display</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">
+                      Total Data Points
+                    </span>
+                    <span className="font-semibold text-lg">
+                      {surveyData.totalDataPoints}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">
+                      Start Time
+                    </span>
+                    <span className="font-medium">{surveyData.startTime}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">
+                      End Time
+                    </span>
+                    <span className="font-medium">{surveyData.endTime}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">
+                      Pipeline Entries
+                    </span>
+                    <span className="font-medium">
+                      {surveyData.pipelineEntries}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">
+                      Valve Operations
+                    </span>
+                    <span className="font-medium">
+                      {surveyData.valveOperations}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">
+                      Average Depth
+                    </span>
+                    <span className="font-medium">
+                      {surveyData.averageDepth}m
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">
+                      Total Perimeter
+                    </span>
+                    <span className="font-medium">
+                      {surveyData.totalPerimeterSurveyed}m
+                    </span>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {hasData && (
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Gauge className="w-5 h-5 mr-2" />
+                    Pipe Diameters Found
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {surveyData.pipeDiameters.map((diameter, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between"
+                      >
+                        <span className="text-sm text-muted-foreground">
+                          Diameter {index + 1}
+                        </span>
+                        <Badge variant="outline">{diameter}mm</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Detailed Survey Activity Log */}
+      {hasData && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Activity className="w-5 h-5 mr-2" />
+              Survey Activity Log
+              <Badge variant="secondary" className="ml-2">
+                {surveyData.snapshots.length} snapshots
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <SortableTableHead
+                    sortKey="timestamp"
+                    currentSortKey={tableConfig.sortConfig.key}
+                    sortDirection={tableConfig.sortConfig.direction}
+                    onSort={tableConfig.handleSort}
+                  >
+                    Time
+                  </SortableTableHead>
+                  <SortableTableHead
+                    sortKey="activity"
+                    currentSortKey={tableConfig.sortConfig.key}
+                    sortDirection={tableConfig.sortConfig.direction}
+                    onSort={tableConfig.handleSort}
+                  >
+                    Activity
+                  </SortableTableHead>
+                  <SortableTableHead
+                    sortKey="pipelineName"
+                    currentSortKey={tableConfig.sortConfig.key}
+                    sortDirection={tableConfig.sortConfig.direction}
+                    onSort={tableConfig.handleSort}
+                  >
+                    Pipeline
+                  </SortableTableHead>
+                  <SortableTableHead
+                    sortKey="valveName"
+                    currentSortKey={tableConfig.sortConfig.key}
+                    sortDirection={tableConfig.sortConfig.direction}
+                    onSort={tableConfig.handleSort}
+                  >
+                    Valve
+                  </SortableTableHead>
+                  <SortableTableHead
+                    sortKey="pipeDepth"
+                    currentSortKey={tableConfig.sortConfig.key}
+                    sortDirection={tableConfig.sortConfig.direction}
+                    onSort={tableConfig.handleSort}
+                  >
+                    Depth (m)
+                  </SortableTableHead>
+                  <SortableTableHead
+                    sortKey="pipeDiameter"
+                    currentSortKey={tableConfig.sortConfig.key}
+                    sortDirection={tableConfig.sortConfig.direction}
+                    onSort={tableConfig.handleSort}
+                  >
+                    Diameter (mm)
+                  </SortableTableHead>
+                  <SortableTableHead
+                    sortKey="perimeter"
+                    currentSortKey={tableConfig.sortConfig.key}
+                    sortDirection={tableConfig.sortConfig.direction}
+                    onSort={tableConfig.handleSort}
+                  >
+                    Perimeter (m)
+                  </SortableTableHead>
+                  <SortableTableHead
+                    sortKey="coordinates"
+                    currentSortKey={tableConfig.sortConfig.key}
+                    sortDirection={tableConfig.sortConfig.direction}
+                    onSort={tableConfig.handleSort}
+                    sortable={false}
+                  >
+                    Coordinates
+                  </SortableTableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedAndPaginatedData.map((snapshot) => (
+                  <TableRow key={snapshot.id}>
+                    <TableCell className="font-mono text-sm">
+                      {snapshot.timestamp}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        {getActivityIcon(snapshot.activity)}
+                        <span className="text-sm">
+                          {getActivityLabel(snapshot.activity)}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <p className="font-medium text-sm">
+                          {snapshot.pipelineName}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {snapshot.pipelineId}
+                        </p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {snapshot.valveId ? (
+                        <div>
+                          <p className="font-medium text-sm">
+                            {snapshot.valveName}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {snapshot.valveId}
+                          </p>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="font-mono text-sm">
+                      {snapshot.pipeDepth.toFixed(1)}
+                    </TableCell>
+                    <TableCell className="font-mono text-sm">
+                      {snapshot.pipeDiameter}
+                    </TableCell>
+                    <TableCell className="font-mono text-sm">
+                      {snapshot.perimeter.toFixed(1)}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">
+                      {snapshot.coordinates[0].toFixed(4)},{" "}
+                      {snapshot.coordinates[1].toFixed(4)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            <div className="mt-4">
+              <Pagination
+                config={tableConfig.paginationConfig}
+                onPageChange={tableConfig.setCurrentPage}
+                onPageSizeChange={tableConfig.setPageSize}
+                onFirstPage={tableConfig.goToFirstPage}
+                onLastPage={tableConfig.goToLastPage}
+                onNextPage={tableConfig.goToNextPage}
+                onPreviousPage={tableConfig.goToPreviousPage}
+                canGoNext={tableConfig.canGoNext}
+                canGoPrevious={tableConfig.canGoPrevious}
+                pageSizeOptions={[5, 10, 20, 50]}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+};

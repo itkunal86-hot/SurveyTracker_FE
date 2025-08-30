@@ -1,0 +1,114 @@
+import { useState } from "react";
+import { Helmet } from "react-helmet-async";
+import { LoginForm } from "@/components/LoginForm";
+import { Sidebar } from "@/components/Sidebar";
+import { MapDashboard } from "@/components/MapDashboard";
+import { DeviceStatus } from "@/components/DeviceStatus";
+import { DailyPersonalMaps } from "./DailyPersonalMaps";
+import { PipelineNetworkEditor } from "@/components/PipelineNetworkEditor";
+import { ValvePointsEditor } from "@/components/ValvePointsEditor";
+import CatastropheManagement from "@/components/CatastropheManagement";
+import ValveOperationLog from "@/components/ValveOperationLog";
+import { getMetaConfig } from "@/lib/meta";
+
+const Index = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState<"admin" | "manager">("admin");
+  const [activeTab, setActiveTab] = useState("dashboard");
+
+  const meta = getMetaConfig("home");
+
+  const handleLogin = (role: "admin" | "manager") => {
+    setUserRole(role);
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setActiveTab("dashboard");
+  };
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case "dashboard":
+        return <MapDashboard />;
+      case "devices":
+        return <DeviceStatus />;
+      case "daily-maps":
+        return <DailyPersonalMaps />;
+      case "pipeline-editor":
+        return <PipelineNetworkEditor />;
+      case "valve-editor":
+        return <ValvePointsEditor />;
+      case "catastrophe":
+        return <CatastropheManagement />;
+      case "valve-operations":
+        return <ValveOperationLog />;
+      case "reports":
+        return (
+          <div className="p-6">
+            <div className="text-center space-y-4">
+              <h2 className="text-2xl font-bold">Reports & Export</h2>
+              <p className="text-muted-foreground">
+                Feature coming soon - Generate compliance and safety reports
+              </p>
+            </div>
+          </div>
+        );
+      default:
+        return <MapDashboard />;
+    }
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <>
+        <Helmet>
+          <title>{meta.title}</title>
+          <meta name="description" content={meta.description} />
+          <meta name="keywords" content={meta.keywords} />
+          <meta name="author" content={meta.author} />
+          <meta property="og:title" content={meta.ogTitle} />
+          <meta property="og:description" content={meta.ogDescription} />
+          <meta property="og:type" content="website" />
+          <meta property="og:image" content={meta.ogImage} />
+          <meta property="og:url" content={meta.ogUrl} />
+          <meta name="twitter:card" content={meta.twitterCard} />
+          <meta name="twitter:site" content={meta.twitterSite} />
+          <meta name="twitter:image" content={meta.twitterImage} />
+        </Helmet>
+        <LoginForm onLogin={handleLogin} />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Helmet>
+        <title>{meta.title}</title>
+        <meta name="description" content={meta.description} />
+        <meta name="keywords" content={meta.keywords} />
+        <meta name="author" content={meta.author} />
+        <meta property="og:title" content={meta.ogTitle} />
+        <meta property="og:description" content={meta.ogDescription} />
+        <meta property="og:type" content="website" />
+        <meta property="og:image" content={meta.ogImage} />
+        <meta property="og:url" content={meta.ogUrl} />
+        <meta name="twitter:card" content={meta.twitterCard} />
+        <meta name="twitter:site" content={meta.twitterSite} />
+        <meta name="twitter:image" content={meta.twitterImage} />
+      </Helmet>
+      <div className="flex h-screen bg-background">
+        <Sidebar
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          userRole={userRole}
+          onLogout={handleLogout}
+        />
+        <main className="flex-1">{renderContent()}</main>
+      </div>
+    </>
+  );
+};
+
+export default Index;

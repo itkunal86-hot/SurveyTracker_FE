@@ -1,0 +1,119 @@
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { 
+  Map, 
+  Users, 
+  Monitor, 
+  Calendar,
+  Settings, 
+  Network as Pipe,
+  Gauge,
+  AlertTriangle,
+  FileText,
+  LogOut,
+  Menu,
+  X
+} from "lucide-react";
+import { useState } from "react";
+
+interface SidebarProps {
+  activeTab: string;
+  onTabChange: (tab: string) => void;
+  userRole: 'admin' | 'manager';
+  onLogout: () => void;
+}
+
+interface MenuItem {
+  id: string;
+  label: string;
+  icon: any;
+  roles: ('admin' | 'manager')[];
+}
+
+const menuItems: MenuItem[] = [
+  { id: 'dashboard', label: 'Map Dashboard', icon: Map, roles: ['admin', 'manager'] },
+  { id: 'devices', label: 'Device Status', icon: Monitor, roles: ['admin', 'manager'] },
+  { id: 'daily-maps', label: 'Daily Personal Maps', icon: Calendar, roles: ['admin', 'manager'] },
+  { id: 'pipeline-editor', label: 'Pipeline Network', icon: Pipe, roles: ['admin'] },
+  { id: 'valve-editor', label: 'Valve Points', icon: Gauge, roles: ['admin'] },
+  { id: 'catastrophe', label: 'Catastrophe Management', icon: AlertTriangle, roles: ['admin', 'manager'] },
+  { id: 'valve-operations', label: 'Valve Operations', icon: Settings, roles: ['admin', 'manager'] },
+  { id: 'reports', label: 'Reports & Export', icon: FileText, roles: ['admin', 'manager'] },
+];
+
+export const Sidebar = ({ activeTab, onTabChange, userRole, onLogout }: SidebarProps) => {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  
+  const filteredItems = menuItems.filter(item => item.roles.includes(userRole));
+
+  return (
+    <div className={cn(
+      "bg-card border-r border-border transition-all duration-300 flex flex-col",
+      isCollapsed ? "w-16" : "w-64"
+    )}>
+      {/* Header */}
+      <div className="p-4 border-b border-border flex items-center justify-between">
+        {!isCollapsed && (
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <Gauge className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-sm">Gas Survey</h2>
+              <p className="text-xs text-muted-foreground capitalize">{userRole}</p>
+            </div>
+          </div>
+        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="h-8 w-8"
+        >
+          {isCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
+        </Button>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 p-2 space-y-1">
+        {filteredItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = activeTab === item.id;
+          
+          return (
+            <Button
+              key={item.id}
+              variant={isActive ? "secondary" : "ghost"}
+              className={cn(
+                "w-full justify-start h-10",
+                isCollapsed && "px-2",
+                isActive && "bg-primary/10 text-primary border border-primary/20"
+              )}
+              onClick={() => onTabChange(item.id)}
+            >
+              <Icon className={cn("h-4 w-4", !isCollapsed && "mr-3")} />
+              {!isCollapsed && (
+                <span className="text-sm font-medium">{item.label}</span>
+              )}
+            </Button>
+          );
+        })}
+      </nav>
+
+      {/* Logout */}
+      <div className="p-2 border-t border-border">
+        <Button
+          variant="ghost"
+          className={cn(
+            "w-full justify-start h-10 text-destructive hover:text-destructive hover:bg-destructive/10",
+            isCollapsed && "px-2"
+          )}
+          onClick={onLogout}
+        >
+          <LogOut className={cn("h-4 w-4", !isCollapsed && "mr-3")} />
+          {!isCollapsed && <span className="text-sm font-medium">Logout</span>}
+        </Button>
+      </div>
+    </div>
+  );
+};

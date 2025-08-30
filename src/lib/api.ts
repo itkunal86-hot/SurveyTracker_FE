@@ -1,0 +1,1232 @@
+import {
+  mockDevices,
+  mockPipelines,
+  mockValves,
+  mockCatastrophes,
+  mockSurveys,
+  mockConfig,
+  mockCatastropheTypes,
+  mockDeviceTypes,
+  mockValveTypes,
+  mockPipelineMaterials,
+  mockStatusOptions,
+  createMockPaginatedResponse,
+  createMockApiResponse,
+} from "./mockData";
+
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "/api";
+
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+  timestamp: string;
+}
+
+export interface PaginatedResponse<T> extends ApiResponse<T[]> {
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface Coordinates {
+  lat: number;
+  lng: number;
+  elevation?: number;
+}
+
+export interface GeolocationPoint extends Coordinates {
+  pointType: "START" | "END" | "NODE" | "JUNCTION" | "VALVE" | "DEVICE";
+  description?: string;
+  accuracy?: number; // GPS accuracy in meters
+}
+
+export interface ConsumerCategory {
+  type: "INDUSTRIAL" | "DOMESTIC" | "COMMERCIAL" | "MUNICIPAL" | "AGRICULTURAL";
+  subCategory?: string;
+  estimatedConsumption?: number; // in cubic meters per day
+  priority?: "HIGH" | "MEDIUM" | "LOW";
+}
+
+export interface OperatingPressure {
+  nominal: number; // Typical operating pressure
+  minimum: number; // Minimum safe operating pressure
+  maximum: number; // Maximum allowable operating pressure
+  unit: "BAR" | "PSI" | "KPA";
+  testPressure?: number; // Pressure used for testing
+}
+
+export interface PipeSpecifications {
+  diameter: {
+    value: number;
+    unit: "MM" | "INCHES";
+    nominalSize?: string; // e.g., "DN500", "6-inch"
+  };
+  material: "STEEL" | "HDPE" | "PVC" | "CONCRETE" | "CAST_IRON" | "COPPER" | "POLYETHYLENE" | "OTHER";
+  materialGrade?: string; // e.g., "API 5L X65", "PE100"
+  wallThickness?: number;
+  coatingType?: string;
+  length?: {
+    value: number;
+    unit: "METERS" | "FEET";
+  };
+  jointType?: "WELDED" | "FLANGED" | "THREADED" | "COMPRESSION" | "FUSION";
+}
+
+export interface InstallationDetails {
+  installationYear: number;
+  commissioningDate?: string;
+  installationMethod?: "OPEN_CUT" | "TRENCHLESS" | "DIRECTIONAL_DRILLING" | "MICRO_TUNNELING";
+  depth?: {
+    value: number;
+    unit: "METERS" | "FEET";
+  };
+  soilType?: string;
+  contractor?: string;
+  inspector?: string;
+  asBuiltDrawingRef?: string;
+}
+
+export interface Device {
+  id: string;
+  name: string;
+  type: "TRIMBLE_SPS986" | "MONITORING_STATION" | "SURVEY_EQUIPMENT";
+  status: "ACTIVE" | "INACTIVE" | "MAINTENANCE" | "ERROR";
+  coordinates: Coordinates;
+  surveyor?: string;
+  batteryLevel?: number;
+  lastSeen?: string;
+  accuracy?: number;
+}
+
+export interface PipelineSegment {
+  id: string;
+  name: string;
+  status: "OPERATIONAL" | "MAINTENANCE" | "DAMAGED" | "INACTIVE";
+  
+  // Comprehensive spatial feature attributes
+  specifications: PipeSpecifications;
+  operatingPressure: OperatingPressure;
+  installation: InstallationDetails;
+  consumerCategory?: ConsumerCategory;
+  
+  // Geolocation with detailed points
+  coordinates: GeolocationPoint[]; // Start, end, and intermediate points
+  elevationProfile?: {
+    points: Array<{
+      distance: number; // Distance from start in meters
+      elevation: number; // Elevation at this point
+      coordinates: Coordinates;
+    }>;
+    gradient?: number; // Overall gradient percentage
+  };
+  
+  // Maintenance and inspection data
+  lastInspection?: string;
+  nextInspection?: string;
+  maintenanceHistory?: Array<{
+    date: string;
+    type: "INSPECTION" | "REPAIR" | "REPLACEMENT" | "CLEANING";
+    description: string;
+    cost?: number;
+    contractor?: string;
+  }>;
+  
+  // Performance metrics
+  flowRate?: {
+    current: number;
+    maximum: number;
+    unit: "LPS" | "GPM" | "M3H";
+  };
+  
+  // Associated assets
+  connectedValves?: string[]; // Array of valve IDs
+  connectedDevices?: string[]; // Array of device IDs
+  
+  // Documentation
+  drawings?: Array<{
+    type: "AS_BUILT" | "DESIGN" | "INSPECTION" | "REPAIR";
+    title: string;
+    url: string;
+    uploadDate: string;
+  }>;
+  
+  // Compliance and certifications
+  standards?: string[]; // e.g., ["API 5L", "ASME B31.8", "ISO 9001"]
+  certifications?: Array<{
+    type: string;
+    issuer: string;
+    issueDate: string;
+    expiryDate?: string;
+    certificateNumber: string;
+  }>;
+}
+
+export interface Valve {
+  id: string;
+  name: string;
+  type: "GATE" | "BALL" | "BUTTERFLY" | "CHECK" | "RELIEF";
+  status: "OPEN" | "CLOSED" | "PARTIALLY_OPEN" | "FAULT";
+  coordinates: Coordinates;
+  diameter?: number;
+  pressure?: number;
+  installDate?: string;
+  lastMaintenance?: string;
+  pipelineId?: string;
+}
+
+export interface Catastrophe {
+  id: string;
+  type:
+    | "LEAK"
+    | "BURST"
+    | "BLOCKAGE"
+    | "CORROSION"
+    | "SUBSIDENCE"
+    | "THIRD_PARTY_DAMAGE";
+  severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  status: "REPORTED" | "INVESTIGATING" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";
+  coordinates: Coordinates;
+  description?: string;
+  reportedAt: string;
+  resolvedAt?: string;
+  reportedBy?: string;
+  assignedTo?: string;
+  estimatedCost?: number;
+  actualCost?: number;
+  pipelineId?: string;
+}
+
+export interface ValveOperation {
+  id: string;
+  valveId: string;
+  operation: "OPEN" | "CLOSE" | "MAINTAIN" | "INSPECT" | "REPAIR";
+  status: "COMPLETED" | "FAILED" | "IN_PROGRESS" | "SCHEDULED";
+  timestamp: string;
+  operator?: string;
+  reason?: string;
+  notes?: string;
+  duration?: number;
+}
+
+export interface SurveyData {
+  id: string;
+  deviceId: string;
+  timestamp: string;
+  coordinates: Coordinates;
+  accuracy?: number;
+  surveyor?: string;
+  notes?: string;
+  temperature?: number;
+  weather?: string;
+}
+
+export interface UserRegistrationRequest {
+  email: string;
+  firstName: string;
+  lastName: string;
+  password: string;
+  role: "MANAGER" | "SURVEY_MANAGER";
+  company: string;
+}
+
+export interface UserRegistrationResponse {
+  status_code: number;
+  status_message: string;
+  message: string;
+  data: string;
+}
+
+export interface UserData {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: "ADMIN" | "MANAGER" | "SURVEY_MANAGER";
+  company: string;
+  isActive: boolean;
+  createdAt: string;
+  lastLogin: string | null;
+}
+
+export interface UserListResponse {
+  status_code: number;
+  status_message: string;
+  message: string;
+  data: UserData[];
+}
+
+export interface UserUpdateRequest {
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  role?: "MANAGER" | "SURVEY_MANAGER";
+  company?: string;
+  isActive?: boolean;
+}
+
+export interface UserLoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface UserLoginResponse {
+  status_code: number;
+  status_message: string;
+  message: string;
+  data: UserData | null;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ForgotPasswordResponse {
+  status_code: number;
+  status_message: string;
+  message: string;
+  data: string;
+}
+
+export interface ResetPasswordRequest {
+  email: string;
+  token: string;
+  newPassword: string;
+}
+
+export interface ResetPasswordResponse {
+  status_code: number;
+  status_message: string;
+  message: string;
+  data: string;
+}
+
+export interface ChangePasswordRequest {
+  email: string;
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface ChangePasswordResponse {
+  status_code: number;
+  status_message: string;
+  message: string;
+  data: string;
+}
+
+class ApiClient {
+  private baseURL: string;
+  private useMockData: boolean = false;
+
+  constructor(baseURL: string = API_BASE_URL) {
+    this.baseURL = baseURL;
+    // Check server health on initialization
+    this.checkServerHealth();
+  }
+
+  private async checkServerHealth(): Promise<boolean> {
+    if (this.useMockData) return false;
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000); // Reduced timeout
+
+      const response = await fetch(`${this.baseURL}/health`, {
+        method: 'GET',
+        signal: controller.signal,
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      });
+
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        console.log("✅ Server is healthy, using live API");
+        return true;
+      } else {
+        throw new Error("Server health check failed");
+      }
+    } catch (error) {
+      // Only log non-abort errors to reduce console noise
+      if (error.name !== 'AbortError') {
+        console.warn("⚠️ Server health check failed, switching to mock data mode");
+      }
+      this.useMockData = true;
+      return false;
+    }
+  }
+
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {},
+  ): Promise<T> {
+    // If we're already in mock mode, don't try the real API
+    if (this.useMockData) {
+      throw new Error("Using mock data");
+    }
+
+    const url = `${this.baseURL}${endpoint}`;
+
+    const config: RequestInit = {
+      headers: {
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+      ...options,
+    };
+
+    try {
+      // Add timeout to requests using AbortController
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000); // Reduced timeout
+
+      const configWithTimeout = {
+        ...config,
+        signal: controller.signal
+      };
+
+      const response = await fetch(url, configWithTimeout);
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.message || `HTTP error! status: ${response.status}`,
+        );
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error(`API request failed: ${url}`, error);
+      console.warn("Switching to mock data mode due to API failure");
+      this.useMockData = true;
+      throw error;
+    }
+  }
+
+  private filterMockData<T>(data: T[], params?: any): T[] {
+    let filtered = [...data];
+    
+    if (params?.status) {
+      filtered = filtered.filter((item: any) => item.status === params.status);
+    }
+    
+    if (params?.type) {
+      filtered = filtered.filter((item: any) => item.type === params.type);
+    }
+    
+    if (params?.material) {
+      filtered = filtered.filter((item: any) => item.material === params.material);
+    }
+    
+    if (params?.severity) {
+      filtered = filtered.filter((item: any) => item.severity === params.severity);
+    }
+    
+    if (params?.deviceId) {
+      filtered = filtered.filter((item: any) => item.deviceId === params.deviceId);
+    }
+    
+    if (params?.surveyor) {
+      filtered = filtered.filter((item: any) => item.surveyor === params.surveyor);
+    }
+    
+    return filtered;
+  }
+
+  // Device endpoints
+  async getDevices(params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    type?: string;
+  }): Promise<PaginatedResponse<Device>> {
+    // If already in mock mode, return mock data immediately
+    if (this.useMockData) {
+      console.log("📊 Using mock data for devices");
+      const filteredData = this.filterMockData(mockDevices, params);
+      return createMockPaginatedResponse(filteredData, params);
+    }
+
+    try {
+      const searchParams = new URLSearchParams();
+      if (params?.page) searchParams.append("page", params.page.toString());
+      if (params?.limit) searchParams.append("limit", params.limit.toString());
+      if (params?.status) searchParams.append("status", params.status);
+      if (params?.type) searchParams.append("type", params.type);
+
+      const query = searchParams.toString();
+      return await this.request<PaginatedResponse<Device>>(
+        `/devices${query ? `?${query}` : ""}`,
+      );
+    } catch (error) {
+      // Fallback to mock data
+      console.log("📊 API failed, falling back to mock data for devices");
+      const filteredData = this.filterMockData(mockDevices, params);
+      return createMockPaginatedResponse(filteredData, params);
+    }
+  }
+
+  async getDevice(id: string): Promise<ApiResponse<Device>> {
+    try {
+      return await this.request<ApiResponse<Device>>(`/devices/${id}`);
+    } catch (error) {
+      // Fallback to mock data
+      const device = mockDevices.find(d => d.id === id);
+      if (!device) {
+        throw new Error(`Device with id ${id} not found`);
+      }
+      return createMockApiResponse(device);
+    }
+  }
+
+  async createDevice(
+    device: Omit<Device, "id" | "lastSeen">,
+  ): Promise<ApiResponse<Device>> {
+    return this.request<ApiResponse<Device>>("/devices", {
+      method: "POST",
+      body: JSON.stringify(device),
+    });
+  }
+
+  async updateDevice(
+    id: string,
+    device: Partial<Device>,
+  ): Promise<ApiResponse<Device>> {
+    return this.request<ApiResponse<Device>>(`/devices/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(device),
+    });
+  }
+
+  async deleteDevice(id: string): Promise<ApiResponse<void>> {
+    return this.request<ApiResponse<void>>(`/devices/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  // Pipeline endpoints
+  async getPipelines(params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    material?: string;
+  }): Promise<PaginatedResponse<PipelineSegment>> {
+    // If already in mock mode, return mock data immediately
+    if (this.useMockData) {
+      console.log("📊 Using mock data for pipelines");
+      const filteredData = this.filterMockData(mockPipelines, params);
+      return createMockPaginatedResponse(filteredData, params);
+    }
+
+    try {
+      const searchParams = new URLSearchParams();
+      if (params?.page) searchParams.append("page", params.page.toString());
+      if (params?.limit) searchParams.append("limit", params.limit.toString());
+      if (params?.status) searchParams.append("status", params.status);
+      if (params?.material) searchParams.append("material", params.material);
+
+      const query = searchParams.toString();
+      return await this.request<PaginatedResponse<PipelineSegment>>(
+        `/pipelines${query ? `?${query}` : ""}`,
+      );
+    } catch (error) {
+      // Fallback to mock data
+      console.log("📊 API failed, falling back to mock data for pipelines");
+      const filteredData = this.filterMockData(mockPipelines, params);
+      return createMockPaginatedResponse(filteredData, params);
+    }
+  }
+
+  async getPipeline(id: string): Promise<ApiResponse<PipelineSegment>> {
+    try {
+      return await this.request<ApiResponse<PipelineSegment>>(`/pipelines/${id}`);
+    } catch (error) {
+      // Fallback to mock data
+      const pipeline = mockPipelines.find(p => p.id === id);
+      if (!pipeline) {
+        throw new Error(`Pipeline with id ${id} not found`);
+      }
+      return createMockApiResponse(pipeline);
+    }
+  }
+
+  async createPipeline(
+    pipeline: Omit<PipelineSegment, "id">,
+  ): Promise<ApiResponse<PipelineSegment>> {
+    return this.request<ApiResponse<PipelineSegment>>("/pipelines", {
+      method: "POST",
+      body: JSON.stringify(pipeline),
+    });
+  }
+
+  async updatePipeline(
+    id: string,
+    pipeline: Partial<PipelineSegment>,
+  ): Promise<ApiResponse<PipelineSegment>> {
+    return this.request<ApiResponse<PipelineSegment>>(`/pipelines/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(pipeline),
+    });
+  }
+
+  async deletePipeline(id: string): Promise<ApiResponse<void>> {
+    return this.request<ApiResponse<void>>(`/pipelines/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  // Valve endpoints
+  async getValves(params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    type?: string;
+  }): Promise<PaginatedResponse<Valve>> {
+    // If already in mock mode, return mock data immediately
+    if (this.useMockData) {
+      console.log("📊 Using mock data for valves");
+      const filteredData = this.filterMockData(mockValves, params);
+      return createMockPaginatedResponse(filteredData, params);
+    }
+
+    try {
+      const searchParams = new URLSearchParams();
+      if (params?.page) searchParams.append("page", params.page.toString());
+      if (params?.limit) searchParams.append("limit", params.limit.toString());
+      if (params?.status) searchParams.append("status", params.status);
+      if (params?.type) searchParams.append("type", params.type);
+
+      const query = searchParams.toString();
+      return await this.request<PaginatedResponse<Valve>>(
+        `/valves${query ? `?${query}` : ""}`,
+      );
+    } catch (error) {
+      // Fallback to mock data
+      console.log("📊 API failed, falling back to mock data for valves");
+      const filteredData = this.filterMockData(mockValves, params);
+      return createMockPaginatedResponse(filteredData, params);
+    }
+  }
+
+  async getValve(id: string): Promise<ApiResponse<Valve>> {
+    try {
+      return await this.request<ApiResponse<Valve>>(`/valves/${id}`);
+    } catch (error) {
+      // Fallback to mock data
+      const valve = mockValves.find(v => v.id === id);
+      if (!valve) {
+        throw new Error(`Valve with id ${id} not found`);
+      }
+      return createMockApiResponse(valve);
+    }
+  }
+
+  async createValve(valve: Omit<Valve, "id">): Promise<ApiResponse<Valve>> {
+    return this.request<ApiResponse<Valve>>("/valves", {
+      method: "POST",
+      body: JSON.stringify(valve),
+    });
+  }
+
+  async updateValve(
+    id: string,
+    valve: Partial<Valve>,
+  ): Promise<ApiResponse<Valve>> {
+    return this.request<ApiResponse<Valve>>(`/valves/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(valve),
+    });
+  }
+
+  async deleteValve(id: string): Promise<ApiResponse<void>> {
+    return this.request<ApiResponse<void>>(`/valves/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  // Catastrophe endpoints
+  async getCatastrophes(params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    severity?: string;
+    type?: string;
+  }): Promise<PaginatedResponse<Catastrophe>> {
+    try {
+      const searchParams = new URLSearchParams();
+      if (params?.page) searchParams.append("page", params.page.toString());
+      if (params?.limit) searchParams.append("limit", params.limit.toString());
+      if (params?.status) searchParams.append("status", params.status);
+      if (params?.severity) searchParams.append("severity", params.severity);
+      if (params?.type) searchParams.append("type", params.type);
+
+      const query = searchParams.toString();
+      return await this.request<PaginatedResponse<Catastrophe>>(
+        `/catastrophes${query ? `?${query}` : ""}`,
+      );
+    } catch (error) {
+      // Fallback to mock data
+      const filteredData = this.filterMockData(mockCatastrophes, params);
+      return createMockPaginatedResponse(filteredData, params);
+    }
+  }
+
+  async getCatastrophe(id: string): Promise<ApiResponse<Catastrophe>> {
+    try {
+      return await this.request<ApiResponse<Catastrophe>>(`/catastrophes/${id}`);
+    } catch (error) {
+      // Fallback to mock data
+      const catastrophe = mockCatastrophes.find(c => c.id === id);
+      if (!catastrophe) {
+        throw new Error(`Catastrophe with id ${id} not found`);
+      }
+      return createMockApiResponse(catastrophe);
+    }
+  }
+
+  async createCatastrophe(
+    catastrophe: Omit<Catastrophe, "id" | "reportedAt">,
+  ): Promise<ApiResponse<Catastrophe>> {
+    return this.request<ApiResponse<Catastrophe>>("/catastrophes", {
+      method: "POST",
+      body: JSON.stringify(catastrophe),
+    });
+  }
+
+  async updateCatastrophe(
+    id: string,
+    catastrophe: Partial<Catastrophe>,
+  ): Promise<ApiResponse<Catastrophe>> {
+    return this.request<ApiResponse<Catastrophe>>(`/catastrophes/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(catastrophe),
+    });
+  }
+
+  async deleteCatastrophe(id: string): Promise<ApiResponse<void>> {
+    return this.request<ApiResponse<void>>(`/catastrophes/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  // Survey endpoints
+  async getSurveys(params?: {
+    page?: number;
+    limit?: number;
+    deviceId?: string;
+    surveyor?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<PaginatedResponse<SurveyData>> {
+    try {
+      const searchParams = new URLSearchParams();
+      if (params?.page) searchParams.append("page", params.page.toString());
+      if (params?.limit) searchParams.append("limit", params.limit.toString());
+      if (params?.deviceId) searchParams.append("deviceId", params.deviceId);
+      if (params?.surveyor) searchParams.append("surveyor", params.surveyor);
+      if (params?.startDate) searchParams.append("startDate", params.startDate);
+      if (params?.endDate) searchParams.append("endDate", params.endDate);
+
+      const query = searchParams.toString();
+      return await this.request<PaginatedResponse<SurveyData>>(
+        `/surveys${query ? `?${query}` : ""}`,
+      );
+    } catch (error) {
+      // Fallback to mock data
+      const filteredData = this.filterMockData(mockSurveys, params);
+      return createMockPaginatedResponse(filteredData, params);
+    }
+  }
+
+  async getSurvey(id: string): Promise<ApiResponse<SurveyData>> {
+    try {
+      return await this.request<ApiResponse<SurveyData>>(`/surveys/${id}`);
+    } catch (error) {
+      // Fallback to mock data
+      const survey = mockSurveys.find(s => s.id === id);
+      if (!survey) {
+        throw new Error(`Survey with id ${id} not found`);
+      }
+      return createMockApiResponse(survey);
+    }
+  }
+
+
+  // Valve Operations endpoints
+  async getValveOperations(params?: {
+    page?: number;
+    limit?: number;
+    valveId?: string;
+    operation?: string;
+    status?: string;
+  }): Promise<PaginatedResponse<ValveOperation>> {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append("page", params.page.toString());
+    if (params?.limit) queryParams.append("limit", params.limit.toString());
+    if (params?.valveId) queryParams.append("valveId", params.valveId);
+    if (params?.operation) queryParams.append("operation", params.operation);
+    if (params?.status) queryParams.append("status", params.status);
+
+    try {
+      return await this.request<PaginatedResponse<ValveOperation>>(
+        `/valve-operations?${queryParams.toString()}`,
+      );
+    } catch (error) {
+      // Fallback to mock data
+      const mockOperations: ValveOperation[] = [
+        {
+          id: "OP-001",
+          valveId: "VALVE_001",
+          operation: "CLOSE",
+          status: "COMPLETED", 
+          timestamp: new Date(2024, 0, 15, 14, 30, 0).toISOString(),
+          operator: "John Smith",
+          reason: "Emergency closure due to gas leak",
+          notes: "Emergency closure due to gas leak at Main Street",
+        },
+        {
+          id: "OP-002",
+          valveId: "VALVE_002", 
+          operation: "CLOSE",
+          status: "COMPLETED",
+          timestamp: new Date(2024, 0, 10, 9, 15, 0).toISOString(),
+          operator: "Sarah Johnson",
+          reason: "Maintenance",
+          notes: "Isolation for pressure drop investigation",
+        },
+      ];
+      
+      let filteredOperations = mockOperations;
+      if (params?.valveId) {
+        filteredOperations = filteredOperations.filter(op => op.valveId === params.valveId);
+      }
+      if (params?.operation) {
+        filteredOperations = filteredOperations.filter(op => op.operation === params.operation);
+      }
+      if (params?.status) {
+        filteredOperations = filteredOperations.filter(op => op.status === params.status);
+      }
+
+      return createMockPaginatedResponse(filteredOperations, params);
+    }
+  }
+
+  async getValveOperation(id: string): Promise<ApiResponse<ValveOperation>> {
+    try {
+      return await this.request<ApiResponse<ValveOperation>>(`/valve-operations/${id}`);
+    } catch (error) {
+      const mockOperation: ValveOperation = {
+        id: id,
+        valveId: "VALVE_001",
+        operation: "CLOSE",
+        status: "COMPLETED",
+        timestamp: new Date().toISOString(),
+        operator: "John Smith",
+        reason: "Emergency closure",
+        notes: "Emergency operation",
+      };
+      return createMockApiResponse(mockOperation);
+    }
+  }
+
+  async createValveOperation(
+    operation: Omit<ValveOperation, "id" | "timestamp" | "status">,
+  ): Promise<ApiResponse<ValveOperation>> {
+    return this.request<ApiResponse<ValveOperation>>("/valve-operations", {
+      method: "POST",
+      body: JSON.stringify(operation),
+    });
+  }
+
+  async updateValveOperation(
+    id: string,
+    operation: Partial<ValveOperation>,
+  ): Promise<ApiResponse<ValveOperation>> {
+    return this.request<ApiResponse<ValveOperation>>(`/valve-operations/${id}`, {
+      method: "PUT", 
+      body: JSON.stringify(operation),
+    });
+  }
+
+  async deleteValveOperation(id: string): Promise<ApiResponse<void>> {
+    return this.request<ApiResponse<void>>(`/valve-operations/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  // User endpoints
+  async loginUser(credentials: UserLoginRequest): Promise<UserLoginResponse> {
+    try {
+      return await this.request<UserLoginResponse>("/User/login", {
+        method: "POST",
+        body: JSON.stringify(credentials),
+      });
+    } catch (error) {
+      console.error("User login failed:", error);
+
+      // Mock failed login for fallback
+      return {
+        status_code: 401,
+        status_message: "error",
+        message: "Invalid email or password (API unavailable)",
+        data: null,
+      };
+    }
+  }
+
+  async forgotPassword(request: ForgotPasswordRequest): Promise<ForgotPasswordResponse> {
+    try {
+      return await this.request<ForgotPasswordResponse>("/User/forgot-password", {
+        method: "POST",
+        body: JSON.stringify(request),
+      });
+    } catch (error) {
+      console.error("Forgot password request failed:", error);
+
+      // Mock response for fallback
+      return {
+        status_code: 200,
+        status_message: "success",
+        message: "Password reset instructions sent to your email (mock)",
+        data: `mock_reset_${Date.now()}`,
+      };
+    }
+  }
+
+  async resetPassword(request: ResetPasswordRequest): Promise<ResetPasswordResponse> {
+    try {
+      return await this.request<ResetPasswordResponse>("/User/reset-password", {
+        method: "POST",
+        body: JSON.stringify(request),
+      });
+    } catch (error) {
+      console.error("Password reset failed:", error);
+
+      // Mock response for fallback
+      return {
+        status_code: 400,
+        status_message: "error",
+        message: "Password reset failed (API unavailable)",
+        data: null,
+      };
+    }
+  }
+
+  async changePassword(request: ChangePasswordRequest): Promise<ChangePasswordResponse> {
+    try {
+      return await this.request<ChangePasswordResponse>("/User/change-password", {
+        method: "POST",
+        body: JSON.stringify(request),
+      });
+    } catch (error) {
+      console.error("Password change failed:", error);
+
+      // Mock response for fallback
+      return {
+        status_code: 400,
+        status_message: "error",
+        message: "Password change failed (API unavailable)",
+        data: null,
+      };
+    }
+  }
+
+  async registerUser(userData: UserRegistrationRequest): Promise<UserRegistrationResponse> {
+    try {
+      return await this.request<UserRegistrationResponse>("/User/register", {
+        method: "POST",
+        body: JSON.stringify(userData),
+      });
+    } catch (error) {
+      console.error("User registration failed, using mock response:", error);
+
+      // Mock successful registration for fallback
+      return {
+        status_code: 200,
+        status_message: "success",
+        message: "User registered successfully (mock)",
+        data: `mock_user_${Date.now()}`,
+      };
+    }
+  }
+
+  async getUsers(params?: {
+    role?: string;
+    isActive?: boolean;
+    company?: string;
+  }): Promise<UserListResponse> {
+    try {
+      const searchParams = new URLSearchParams();
+      if (params?.role) searchParams.append("role", params.role);
+      if (params?.isActive !== undefined) searchParams.append("isActive", params.isActive.toString());
+      if (params?.company) searchParams.append("company", params.company);
+
+      const query = searchParams.toString();
+      return await this.request<UserListResponse>(
+        `/User${query ? `?${query}` : ""}`,
+      );
+    } catch (error) {
+      console.warn("Failed to fetch users from API, using mock data");
+
+      // Mock users data for fallback
+      const mockUsers: UserData[] = [
+        {
+          id: "1",
+          email: "john.smith@company.com",
+          firstName: "John",
+          lastName: "Smith",
+          role: "ADMIN",
+          company: "Infrastep",
+          isActive: true,
+          createdAt: "2024-01-15T10:00:00Z",
+          lastLogin: "2024-08-29T09:30:00Z",
+        },
+        {
+          id: "2",
+          email: "sarah.johnson@company.com",
+          firstName: "Sarah",
+          lastName: "Johnson",
+          role: "MANAGER",
+          company: "Infrastep",
+          isActive: true,
+          createdAt: "2024-02-20T14:30:00Z",
+          lastLogin: "2024-08-28T16:45:00Z",
+        },
+        {
+          id: "3",
+          email: "mike.wilson@company.com",
+          firstName: "Mike",
+          lastName: "Wilson",
+          role: "SURVEY_MANAGER",
+          company: "Infrastep",
+          isActive: true,
+          createdAt: "2024-03-10T09:15:00Z",
+          lastLogin: "2024-08-29T08:15:00Z",
+        },
+        {
+          id: "4",
+          email: "emily.davis@company.com",
+          firstName: "Emily",
+          lastName: "Davis",
+          role: "SURVEY_MANAGER",
+          company: "Infrastep",
+          isActive: false,
+          createdAt: "2024-01-25T11:20:00Z",
+          lastLogin: "2024-08-25T13:30:00Z",
+        },
+      ];
+
+      let filteredUsers = mockUsers;
+      if (params?.role) {
+        filteredUsers = filteredUsers.filter(user => user.role === params.role);
+      }
+      if (params?.isActive !== undefined) {
+        filteredUsers = filteredUsers.filter(user => user.isActive === params.isActive);
+      }
+      if (params?.company) {
+        filteredUsers = filteredUsers.filter(user =>
+          user.company.toLowerCase().includes(params.company!.toLowerCase())
+        );
+      }
+
+      return {
+        status_code: 200,
+        status_message: "success",
+        message: "Users retrieved successfully (mock)",
+        data: filteredUsers,
+      };
+    }
+  }
+
+  async getUser(id: string): Promise<UserRegistrationResponse> {
+    try {
+      return await this.request<UserRegistrationResponse>(`/User/${id}`);
+    } catch (error) {
+      // Fallback to mock data
+      return {
+        status_code: 404,
+        status_message: "error",
+        message: "User not found (mock)",
+        data: "",
+      };
+    }
+  }
+
+  async updateUser(id: string, userData: UserUpdateRequest): Promise<UserRegistrationResponse> {
+    try {
+      return await this.request<UserRegistrationResponse>(`/User/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(userData),
+      });
+    } catch (error) {
+      console.error("User update failed, using mock response:", error);
+
+      return {
+        status_code: 200,
+        status_message: "success",
+        message: "User updated successfully (mock)",
+        data: id,
+      };
+    }
+  }
+
+  async deleteUser(id: string): Promise<UserRegistrationResponse> {
+    try {
+      return await this.request<UserRegistrationResponse>(`/User/${id}`, {
+        method: "DELETE",
+      });
+    } catch (error) {
+      console.error("User deletion failed, using mock response:", error);
+
+      return {
+        status_code: 200,
+        status_message: "success",
+        message: "User deleted successfully (mock)",
+        data: id,
+      };
+    }
+  }
+
+  // Configuration endpoints
+  async getConfig(): Promise<ApiResponse<any>> {
+    try {
+      return await this.request<ApiResponse<any>>("/config");
+    } catch (error) {
+      // Fallback to mock data
+      return createMockApiResponse(mockConfig);
+    }
+  }
+
+  async getCatastropheTypes(): Promise<ApiResponse<any[]>> {
+    try {
+      return await this.request<ApiResponse<any[]>>("/config/catastrophe-types");
+    } catch (error) {
+      // Fallback to mock data
+      return createMockApiResponse(mockCatastropheTypes);
+    }
+  }
+
+  async getDeviceTypes(): Promise<ApiResponse<any[]>> {
+    try {
+      return await this.request<ApiResponse<any[]>>("/config/device-types");
+    } catch (error) {
+      // Fallback to mock data
+      return createMockApiResponse(mockDeviceTypes);
+    }
+  }
+
+  async getValveTypes(): Promise<ApiResponse<any[]>> {
+    try {
+      return await this.request<ApiResponse<any[]>>("/config/valve-types");
+    } catch (error) {
+      // Fallback to mock data
+      return createMockApiResponse(mockValveTypes);
+    }
+  }
+
+  async getPipelineMaterials(): Promise<ApiResponse<any[]>> {
+    try {
+      return await this.request<ApiResponse<any[]>>("/config/pipeline-materials");
+    } catch (error) {
+      // Fallback to mock data
+      return createMockApiResponse(mockPipelineMaterials);
+    }
+  }
+
+  async getStatusOptions(
+    type: "device" | "pipeline" | "valve" | "catastrophe",
+  ): Promise<ApiResponse<any[]>> {
+    try {
+      return await this.request<ApiResponse<any[]>>(`/config/status-options/${type}`);
+    } catch (error) {
+      // Fallback to mock data
+      const statusOptions = mockStatusOptions[type];
+      if (!statusOptions) {
+        throw new Error(`Status options for type ${type} not found`);
+      }
+      return createMockApiResponse(statusOptions);
+    }
+  }
+}
+
+// Compatibility helpers for backward compatibility with existing components
+export interface LegacyPipelineSegment {
+  id: string;
+  name: string;
+  diameter: number;
+  material: "STEEL" | "HDPE" | "PVC" | "CONCRETE";
+  depth?: number;
+  pressure?: number;
+  installDate?: string;
+  coordinates: Coordinates[];
+  status: "OPERATIONAL" | "MAINTENANCE" | "DAMAGED" | "INACTIVE";
+}
+
+// Helper function to convert new PipelineSegment to legacy format for backward compatibility
+export function toLegacyPipelineSegment(pipeline: PipelineSegment): LegacyPipelineSegment {
+  return {
+    id: pipeline.id,
+    name: pipeline.name,
+    diameter: pipeline.specifications.diameter.value,
+    material: pipeline.specifications.material as "STEEL" | "HDPE" | "PVC" | "CONCRETE",
+    depth: pipeline.installation.depth?.value,
+    pressure: pipeline.operatingPressure.nominal,
+    installDate: pipeline.installation.commissioningDate,
+    coordinates: pipeline.coordinates.map(coord => ({
+      lat: coord.lat,
+      lng: coord.lng,
+      elevation: coord.elevation
+    })),
+    status: pipeline.status
+  };
+}
+
+// Helper function to convert legacy format to new PipelineSegment
+export function fromLegacyPipelineSegment(legacy: Partial<LegacyPipelineSegment>): Partial<PipelineSegment> {
+  const coordinates: GeolocationPoint[] = legacy.coordinates?.map((coord, index) => ({
+    ...coord,
+    pointType: index === 0 ? "START" : 
+               index === (legacy.coordinates?.length || 1) - 1 ? "END" : "NODE"
+  })) || [];
+
+  return {
+    id: legacy.id,
+    name: legacy.name || "",
+    status: legacy.status || "OPERATIONAL",
+    specifications: {
+      diameter: {
+        value: legacy.diameter || 0,
+        unit: "MM"
+      },
+      material: legacy.material || "STEEL",
+      length: {
+        value: 0,
+        unit: "METERS"
+      }
+    },
+    operatingPressure: {
+      nominal: legacy.pressure || 0,
+      minimum: legacy.pressure ? legacy.pressure * 0.7 : 0,
+      maximum: legacy.pressure ? legacy.pressure * 1.3 : 0,
+      unit: "BAR"
+    },
+    installation: {
+      installationYear: legacy.installDate ? new Date(legacy.installDate).getFullYear() : new Date().getFullYear(),
+      commissioningDate: legacy.installDate,
+      depth: legacy.depth ? {
+        value: legacy.depth,
+        unit: "METERS"
+      } : undefined
+    },
+    coordinates
+  };
+}
+
+export const apiClient = new ApiClient();
+export default apiClient;

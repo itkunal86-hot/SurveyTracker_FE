@@ -1,0 +1,600 @@
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { LeafletMap } from "@/components/LeafletMap";
+import { Label } from "@/components/ui/label";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { SortableTableHead } from "@/components/ui/sortable-table-head";
+import { Pagination } from "@/components/ui/pagination";
+import { useTable } from "@/hooks/use-table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Upload,
+  MapPin,
+  AlertTriangle,
+  Loader2,
+} from "lucide-react";
+
+import { useToast } from "@/hooks/use-toast";
+import { apiClient, PipelineSegment } from "@/lib/api";
+
+export const PipelineNetworkEditor = () => {
+  const [segments, setSegments] = useState<PipelineSegment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingSegment, setEditingSegment] = useState<PipelineSegment | null>(
+    null,
+  );
+  const [formData, setFormData] = useState({
+    name: "",
+    diameter: "",
+    depth: "",
+    material: "STEEL" as "STEEL" | "HDPE" | "PVC" | "CONCRETE" | "CAST_IRON" | "COPPER" | "POLYETHYLENE" | "OTHER",
+    status: "OPERATIONAL" as
+      | "OPERATIONAL"
+      | "MAINTENANCE"
+      | "DAMAGED"
+      | "INACTIVE",
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const { toast } = useToast();
+
+  // Fetch pipeline segments from API
+  const fetchSegments = async () => {
+    try {
+      setLoading(true);
+      const response = await apiClient.getPipelines({ limit: 100 });
+      setSegments(response.data);
+    } catch (error) {
+      console.error("Failed to fetch pipeline segments:", error);
+      toast({
+        title: "Error",
+        description:
+          "Failed to load pipeline segments. Please check if the server is running.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSegments();
+  }, []);
+
+  // Demo data for map visualization
+  const demoDevices = [
+    {
+      id: "MON-001",
+      name: "Central Station Monitor",
+      lat: 40.7589,
+      lng: -73.9851,
+      status: "active" as const,
+      lastPing: "15 sec ago",
+    },
+    {
+      id: "MON-002",
+      name: "East Side Distribution Monitor",
+      lat: 40.7614,
+      lng: -73.9776,
+      status: "active" as const,
+      lastPing: "23 sec ago",
+    },
+  ];
+
+  const demoPipelinesWithStatus = segments.map((segment) => ({
+    id: segment.id,
+    diameter: segment.specifications?.diameter?.value || 0,
+    depth: segment.installation?.depth?.value || 0,
+    status: segment.status.toLowerCase() as "normal" | "warning" | "critical",
+  }));
+
+  const demoValves = [
+    {
+      id: "VLV-001",
+      type: "control" as const,
+      status: "open" as const,
+      segmentId: segments[0]?.id || "PS-001",
+    },
+  ];
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = "Name is required";
+    }
+
+    const diameter = parseFloat(formData.diameter);
+    if (!formData.diameter || isNaN(diameter) || diameter <= 0) {
+      newErrors.diameter = "Diameter must be a positive number";
+    }
+
+    const depth = parseFloat(formData.depth);
+    if (!formData.depth || isNaN(depth) || depth <= 0) {
+      newErrors.depth = "Depth must be a positive number";
+    }
+
+    if (!formData.material) {
+      newErrors.material = "Material is required";
+    }
+
+    if (!formData.status) {
+      newErrors.status = "Status is required";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) return;
+
+    setSubmitting(true);
+
+    try {
+      const diameter = parseFloat(formData.diameter);
+      const depth = parseFloat(formData.depth);
+
+      const pipelineData = {
+        name: formData.name,
+        status: formData.status,
+        specifications: {
+          diameter: {
+            value: diameter,
+            unit: "MM" as const,
+          },
+          material: formData.material,
+        },
+        operatingPressure: {
+          nominal: 10,
+          minimum: 5,
+          maximum: 15,
+          unit: "BAR" as const,
+        },
+        installation: {
+          installationYear: new Date().getFullYear(),
+          depth: {
+            value: depth,
+            unit: "METERS" as const,
+          },
+        },
+        coordinates: [{ 
+          lat: 40.7589, 
+          lng: -73.9851,
+          pointType: "START" as const,
+        }], // Default coordinates with proper GeolocationPoint format
+      };
+
+      if (editingSegment) {
+        // Update existing segment
+        await apiClient.updatePipeline(editingSegment.id, pipelineData);
+        toast({ title: "Pipeline segment updated successfully" });
+      } else {
+        // Add new segment
+        await apiClient.createPipeline(pipelineData);
+        toast({ title: "Pipeline segment added successfully" });
+      }
+
+      await fetchSegments(); // Refresh the list
+      setIsDialogOpen(false);
+      setEditingSegment(null);
+      setFormData({
+        name: "",
+        diameter: "",
+        depth: "",
+        material: "STEEL",
+        status: "OPERATIONAL",
+      });
+      setErrors({});
+    } catch (error) {
+      console.error("Failed to save pipeline segment:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save pipeline segment. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleEdit = (segment: PipelineSegment) => {
+    setEditingSegment(segment);
+    setFormData({
+      name: segment.name,
+      diameter: segment.specifications?.diameter?.value?.toString() || "",
+      depth: segment.installation?.depth?.value?.toString() || "",
+      material: segment.specifications?.material || "STEEL",
+      status: segment.status,
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = async (segmentId: string) => {
+    if (!confirm("Are you sure you want to delete this pipeline segment?"))
+      return;
+
+    try {
+      await apiClient.deletePipeline(segmentId);
+      toast({ title: "Pipeline segment deleted successfully" });
+      await fetchSegments(); // Refresh the list
+    } catch (error) {
+      console.error("Failed to delete pipeline segment:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete pipeline segment. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAddNew = () => {
+    setEditingSegment(null);
+    setFormData({
+      name: "",
+      diameter: "",
+      depth: "",
+      material: "STEEL",
+      status: "OPERATIONAL",
+    });
+    setErrors({});
+    setIsDialogOpen(true);
+  };
+
+  const handleFileUpload = (segmentId: string) => {
+    toast({ title: "Geo-data upload feature coming soon" });
+  };
+
+  // Use the table hook for sorting and pagination
+  const { tableConfig, sortedAndPaginatedData } = useTable(segments, 5, "id");
+
+  const getStatusBadge = (status: string) => {
+    const statusMap = {
+      OPERATIONAL: { label: "Operational", variant: "default" as const },
+      MAINTENANCE: { label: "Maintenance", variant: "secondary" as const },
+      DAMAGED: { label: "Damaged", variant: "destructive" as const },
+      INACTIVE: { label: "Inactive", variant: "outline" as const },
+    };
+    const statusInfo = statusMap[status as keyof typeof statusMap] || {
+      label: status,
+      variant: "outline" as const,
+    };
+    return <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>;
+  };
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Pipeline Network Viewer</h1>
+          <p className="text-muted-foreground">
+            View underground pipeline segments and geo-data
+          </p>
+        </div>
+      </div>
+
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Pipeline Segments List */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                Pipeline Segments ({segments.length})
+              </CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="p-6 pb-0">
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                  <span className="ml-2">Loading pipeline segments...</span>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                     <TableRow>
+                       <SortableTableHead
+                         sortKey="name"
+                         currentSortKey={tableConfig.sortConfig.key as string}
+                         sortDirection={tableConfig.sortConfig.direction}
+                         onSort={tableConfig.handleSort}
+                       >
+                         Name
+                       </SortableTableHead>
+                       <SortableTableHead
+                         sortKey="diameter"
+                         currentSortKey={tableConfig.sortConfig.key as string}
+                         sortDirection={tableConfig.sortConfig.direction}
+                         onSort={tableConfig.handleSort}
+                       >
+                         Diameter
+                       </SortableTableHead>
+                       <SortableTableHead
+                         sortKey="material"
+                         currentSortKey={tableConfig.sortConfig.key as string}
+                         sortDirection={tableConfig.sortConfig.direction}
+                         onSort={tableConfig.handleSort}
+                       >
+                         Material
+                       </SortableTableHead>
+                       <SortableTableHead
+                         sortKey="length"
+                         currentSortKey={tableConfig.sortConfig.key as string}
+                         sortDirection={tableConfig.sortConfig.direction}
+                         onSort={tableConfig.handleSort}
+                       >
+                         Length
+                       </SortableTableHead>
+                       <SortableTableHead
+                         sortKey="installationYear"
+                         currentSortKey={tableConfig.sortConfig.key as string}
+                         sortDirection={tableConfig.sortConfig.direction}
+                         onSort={tableConfig.handleSort}
+                       >
+                         Installation Year
+                       </SortableTableHead>
+                       <SortableTableHead
+                         sortKey="operatingPressure"
+                         currentSortKey={tableConfig.sortConfig.key as string}
+                         sortDirection={tableConfig.sortConfig.direction}
+                         onSort={tableConfig.handleSort}
+                       >
+                         Operating Pressure
+                       </SortableTableHead>
+                       <SortableTableHead
+                         sortKey="consumerCategory"
+                         currentSortKey={tableConfig.sortConfig.key as string}
+                         sortDirection={tableConfig.sortConfig.direction}
+                         onSort={tableConfig.handleSort}
+                       >
+                         Consumer Category
+                       </SortableTableHead>
+                       <SortableTableHead
+                         sortKey="status"
+                         currentSortKey={tableConfig.sortConfig.key as string}
+                         sortDirection={tableConfig.sortConfig.direction}
+                         onSort={tableConfig.handleSort}
+                       >
+                         Status
+                       </SortableTableHead>
+                     </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sortedAndPaginatedData.map((segment) => (
+                       <TableRow key={segment.id}>
+                         <TableCell className="font-medium">
+                           {segment.name}
+                         </TableCell>
+                         <TableCell>
+                           {segment.specifications?.diameter?.value || 'N/A'} {segment.specifications?.diameter?.unit || ''}
+                         </TableCell>
+                         <TableCell>{segment.specifications?.material || 'N/A'}</TableCell>
+                         <TableCell>
+                           {segment.specifications?.length?.value || 'N/A'} {segment.specifications?.length?.unit || ''}
+                         </TableCell>
+                         <TableCell>{segment.installation?.installationYear || 'N/A'}</TableCell>
+                         <TableCell>
+                           {segment.operatingPressure?.nominal || 'N/A'} {segment.operatingPressure?.unit || ''}
+                         </TableCell>
+                         <TableCell>{segment.consumerCategory?.type || 'N/A'}</TableCell>
+                         <TableCell>{getStatusBadge(segment.status)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+
+            {/* Pagination */}
+            {!loading && (
+              <Pagination
+                config={tableConfig.paginationConfig}
+                onPageChange={tableConfig.setCurrentPage}
+                onPageSizeChange={tableConfig.setPageSize}
+                onFirstPage={tableConfig.goToFirstPage}
+                onLastPage={tableConfig.goToLastPage}
+                onNextPage={tableConfig.goToNextPage}
+                onPreviousPage={tableConfig.goToPreviousPage}
+                canGoNext={tableConfig.canGoNext}
+                canGoPrevious={tableConfig.canGoPrevious}
+                pageSizeOptions={[5, 10, 20]}
+              />
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Map View */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Pipeline Network Map</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-96">
+              <LeafletMap
+                devices={demoDevices}
+                pipelines={demoPipelinesWithStatus}
+                valves={demoValves}
+                showDevices={true}
+                showPipelines={true}
+                showValves={true}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Add/Edit Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>
+              {editingSegment
+                ? "Edit Pipeline Segment"
+                : "Add New Pipeline Segment"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                placeholder="Enter segment name"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, name: e.target.value }))
+                }
+                className={errors.name ? "border-destructive" : ""}
+              />
+              {errors.name && (
+                <p className="text-sm text-destructive">{errors.name}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="diameter">Diameter (mm)</Label>
+              <Input
+                id="diameter"
+                type="number"
+                placeholder="Enter diameter in millimeters"
+                value={formData.diameter}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, diameter: e.target.value }))
+                }
+                className={errors.diameter ? "border-destructive" : ""}
+              />
+              {errors.diameter && (
+                <p className="text-sm text-destructive">{errors.diameter}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="depth">Depth (m)</Label>
+              <Input
+                id="depth"
+                type="number"
+                step="0.1"
+                placeholder="Enter depth in meters"
+                value={formData.depth}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, depth: e.target.value }))
+                }
+                className={errors.depth ? "border-destructive" : ""}
+              />
+              {errors.depth && (
+                <p className="text-sm text-destructive">{errors.depth}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="material">Material</Label>
+              <Select
+                value={formData.material}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    material: value as "STEEL" | "HDPE" | "PVC" | "CONCRETE" | "CAST_IRON" | "COPPER" | "POLYETHYLENE" | "OTHER",
+                  }))
+                }
+              >
+                <SelectTrigger
+                  className={errors.material ? "border-destructive" : ""}
+                >
+                  <SelectValue placeholder="Select material" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="STEEL">Steel</SelectItem>
+                  <SelectItem value="HDPE">HDPE</SelectItem>
+                  <SelectItem value="PVC">PVC</SelectItem>
+                  <SelectItem value="CONCRETE">Concrete</SelectItem>
+                  <SelectItem value="CAST_IRON">Cast Iron</SelectItem>
+                  <SelectItem value="COPPER">Copper</SelectItem>
+                  <SelectItem value="POLYETHYLENE">Polyethylene</SelectItem>
+                  <SelectItem value="OTHER">Other</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.material && (
+                <p className="text-sm text-destructive">{errors.material}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    status: value as
+                      | "OPERATIONAL"
+                      | "MAINTENANCE"
+                      | "DAMAGED"
+                      | "INACTIVE",
+                  }))
+                }
+              >
+                <SelectTrigger
+                  className={errors.status ? "border-destructive" : ""}
+                >
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="OPERATIONAL">Operational</SelectItem>
+                  <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
+                  <SelectItem value="DAMAGED">Damaged</SelectItem>
+                  <SelectItem value="INACTIVE">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.status && (
+                <p className="text-sm text-destructive">{errors.status}</p>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSubmit} disabled={submitting}>
+                {submitting && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                {editingSegment ? "Update Segment" : "Add Segment"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
