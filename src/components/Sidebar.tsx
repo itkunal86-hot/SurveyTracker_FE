@@ -24,7 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { useSurveyContext } from "@/contexts/SurveyContext";
 import { useState } from "react";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ChangePasswordForm } from "@/components/ChangePasswordForm";
 
 interface SidebarProps {
@@ -325,6 +325,9 @@ export const Sidebar = ({
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-xl p-0">
+            <DialogHeader>
+              <DialogTitle>Change Password</DialogTitle>
+            </DialogHeader>
             <div className="p-6">
               <ChangePasswordForm
                 userEmail={currentUserEmail}
