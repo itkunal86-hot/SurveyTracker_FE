@@ -201,6 +201,30 @@ export interface Catastrophe {
   pipelineId?: string;
 }
 
+export interface AssetType {
+  id: string;
+  name: string;
+  isSurveyElement: boolean;
+  surveyCategoryId: string | null;
+  menuName?: string | null;
+  menuOrder?: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AssetProperty {
+  id: string;
+  name: string;
+  dataType: number;
+  isRequired: boolean;
+  order?: number | null;
+  options?: string | null;
+  valueUnit?: string | null;
+  assetTypeId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ValveOperation {
   id: string;
   valveId: string;
