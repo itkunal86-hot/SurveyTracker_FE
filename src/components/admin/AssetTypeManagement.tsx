@@ -20,6 +20,7 @@ export default function AssetTypeManagement() {
   const [items, setItems] = useState<AssetType[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | "">("");
+  const ALL_VALUE = "__ALL__";
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editing, setEditing] = useState<AssetType | null>(null);
   const [form, setForm] = useState({ name: "", isSurveyElement: false, surveyCategoryId: "", menuName: "", menuOrder: "" as any });
