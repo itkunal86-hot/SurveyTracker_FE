@@ -433,6 +433,16 @@ class ApiClient {
     }
   }
 
+  // Mock stores for assets when API is unavailable
+  private mockAssetTypes: AssetType[] = [
+    { id: "AT_001", name: "Valve", isSurveyElement: true, surveyCategoryId: "CAT_001", menuName: "Valve", menuOrder: 1, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+    { id: "AT_002", name: "Manhole", isSurveyElement: true, surveyCategoryId: "CAT_003", menuName: "Manhole", menuOrder: 2, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+  ];
+  private mockAssetProperties: AssetProperty[] = [
+    { id: "AP_001", name: "Diameter", dataType: 1, isRequired: true, order: 1, options: null, valueUnit: "mm", assetTypeId: "AT_001", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+    { id: "AP_002", name: "Valve Type", dataType: 2, isRequired: true, order: 2, options: JSON.stringify(["Gate","Ball","Butterfly"]), valueUnit: null, assetTypeId: "AT_001", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+  ];
+
   private filterMockData<T>(data: T[], params?: any): T[] {
     let filtered = [...data];
     
