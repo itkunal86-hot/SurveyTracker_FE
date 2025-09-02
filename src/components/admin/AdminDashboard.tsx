@@ -11,6 +11,7 @@ import DeviceAssignmentPanel from "./DeviceAssignmentPanel";
 import SurveyAttributesMaster from "./SurveyAttributesMaster";
 import SurveyHistoryLog from "./SurveyHistoryLog";
 import AssetTypeManagement from "./AssetTypeManagement";
+import AssetPropertyManagement from "./AssetPropertyManagement";
 import UserManagement from "./UserManagement";
 
 interface AdminStats {
@@ -60,7 +61,7 @@ export default function AdminDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="grid w-full grid-cols-9">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <Activity className="h-4 w-4" />
             Overview
@@ -80,6 +81,10 @@ export default function AdminDashboard() {
           <TabsTrigger value="assets" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
             Assets
+          </TabsTrigger>
+          <TabsTrigger value="asset-attributes" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Asset Attributes
           </TabsTrigger>
           <TabsTrigger value="devices" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
@@ -259,6 +264,10 @@ export default function AdminDashboard() {
 
         <TabsContent value="assets">
           <AssetTypeManagement />
+        </TabsContent>
+
+        <TabsContent value="asset-attributes">
+          <AssetPropertyManagement />
         </TabsContent>
 
         <TabsContent value="attributes">
