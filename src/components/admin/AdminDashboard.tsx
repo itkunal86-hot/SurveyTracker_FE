@@ -8,8 +8,10 @@ import { Settings, Database, Users, Activity, FileText, History, ArrowLeft, Map,
 import SurveyCategoriesManagement from "./SurveyCategoriesManagement";
 import SurveyManagement from "./SurveyManagement";
 import DeviceAssignmentPanel from "./DeviceAssignmentPanel";
-import SurveyAttributesMaster from "./SurveyAttributesMaster";
+// import SurveyAttributesMaster from "./SurveyAttributesMaster";
 import SurveyHistoryLog from "./SurveyHistoryLog";
+import AssetTypeManagement from "./AssetTypeManagement";
+import AssetPropertyManagement from "./AssetPropertyManagement";
 import UserManagement from "./UserManagement";
 
 interface AdminStats {
@@ -59,7 +61,7 @@ export default function AdminDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <Activity className="h-4 w-4" />
             Overview
@@ -75,6 +77,10 @@ export default function AdminDashboard() {
           <TabsTrigger value="surveys" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Surveys
+          </TabsTrigger>
+          <TabsTrigger value="assets" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Assets
           </TabsTrigger>
           <TabsTrigger value="devices" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
@@ -252,8 +258,13 @@ export default function AdminDashboard() {
           <DeviceAssignmentPanel />
         </TabsContent>
 
+        <TabsContent value="assets">
+          <AssetTypeManagement />
+        </TabsContent>
+
+
         <TabsContent value="attributes">
-          <SurveyAttributesMaster />
+          <AssetPropertyManagement />
         </TabsContent>
 
         <TabsContent value="history">

@@ -201,6 +201,30 @@ export interface Catastrophe {
   pipelineId?: string;
 }
 
+export interface AssetType {
+  id: string;
+  name: string;
+  isSurveyElement: boolean;
+  surveyCategoryId: string | null;
+  menuName?: string | null;
+  menuOrder?: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AssetProperty {
+  id: string;
+  name: string;
+  dataType: number;
+  isRequired: boolean;
+  order?: number | null;
+  options?: string | null;
+  valueUnit?: string | null;
+  assetTypeId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ValveOperation {
   id: string;
   valveId: string;
@@ -409,6 +433,16 @@ class ApiClient {
     }
   }
 
+  // Mock stores for assets when API is unavailable
+  private mockAssetTypes: AssetType[] = [
+    { id: "AT_001", name: "Valve", isSurveyElement: true, surveyCategoryId: "CAT_001", menuName: "Valve", menuOrder: 1, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+    { id: "AT_002", name: "Manhole", isSurveyElement: true, surveyCategoryId: "CAT_003", menuName: "Manhole", menuOrder: 2, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+  ];
+  private mockAssetProperties: AssetProperty[] = [
+    { id: "AP_001", name: "Diameter", dataType: 1, isRequired: true, order: 1, options: null, valueUnit: "mm", assetTypeId: "AT_001", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+    { id: "AP_002", name: "Valve Type", dataType: 2, isRequired: true, order: 2, options: JSON.stringify(["Gate","Ball","Butterfly"]), valueUnit: null, assetTypeId: "AT_001", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+  ];
+
   private filterMockData<T>(data: T[], params?: any): T[] {
     let filtered = [...data];
     
@@ -437,6 +471,107 @@ class ApiClient {
     }
     
     return filtered;
+  }
+
+  // Asset Types endpoints
+  async getAssetTypes(params?: { page?: number; limit?: number; surveyCategoryId?: string; search?: string; }): Promise<PaginatedResponse<AssetType>> {
+    try {
+      const sp = new URLSearchParams();
+      if (params?.page) sp.append("page", String(params.page));
+      if (params?.limit) sp.append("limit", String(params.limit));
+      if (params?.surveyCategoryId) sp.append("surveyCategoryId", params.surveyCategoryId);
+      if (params?.search) sp.append("search", params.search);
+      const q = sp.toString();
+      return await this.request<PaginatedResponse<AssetType>>(`/asset-types${q ? `?${q}` : ""}`);
+    } catch (error) {
+      let data = [...this.mockAssetTypes];
+      if (params?.surveyCategoryId) data = data.filter(a => a.surveyCategoryId === params.surveyCategoryId);
+      if (params?.search) {
+        const t = params.search.toLowerCase();
+        data = data.filter(a => a.name.toLowerCase().includes(t) || (a.menuName || "").toLowerCase().includes(t));
+      }
+      return createMockPaginatedResponse(data, params);
+    }
+  }
+
+  async createAssetType(payload: Omit<AssetType, "id" | "createdAt" | "updatedAt">): Promise<ApiResponse<AssetType>> {
+    try {
+      return await this.request<ApiResponse<AssetType>>(`/asset-types`, { method: "POST", body: JSON.stringify(payload) });
+    } catch (error) {
+      const item: AssetType = { ...payload, id: `AT_${Date.now()}`, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as AssetType;
+      this.mockAssetTypes.push(item);
+      return createMockApiResponse(item);
+    }
+  }
+
+  async updateAssetType(id: string, payload: Partial<AssetType>): Promise<ApiResponse<AssetType>> {
+    try {
+      return await this.request<ApiResponse<AssetType>>(`/asset-types/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+    } catch (error) {
+      const idx = this.mockAssetTypes.findIndex(a => a.id === id);
+      if (idx === -1) throw error;
+      this.mockAssetTypes[idx] = { ...this.mockAssetTypes[idx], ...payload, updatedAt: new Date().toISOString() };
+      return createMockApiResponse(this.mockAssetTypes[idx]);
+    }
+  }
+
+  async deleteAssetType(id: string): Promise<ApiResponse<void>> {
+    try {
+      return await this.request<ApiResponse<void>>(`/asset-types/${id}`, { method: "DELETE" });
+    } catch (error) {
+      this.mockAssetTypes = this.mockAssetTypes.filter(a => a.id !== id);
+      return createMockApiResponse(undefined as unknown as void);
+    }
+  }
+
+  // Asset Properties endpoints
+  async getAssetProperties(params?: { page?: number; limit?: number; assetTypeId?: string; search?: string; }): Promise<PaginatedResponse<AssetProperty>> {
+    try {
+      const sp = new URLSearchParams();
+      if (params?.page) sp.append("page", String(params.page));
+      if (params?.limit) sp.append("limit", String(params.limit));
+      if (params?.assetTypeId) sp.append("assetTypeId", params.assetTypeId);
+      if (params?.search) sp.append("search", params.search);
+      return await this.request<PaginatedResponse<AssetProperty>>(`/asset-properties?${sp.toString()}`);
+    } catch (error) {
+      let data = [...this.mockAssetProperties];
+      if (params?.assetTypeId) data = data.filter(p => p.assetTypeId === params.assetTypeId);
+      if (params?.search) {
+        const t = params.search.toLowerCase();
+        data = data.filter(p => p.name.toLowerCase().includes(t));
+      }
+      return createMockPaginatedResponse(data, params);
+    }
+  }
+
+  async createAssetProperty(payload: Omit<AssetProperty, "id" | "createdAt" | "updatedAt">): Promise<ApiResponse<AssetProperty>> {
+    try {
+      return await this.request<ApiResponse<AssetProperty>>(`/asset-properties`, { method: "POST", body: JSON.stringify(payload) });
+    } catch (error) {
+      const item: AssetProperty = { ...payload, id: `AP_${Date.now()}`, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as AssetProperty;
+      this.mockAssetProperties.push(item);
+      return createMockApiResponse(item);
+    }
+  }
+
+  async updateAssetProperty(id: string, payload: Partial<AssetProperty>): Promise<ApiResponse<AssetProperty>> {
+    try {
+      return await this.request<ApiResponse<AssetProperty>>(`/asset-properties/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+    } catch (error) {
+      const idx = this.mockAssetProperties.findIndex(p => p.id === id);
+      if (idx === -1) throw error;
+      this.mockAssetProperties[idx] = { ...this.mockAssetProperties[idx], ...payload, updatedAt: new Date().toISOString() };
+      return createMockApiResponse(this.mockAssetProperties[idx]);
+    }
+  }
+
+  async deleteAssetProperty(id: string): Promise<ApiResponse<void>> {
+    try {
+      return await this.request<ApiResponse<void>>(`/asset-properties/${id}`, { method: "DELETE" });
+    } catch (error) {
+      this.mockAssetProperties = this.mockAssetProperties.filter(p => p.id !== id);
+      return createMockApiResponse(undefined as unknown as void);
+    }
   }
 
   // Device endpoints

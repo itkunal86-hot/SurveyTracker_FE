@@ -463,7 +463,7 @@ CATASTROPHES API (/api/catastrophes)
        "estimatedCost": 75000,
        "pipelineId": "PIPELINE_002"
      },
-     "message": "Catastrophe reported successfully",
+       "message": "Catastrophe reported successfully",
      "timestamp": "2023-12-01T10:30:00Z"
    }
 
@@ -867,3 +867,316 @@ Content-Type: application/json (for POST/PUT requests)
 Accept: application/json
 
 Note: Currently no authentication is required. In production, implement JWT or API key authentication.
+
+
+=====================================
+ADMIN - SURVEY CATEGORIES API (/api/survey-categories)
+=====================================
+
+1. GET /api/survey-categories
+   PATH: /api/survey-categories
+   METHOD: GET
+   QUERY PARAMETERS:
+     - page: integer (default: 1)
+     - limit: integer (default: 10)
+     - search: string - Search by name or description
+   
+   RESPONSE:
+   {
+     "success": true,
+     "data": [
+       {
+         "id": "CAT_001",
+         "name": "Gas Pipeline",
+         "description": "Surveys for natural gas pipeline infrastructure",
+         "createdAt": "2024-01-15T08:00:00Z",
+         "updatedAt": "2024-01-15T08:00:00Z"
+       }
+     ],
+     "pagination": { "page": 1, "limit": 10, "total": 4, "totalPages": 1 },
+     "timestamp": "2024-01-15T08:00:00Z"
+   }
+
+2. GET /api/survey-categories/{id}
+   PATH: /api/survey-categories/CAT_001
+   METHOD: GET
+   PATH PARAMETERS:
+     - id: string - Survey category ID
+   
+   RESPONSE (200):
+   {
+     "success": true,
+     "data": { "id": "CAT_001", "name": "Gas Pipeline", "description": "...", "createdAt": "...", "updatedAt": "..." },
+     "timestamp": "2024-01-15T08:00:00Z"
+   }
+   RESPONSE (404):
+   { "error": "Not Found", "message": "Survey category not found", "statusCode": 404 }
+
+3. POST /api/survey-categories
+   PATH: /api/survey-categories
+   METHOD: POST
+   PAYLOAD:
+   {
+     "name": "New Category",            // required
+     "description": "Optional details"   // optional
+   }
+   
+   RESPONSE (201):
+   {
+     "success": true,
+     "data": { "id": "CAT_170...", "name": "New Category", "description": "Optional details", "createdAt": "...", "updatedAt": "..." },
+     "message": "Survey category created successfully",
+     "timestamp": "..."
+   }
+   RESPONSE (400):
+   { "error": "Bad Request", "message": "Missing required field: name" }
+   { "error": "Bad Request", "message": "Category name must be unique" }
+
+4. PUT /api/survey-categories/{id}
+   PATH: /api/survey-categories/CAT_001
+   METHOD: PUT
+   PAYLOAD: { "name"?: string, "description"?: string }
+   
+   RESPONSE (200):
+   {
+     "success": true,
+     "data": { "id": "CAT_001", "name": "Updated", "description": "...", "createdAt": "...", "updatedAt": "..." },
+     "message": "Survey category updated successfully",
+     "timestamp": "..."
+   }
+   RESPONSE (404): { "error": "Not Found", "message": "Survey category not found" }
+   RESPONSE (400): { "error": "Bad Request", "message": "Category name must be unique" }
+
+5. DELETE /api/survey-categories/{id}
+   PATH: /api/survey-categories/CAT_001
+   METHOD: DELETE
+   
+   RESPONSE (200):
+   { "success": true, "message": "Survey category deleted successfully", "timestamp": "..." }
+   RESPONSE (404): { "error": "Not Found", "message": "Survey category not found" }
+
+
+=====================================
+ADMIN - ASSET TYPES API (/api/asset-types)
+=====================================
+
+AssetType fields:
+- id: string
+- name: string
+- isSurveyElement: boolean
+- surveyCategoryId: string | null
+- menuName: string | null
+- menuOrder: number | null
+- createdAt: string (ISO date-time)
+- updatedAt: string (ISO date-time)
+
+1. GET /api/asset-types
+   PATH: /api/asset-types
+   METHOD: GET
+   QUERY PARAMETERS:
+     - page: integer (default: 1)
+     - limit: integer (default: 10)
+     - surveyCategoryId: string - Filter by survey category ID
+     - search: string - Filter by name or menuName
+   
+   RESPONSE (200):
+   {
+     "success": true,
+     "data": [ { "id": "AT_001", "name": "Valve", "isSurveyElement": true, "surveyCategoryId": "CAT_001", "menuName": "Valve", "menuOrder": 1, "createdAt": "...", "updatedAt": "..." } ],
+     "pagination": { "page": 1, "limit": 10, "total": 2, "totalPages": 1 },
+     "timestamp": "..."
+   }
+
+2. GET /api/asset-types/{id}
+   PATH: /api/asset-types/AT_001
+   METHOD: GET
+   
+   RESPONSE (200):
+   {
+     "success": true,
+     "data": {
+       "id": "AT_001",
+       "name": "Valve",
+       "isSurveyElement": true,
+       "surveyCategoryId": "CAT_001",
+       "menuName": "Valve",
+       "menuOrder": 1,
+       "createdAt": "2024-01-15T08:00:00Z",
+       "updatedAt": "2024-01-15T08:00:00Z"
+     },
+     "timestamp": "..."
+   }
+   RESPONSE (404): { "error": "Not Found", "message": "Asset type not found" }
+
+3. POST /api/asset-types
+   PATH: /api/asset-types
+   METHOD: POST
+   PAYLOAD:
+   {
+     "name": "New Asset Type",          // required
+     "isSurveyElement": true,            // optional (default: false)
+     "surveyCategoryId": "CAT_001",     // optional or null
+     "menuName": "Menu Label",          // optional or null
+     "menuOrder": 3                      // optional or null
+   }
+   
+   RESPONSE (201):
+   {
+     "success": true,
+     "data": { "id": "AT_170...", "name": "New Asset Type", "isSurveyElement": true, "surveyCategoryId": "CAT_001", "menuName": "Menu Label", "menuOrder": 3, "createdAt": "...", "updatedAt": "..." },
+     "message": "Asset type created successfully",
+     "timestamp": "..."
+   }
+   RESPONSE (400):
+   { "error": "Bad Request", "message": "Missing required field: name" }
+   { "error": "Bad Request", "message": "Asset type name must be unique within category" }
+
+4. PUT /api/asset-types/{id}
+   PATH: /api/asset-types/AT_001
+   METHOD: PUT
+   PAYLOAD: { "name"?: string, "isSurveyElement"?: boolean, "surveyCategoryId"?: string | null, "menuName"?: string | null, "menuOrder"?: number | null }
+   
+   RESPONSE (200):
+   {
+     "success": true,
+     "data": {
+       "id": "AT_001",
+       "name": "Valve",
+       "isSurveyElement": true,
+       "surveyCategoryId": "CAT_001",
+       "menuName": "Valve",
+       "menuOrder": 1,
+       "createdAt": "2024-01-15T08:00:00Z",
+       "updatedAt": "2024-01-15T08:00:00Z"
+     },
+     "message": "Asset type updated successfully",
+     "timestamp": "..."
+   }
+   RESPONSE (404): { "error": "Not Found", "message": "Asset type not found" }
+   RESPONSE (400): { "error": "Bad Request", "message": "Asset type name must be unique within category" }
+
+5. DELETE /api/asset-types/{id}
+   PATH: /api/asset-types/AT_001
+   METHOD: DELETE
+   
+   RESPONSE (200): { "success": true, "message": "Asset type deleted successfully", "timestamp": "..." }
+   RESPONSE (404): { "error": "Not Found", "message": "Asset type not found" }
+
+
+=====================================
+ADMIN - ASSET PROPERTIES API (/api/asset-properties)
+=====================================
+
+AssetProperty fields:
+- id: string
+- name: string
+- dataType: number
+- isRequired: boolean
+- order: number | null
+- options: string | null
+- valueUnit: string | null
+- assetTypeId: string
+- createdAt: string (ISO date-time)
+- updatedAt: string (ISO date-time)
+
+1. GET /api/asset-properties
+   PATH: /api/asset-properties
+   METHOD: GET
+   QUERY PARAMETERS:
+     - page: integer (default: 1)
+     - limit: integer (default: 10)
+     - assetTypeId: string - Filter by asset type ID
+     - search: string - Filter by property name
+   
+   RESPONSE (200):
+   {
+     "success": true,
+     "data": [ { "id": "AP_001", "name": "Diameter", "dataType": 1, "isRequired": true, "order": 1, "options": null, "valueUnit": "mm", "assetTypeId": "AT_001", "createdAt": "...", "updatedAt": "..." } ],
+     "pagination": { "page": 1, "limit": 10, "total": 2, "totalPages": 1 },
+     "timestamp": "..."
+   }
+
+2. GET /api/asset-properties/{id}
+   PATH: /api/asset-properties/AP_001
+   METHOD: GET
+   
+   RESPONSE (200):
+   {
+     "success": true,
+     "data": {
+       "id": "AP_001",
+       "name": "Diameter",
+       "dataType": 1,
+       "isRequired": true,
+       "order": 1,
+       "options": null,
+       "valueUnit": "mm",
+       "assetTypeId": "AT_001",
+       "createdAt": "2024-01-15T08:00:00Z",
+       "updatedAt": "2024-01-15T08:00:00Z"
+     },
+     "timestamp": "..."
+   }
+   RESPONSE (404): { "error": "Not Found", "message": "Asset property not found" }
+
+3. POST /api/asset-properties
+   PATH: /api/asset-properties
+   METHOD: POST
+   PAYLOAD:
+   {
+     "name": "Diameter",            // required
+     "dataType": 1,                  // required (number)
+     "isRequired": true,             // optional (default: false)
+     "order": 1,                     // optional or null
+     "options": null,                // optional or string (e.g., JSON or CSV)
+     "valueUnit": "mm",             // optional or null
+     "assetTypeId": "AT_001"        // required
+   }
+   
+   RESPONSE (201):
+   {
+     "success": true,
+     "data": { "id": "AP_170...", "name": "Diameter", "dataType": 1, "isRequired": true, "order": 1, "options": null, "valueUnit": "mm", "assetTypeId": "AT_001", "createdAt": "...", "updatedAt": "..." },
+     "message": "Asset property created successfully",
+     "timestamp": "..."
+   }
+   RESPONSE (400):
+   { "error": "Bad Request", "message": "Missing required field: name" }
+   { "error": "Bad Request", "message": "Missing required field: assetTypeId" }
+   { "error": "Bad Request", "message": "Invalid dataType" }
+   { "error": "Bad Request", "message": "Property name must be unique within asset type" }
+
+4. PUT /api/asset-properties/{id}
+   PATH: /api/asset-properties/AP_001
+   METHOD: PUT
+   PAYLOAD: { "name"?: string, "dataType"?: number, "isRequired"?: boolean, "order"?: number | null, "options"?: string | null, "valueUnit"?: string | null, "assetTypeId"?: string }
+   
+   RESPONSE (200):
+   {
+     "success": true,
+     "data": {
+       "id": "AP_001",
+       "name": "Diameter",
+       "dataType": 1,
+       "isRequired": true,
+       "order": 1,
+       "options": null,
+       "valueUnit": "mm",
+       "assetTypeId": "AT_001",
+       "createdAt": "2024-01-15T08:00:00Z",
+       "updatedAt": "2024-01-15T08:00:00Z"
+     },
+     "message": "Asset property updated successfully",
+     "timestamp": "..."
+   }
+   RESPONSE (404): { "error": "Not Found", "message": "Asset property not found" }
+   RESPONSE (400): { "error": "Bad Request", "message": "Property name must be unique within asset type" }
+
+5. DELETE /api/asset-properties/{id}
+   PATH: /api/asset-properties/AP_001
+   METHOD: DELETE
+   
+   RESPONSE (200): { "success": true, "message": "Asset property deleted successfully", "timestamp": "..." }
+   RESPONSE (404): { "error": "Not Found", "message": "Asset property not found" }
+
+   /////////////////
