@@ -10,8 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-interface AssetType { id: string; name: string }
-interface AssetProperty { id: string; name: string; dataType: number; isRequired: boolean; order?: number | null; options?: string | null; valueUnit?: string | null; assetTypeId: string; createdAt: string; updatedAt: string }
+import { apiClient, type AssetType, type AssetProperty } from "@/lib/api";
 
 const API = "/api";
 
@@ -29,26 +28,16 @@ export default function AssetPropertyManagement() {
   useEffect(() => {
     const loadAssetTypes = async () => {
       try {
-        const res = await fetch(`${API}/asset-types?limit=200`);
-        if (res.ok) {
-          const json = await res.json();
-          setAssetTypes((json.data || []).map((i: any) => ({ id: i.id, name: i.name })));
-        }
+        const res = await apiClient.getAssetTypes({ limit: 200 });
+        setAssetTypes((res.data || []).map((i: any) => ({ id: i.id, name: i.name })));
       } catch {}
     };
     loadAssetTypes();
   }, []);
 
   const loadItems = async () => {
-    const params = new URLSearchParams();
-    params.set("limit", "200");
-    if (selectedAssetType) params.set("assetTypeId", selectedAssetType);
-    if (searchTerm) params.set("search", searchTerm);
-    const res = await fetch(`${API}/asset-properties?${params.toString()}`);
-    if (res.ok) {
-      const json = await res.json();
-      setItems(json.data || []);
-    }
+    const res = await apiClient.getAssetProperties({ limit: 200, assetTypeId: selectedAssetType || undefined, search: searchTerm || undefined });
+    setItems(res.data || []);
   };
 
   useEffect(() => {
@@ -90,11 +79,13 @@ export default function AssetPropertyManagement() {
       assetTypeId: form.assetTypeId,
     };
     if (editing) {
-      const res = await fetch(`${API}/asset-properties/${editing.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-      if (res.ok) { await loadItems(); resetForm(); }
+      await apiClient.updateAssetProperty(editing.id, payload as any);
+      await loadItems();
+      resetForm();
     } else {
-      const res = await fetch(`${API}/asset-properties`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-      if (res.ok) { await loadItems(); resetForm(); }
+      await apiClient.createAssetProperty(payload as any);
+      await loadItems();
+      resetForm();
     }
   };
 
@@ -106,8 +97,8 @@ export default function AssetPropertyManagement() {
 
   const onDelete = async (id: string) => {
     if (!confirm("Delete this property?")) return;
-    const res = await fetch(`${API}/asset-properties/${id}`, { method: "DELETE" });
-    if (res.ok) await loadItems();
+    await apiClient.deleteAssetProperty(id);
+    await loadItems();
   };
 
   return (
