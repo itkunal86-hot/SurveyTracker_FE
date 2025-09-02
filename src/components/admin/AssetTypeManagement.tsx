@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface SurveyCategory { id: string; name: string; description?: string }
-interface AssetType { id: string; name: string; isSurveyElement: boolean; surveyCategoryId: string | null; menuName?: string | null; menuOrder?: number | null; createdAt: string; updatedAt: string }
+import { apiClient, type AssetType } from "@/lib/api";
 
 const API = "/api";
 
@@ -41,15 +41,8 @@ export default function AssetTypeManagement() {
   }, []);
 
   const loadItems = async (categoryId?: string) => {
-    const params = new URLSearchParams();
-    params.set("limit", "100");
-    if (categoryId) params.set("surveyCategoryId", categoryId);
-    if (searchTerm) params.set("search", searchTerm);
-    const res = await fetch(`${API}/asset-types?${params.toString()}`);
-    if (res.ok) {
-      const json = await res.json();
-      setItems(json.data || []);
-    }
+    const res = await apiClient.getAssetTypes({ limit: 100, surveyCategoryId: categoryId, search: searchTerm });
+    setItems(res.data || []);
   };
 
   useEffect(() => {
@@ -87,17 +80,13 @@ export default function AssetTypeManagement() {
       menuOrder: form.menuOrder === "" ? null : Number(form.menuOrder),
     };
     if (editing) {
-      const res = await fetch(`${API}/asset-types/${editing.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-      if (res.ok) {
-        await loadItems(selectedCategory || undefined);
-        resetForm();
-      }
+      await apiClient.updateAssetType(editing.id, payload as any);
+      await loadItems(selectedCategory || undefined);
+      resetForm();
     } else {
-      const res = await fetch(`${API}/asset-types`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-      if (res.ok) {
-        await loadItems(selectedCategory || undefined);
-        resetForm();
-      }
+      await apiClient.createAssetType(payload as any);
+      await loadItems(selectedCategory || undefined);
+      resetForm();
     }
   };
 
@@ -109,8 +98,8 @@ export default function AssetTypeManagement() {
 
   const onDelete = async (id: string) => {
     if (!confirm("Delete this asset type?")) return;
-    const res = await fetch(`${API}/asset-types/${id}`, { method: "DELETE" });
-    if (res.ok) await loadItems(selectedCategory || undefined);
+    await apiClient.deleteAssetType(id);
+    await loadItems(selectedCategory || undefined);
   };
 
   return (
