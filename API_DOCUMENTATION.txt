@@ -1178,3 +1178,5 @@ AssetProperty fields:
    
    RESPONSE (200): { "success": true, "message": "Asset property deleted successfully", "timestamp": "..." }
    RESPONSE (404): { "error": "Not Found", "message": "Asset property not found" }
+
+   /////////////////
