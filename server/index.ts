@@ -15,6 +15,7 @@ import { catastropheRoutes } from "./routes/catastrophes";
 import { surveyRoutes } from "./routes/surveys";
 import { configRoutes } from "./routes/config";
 import { userRoutes } from "./routes/users";
+import { assetTypeRoutes } from "./routes/asset-types";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -131,6 +132,7 @@ app.use("/api/catastrophes", catastropheRoutes);
 app.use("/api/surveys", surveyRoutes);
 app.use("/api/config", configRoutes);
 app.use("/api/User", userRoutes);
+app.use("/api/asset-types", assetTypeRoutes);
 
 // 404 handler
 app.use("*", (req, res) => {
