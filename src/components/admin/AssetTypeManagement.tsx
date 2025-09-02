@@ -176,10 +176,10 @@ export default function AssetTypeManagement() {
             <Input placeholder="Search assets..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="max-w-sm" />
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <Select value={selectedCategory} onValueChange={(v) => setSelectedCategory(v)}>
+            <Select value={selectedCategory === "" ? ALL_VALUE : selectedCategory} onValueChange={(v) => setSelectedCategory(v === ALL_VALUE ? "" : v)}>
               <SelectTrigger className="w-[240px]"><SelectValue placeholder="Filter by category" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Categories</SelectItem>
+                <SelectItem value={ALL_VALUE}>All Categories</SelectItem>
                 {categories.map(c => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}
               </SelectContent>
             </Select>
