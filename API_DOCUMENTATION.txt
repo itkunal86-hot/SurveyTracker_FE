@@ -991,7 +991,21 @@ AssetType fields:
    PATH: /api/asset-types/AT_001
    METHOD: GET
    
-   RESPONSE (200): { "success": true, "data": { /* AssetType */ }, "timestamp": "..." }
+   RESPONSE (200):
+   {
+     "success": true,
+     "data": {
+       "id": "AT_001",
+       "name": "Valve",
+       "isSurveyElement": true,
+       "surveyCategoryId": "CAT_001",
+       "menuName": "Valve",
+       "menuOrder": 1,
+       "createdAt": "2024-01-15T08:00:00Z",
+       "updatedAt": "2024-01-15T08:00:00Z"
+     },
+     "timestamp": "..."
+   }
    RESPONSE (404): { "error": "Not Found", "message": "Asset type not found" }
 
 3. POST /api/asset-types
@@ -1023,7 +1037,21 @@ AssetType fields:
    PAYLOAD: { "name"?: string, "isSurveyElement"?: boolean, "surveyCategoryId"?: string | null, "menuName"?: string | null, "menuOrder"?: number | null }
    
    RESPONSE (200):
-   { "success": true, "data": { /* AssetType */ }, "message": "Asset type updated successfully", "timestamp": "..." }
+   {
+     "success": true,
+     "data": {
+       "id": "AT_001",
+       "name": "Valve",
+       "isSurveyElement": true,
+       "surveyCategoryId": "CAT_001",
+       "menuName": "Valve",
+       "menuOrder": 1,
+       "createdAt": "2024-01-15T08:00:00Z",
+       "updatedAt": "2024-01-15T08:00:00Z"
+     },
+     "message": "Asset type updated successfully",
+     "timestamp": "..."
+   }
    RESPONSE (404): { "error": "Not Found", "message": "Asset type not found" }
    RESPONSE (400): { "error": "Bad Request", "message": "Asset type name must be unique within category" }
 
@@ -1072,7 +1100,23 @@ AssetProperty fields:
    PATH: /api/asset-properties/AP_001
    METHOD: GET
    
-   RESPONSE (200): { "success": true, "data": { /* AssetProperty */ }, "timestamp": "..." }
+   RESPONSE (200):
+   {
+     "success": true,
+     "data": {
+       "id": "AP_001",
+       "name": "Diameter",
+       "dataType": 1,
+       "isRequired": true,
+       "order": 1,
+       "options": null,
+       "valueUnit": "mm",
+       "assetTypeId": "AT_001",
+       "createdAt": "2024-01-15T08:00:00Z",
+       "updatedAt": "2024-01-15T08:00:00Z"
+     },
+     "timestamp": "..."
+   }
    RESPONSE (404): { "error": "Not Found", "message": "Asset property not found" }
 
 3. POST /api/asset-properties
@@ -1107,7 +1151,24 @@ AssetProperty fields:
    METHOD: PUT
    PAYLOAD: { "name"?: string, "dataType"?: number, "isRequired"?: boolean, "order"?: number | null, "options"?: string | null, "valueUnit"?: string | null, "assetTypeId"?: string }
    
-   RESPONSE (200): { "success": true, "data": { /* AssetProperty */ }, "message": "Asset property updated successfully", "timestamp": "..." }
+   RESPONSE (200):
+   {
+     "success": true,
+     "data": {
+       "id": "AP_001",
+       "name": "Diameter",
+       "dataType": 1,
+       "isRequired": true,
+       "order": 1,
+       "options": null,
+       "valueUnit": "mm",
+       "assetTypeId": "AT_001",
+       "createdAt": "2024-01-15T08:00:00Z",
+       "updatedAt": "2024-01-15T08:00:00Z"
+     },
+     "message": "Asset property updated successfully",
+     "timestamp": "..."
+   }
    RESPONSE (404): { "error": "Not Found", "message": "Asset property not found" }
    RESPONSE (400): { "error": "Bad Request", "message": "Property name must be unique within asset type" }
 
