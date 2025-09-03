@@ -1180,3 +1180,306 @@ AssetProperty fields:
    RESPONSE (404): { "error": "Not Found", "message": "Asset property not found" }
 
    /////////////////
+
+=====================================
+ADMIN - SURVEY ATTRIBUTES API (/api/survey-attributes)
+=====================================
+
+SurveyAttribute fields:
+- id: string
+- categoryId: string
+- categoryName: string (optional)
+- name: string
+- dataType: string (TEXT, NUMBER, DATE, DROPDOWN)
+- dropdownOptions: string[] (required when dataType=DROPDOWN)
+- isRequired: boolean
+- order: number
+- createdAt: string (ISO date-time)
+- updatedAt: string (ISO date-time)
+
+1. GET /api/survey-attributes
+   PATH: /api/survey-attributes
+   METHOD: GET
+   QUERY PARAMETERS:
+     - page: integer (default: 1)
+     - limit: integer (default: 10)
+     - categoryId: string - Filter by survey category ID
+     - search: string - Search by attribute name
+
+   RESPONSE (200):
+   {
+     "success": true,
+     "data": [
+       {
+         "id": "ATTR_001",
+         "categoryId": "CAT_001",
+         "categoryName": "Gas Pipeline",
+         "name": "Pipe Diameter",
+         "dataType": "NUMBER",
+         "isRequired": true,
+         "order": 1,
+         "createdAt": "2024-01-15T08:00:00Z",
+         "updatedAt": "2024-01-15T08:00:00Z"
+       }
+     ],
+     "pagination": { "page": 1, "limit": 10, "total": 5, "totalPages": 1 },
+     "timestamp": "..."
+   }
+
+2. GET /api/survey-attributes/by-category/{categoryId}
+   PATH: /api/survey-attributes/by-category/CAT_001
+   METHOD: GET
+   PATH PARAMETERS:
+     - categoryId: string - Survey category ID
+
+   RESPONSE (200):
+   {
+     "success": true,
+     "data": [ { "id": "ATTR_001", "name": "Pipe Diameter", "dataType": "NUMBER", "isRequired": true, "order": 1, "categoryId": "CAT_001", "createdAt": "...", "updatedAt": "..." } ],
+     "timestamp": "..."
+   }
+
+3. GET /api/survey-attributes/{id}
+   PATH: /api/survey-attributes/ATTR_001
+   METHOD: GET
+
+   RESPONSE (200): { "success": true, "data": { /* SurveyAttribute */ }, "timestamp": "..." }
+   RESPONSE (404): { "error": "Not Found", "message": "Survey attribute not found", "statusCode": 404 }
+
+4. POST /api/survey-attributes
+   PATH: /api/survey-attributes
+   METHOD: POST
+   PAYLOAD:
+   {
+     "categoryId": "CAT_001",          // required
+     "name": "Material Type",          // required
+     "dataType": "DROPDOWN",           // required (TEXT|NUMBER|DATE|DROPDOWN)
+     "dropdownOptions": ["Steel", "HDPE"], // required if dataType=DROPDOWN
+     "isRequired": true,                 // required
+     "order": 2                          // required
+   }
+
+   RESPONSE (201): { "success": true, "data": { /* SurveyAttribute */ }, "message": "Survey attribute created successfully", "timestamp": "..." }
+   RESPONSE (400): { "error": "Bad Request", "message": "Missing required fields: categoryId, name, dataType, isRequired, order" }
+   RESPONSE (400): { "error": "Bad Request", "message": "Dropdown options are required for DROPDOWN data type" }
+
+5. PUT /api/survey-attributes/{id}
+   PATH: /api/survey-attributes/ATTR_001
+   METHOD: PUT
+   PAYLOAD: { "categoryId"?: string, "name"?: string, "dataType"?: "TEXT"|"NUMBER"|"DATE"|"DROPDOWN", "dropdownOptions"?: string[], "isRequired"?: boolean, "order"?: number }
+
+   RESPONSE (200): { "success": true, "data": { /* SurveyAttribute */ }, "message": "Survey attribute updated successfully", "timestamp": "..." }
+   RESPONSE (404): { "error": "Not Found", "message": "Survey attribute not found" }
+   RESPONSE (400): { "error": "Bad Request", "message": "Dropdown options are required for DROPDOWN data type" }
+
+6. DELETE /api/survey-attributes/{id}
+   PATH: /api/survey-attributes/ATTR_001
+   METHOD: DELETE
+
+   RESPONSE (200): { "success": true, "message": "Survey attribute deleted successfully", "timestamp": "..." }
+   RESPONSE (404): { "error": "Not Found", "message": "Survey attribute not found" }
+
+
+=====================================
+ADMIN - DEVICE ASSIGNMENTS API (/api/device-assignments)
+=====================================
+
+DeviceAssignment fields:
+- id: string
+- deviceId: string
+- deviceName: string (optional)
+- surveyId: string
+- surveyName: string (optional)
+- assignedDate: string (ISO date-time)
+- unassignedDate: string (ISO date-time, optional)
+- status: string (ACTIVE, COMPLETED, CANCELLED)
+- assignedBy: string
+- notes: string (optional)
+- createdAt: string (ISO date-time)
+- updatedAt: string (ISO date-time)
+
+1. GET /api/device-assignments
+   PATH: /api/device-assignments
+   METHOD: GET
+   QUERY PARAMETERS:
+     - page: integer (default: 1)
+     - limit: integer (default: 10)
+     - deviceId: string
+     - surveyId: string
+     - status: string (ACTIVE, COMPLETED, CANCELLED)
+
+   RESPONSE (200):
+   {
+     "success": true,
+     "data": [ { "id": "ASN_001", "deviceId": "TRIMBLE_001", "surveyId": "SUR_001", "assignedDate": "2024-01-15T08:00:00Z", "status": "ACTIVE", "assignedBy": "Admin User", "createdAt": "...", "updatedAt": "..." } ],
+     "pagination": { "page": 1, "limit": 10, "total": 3, "totalPages": 1 },
+     "timestamp": "..."
+   }
+
+2. GET /api/device-assignments/by-survey/{surveyId}
+   PATH: /api/device-assignments/by-survey/SUR_001
+   METHOD: GET
+
+   RESPONSE (200): { "success": true, "data": [ /* DeviceAssignment[] */ ], "timestamp": "..." }
+
+3. GET /api/device-assignments/conflicts
+   PATH: /api/device-assignments/conflicts?deviceId=TRIMBLE_001&startDate=2024-01-01T00:00:00Z&endDate=2024-01-31T23:59:59Z
+   METHOD: GET
+
+   RESPONSE (200): { "success": true, "data": [ { "deviceId": "TRIMBLE_001", "deviceName": "Trimble SPS986 Unit 001", "conflictingSurveyId": "SUR_001", "conflictingSurveyName": "Mumbai Gas Main Line Survey", "assignedDate": "2024-01-15T08:00:00Z", "unassignedDate": null } ], "timestamp": "..." }
+
+4. GET /api/device-assignments/{id}
+   PATH: /api/device-assignments/ASN_001
+   METHOD: GET
+
+   RESPONSE (200): { "success": true, "data": { /* DeviceAssignment */ }, "timestamp": "..." }
+   RESPONSE (404): { "error": "Not Found", "message": "Device assignment not found" }
+
+5. POST /api/device-assignments
+   PATH: /api/device-assignments
+   METHOD: POST
+   PAYLOAD:
+   {
+     "deviceId": "TRIMBLE_001",           // required
+     "surveyId": "SUR_001",               // required
+     "assignedDate": "2024-01-15T08:00:00Z", // required (ISO date-time)
+     "assignedBy": "Admin User",          // required
+     "notes": "Optional notes"            // optional
+   }
+
+   RESPONSE (201): { "success": true, "data": { /* DeviceAssignment */ }, "message": "Device assignment created successfully", "timestamp": "..." }
+   RESPONSE (400): { "error": "Bad Request", "message": "Missing required fields: deviceId, surveyId, assignedDate, assignedBy" }
+   RESPONSE (400): { "error": "Bad Request", "message": "Device is already assigned to an active survey" }
+
+6. PUT /api/device-assignments/{id}
+   PATH: /api/device-assignments/ASN_001
+   METHOD: PUT
+   PAYLOAD: { "unassignedDate"?: string, "status"?: "ACTIVE"|"COMPLETED"|"CANCELLED", "notes"?: string }
+
+   RESPONSE (200): { "success": true, "data": { /* DeviceAssignment */ }, "message": "Device assignment updated successfully", "timestamp": "..." }
+   RESPONSE (404): { "error": "Not Found", "message": "Device assignment not found" }
+
+7. DELETE /api/device-assignments/{id}
+   PATH: /api/device-assignments/ASN_001
+   METHOD: DELETE
+
+   RESPONSE (200): { "success": true, "message": "Device assignment deleted successfully", "timestamp": "..." }
+   RESPONSE (404): { "error": "Not Found", "message": "Device assignment not found" }
+
+
+=====================================
+ADMIN - SURVEY HISTORY API (/api/survey-history)
+=====================================
+
+SurveyHistoryLog fields:
+- id: string
+- surveyId: string
+- surveyName: string (optional)
+- deviceId: string
+- deviceName: string (optional)
+- action: string (ASSIGNED, UNASSIGNED, STARTED, COMPLETED, PAUSED, RESUMED, DATA_SYNC)
+- timestamp: string (ISO date-time)
+- performedBy: string
+- details: string (optional)
+- location: { lat: number, lng: number } (optional)
+- dataPoints: number (optional)
+- duration: number (optional, minutes)
+
+DeviceUsageLog fields:
+- id: string
+- deviceId: string
+- deviceName: string (optional)
+- surveyId: string
+- surveyName: string (optional)
+- usageDate: string (YYYY-MM-DD)
+- hoursUsed: number
+- dataPointsCollected: number
+- batteryStart: number
+- batteryEnd: number
+- operator: string
+- location: string (optional)
+
+1. GET /api/survey-history
+   PATH: /api/survey-history
+   METHOD: GET
+   QUERY PARAMETERS:
+     - page: integer (default: 1)
+     - limit: integer (default: 10)
+     - surveyId: string
+     - deviceId: string
+     - action: string (ASSIGNED, UNASSIGNED, STARTED, COMPLETED, PAUSED, RESUMED, DATA_SYNC)
+     - startDate: string (YYYY-MM-DD)
+     - endDate: string (YYYY-MM-DD)
+
+   RESPONSE (200):
+   {
+     "success": true,
+     "data": [ { "id": "HIST_001", "surveyId": "SUR_001", "deviceId": "TRIMBLE_001", "action": "ASSIGNED", "timestamp": "2024-01-15T08:00:00Z", "performedBy": "Admin User" } ],
+     "pagination": { "page": 1, "limit": 10, "total": 3, "totalPages": 1 },
+     "timestamp": "..."
+   }
+
+2. GET /api/survey-history/device-usage
+   PATH: /api/survey-history/device-usage
+   METHOD: GET
+   QUERY PARAMETERS:
+     - page: integer (default: 1)
+     - limit: integer (default: 10)
+     - deviceId: string
+     - startDate: string (YYYY-MM-DD)
+     - endDate: string (YYYY-MM-DD)
+
+   RESPONSE (200):
+   {
+     "success": true,
+     "data": [ { "id": "USAGE_001", "deviceId": "TRIMBLE_001", "usageDate": "2024-01-15", "hoursUsed": 8.5, "dataPointsCollected": 1250, "batteryStart": 100, "batteryEnd": 35, "operator": "Rajesh Kumar" } ],
+     "pagination": { "page": 1, "limit": 10, "total": 2, "totalPages": 1 },
+     "timestamp": "..."
+   }
+
+3. GET /api/survey-history/reports/{reportType}
+   PATH: /api/survey-history/reports/usage?startDate=2024-01-01&endDate=2024-01-31&deviceId=TRIMBLE_001
+   METHOD: GET
+   PATH PARAMETERS:
+     - reportType: string (inventory, usage, downtime)
+   QUERY PARAMETERS:
+     - startDate: string (YYYY-MM-DD)
+     - endDate: string (YYYY-MM-DD)
+     - deviceId: string (optional)
+
+   RESPONSE (200):
+   {
+     "success": true,
+     "data": {
+       "reportType": "USAGE",
+       "generatedAt": "2024-01-31T12:00:00Z",
+       "dateRange": { "startDate": "2024-01-01", "endDate": "2024-01-31" },
+       "totalDevices": 5,
+       "activeDevices": 3,
+       "totalSurveys": 4,
+       "activeSurveys": 2,
+       "totalUsageHours": 156.5,
+       "totalDataPoints": 12450,
+       "details": [ /* array of usage entries or summary rows */ ]
+     },
+     "timestamp": "..."
+   }
+   RESPONSE (400): { "error": "Bad Request", "message": "Invalid report type. Must be one of: inventory, usage, downtime" }
+
+4. POST /api/survey-history
+   PATH: /api/survey-history
+   METHOD: POST
+   PAYLOAD:
+   {
+     "surveyId": "SUR_001",          // required
+     "deviceId": "TRIMBLE_001",      // required
+     "action": "STARTED",            // required (ASSIGNED|UNASSIGNED|STARTED|COMPLETED|PAUSED|RESUMED|DATA_SYNC)
+     "performedBy": "Rajesh Kumar",  // required
+     "details": "Optional details",   // optional
+     "location": { "lat": 19.076, "lng": 72.8777 }, // optional
+     "dataPoints": 100,               // optional
+     "duration": 60                   // optional (minutes)
+   }
+
+   RESPONSE (201): { "success": true, "data": { /* SurveyHistoryLog */ }, "message": "Survey history log created successfully", "timestamp": "..." }
+   RESPONSE (400): { "error": "Bad Request", "message": "Missing required fields: surveyId, deviceId, action, performedBy" }
