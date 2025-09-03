@@ -1369,6 +1369,82 @@ DeviceAssignment fields:
 
 =====================================
 ADMIN - SURVEY HISTORY API (/api/survey-history)
+
+
+=====================================
+ADMIN - SURVEY MANAGEMENT API (/api/survey-management)
+=====================================
+
+Survey fields:
+- id: string
+- name: string
+- categoryId: string
+- categoryName: string (optional)
+- startDate: string (YYYY-MM-DD)
+- endDate: string (YYYY-MM-DD)
+- status: string (ACTIVE, CLOSED)
+- createdBy: string
+- createdAt: string (ISO date-time)
+- updatedAt: string (ISO date-time)
+
+1. GET /api/survey-management
+   PATH: /api/survey-management
+   METHOD: GET
+   QUERY PARAMETERS:
+     - page: integer (default: 1)
+     - limit: integer (default: 10)
+     - categoryId: string
+     - status: string (ACTIVE, CLOSED)
+     - search: string (name or category)
+
+   RESPONSE (200):
+   {
+     "success": true,
+     "data": [ { "id": "SUR_001", "name": "Mumbai Gas Main Line Survey", "categoryId": "CAT_001", "categoryName": "Gas Pipeline", "startDate": "2024-01-15", "endDate": "2024-03-15", "status": "ACTIVE", "createdBy": "Admin User", "createdAt": "...", "updatedAt": "..." } ],
+     "pagination": { "page": 1, "limit": 10, "total": 3, "totalPages": 1 },
+     "timestamp": "..."
+   }
+
+2. GET /api/survey-management/{id}
+   PATH: /api/survey-management/SUR_001
+   METHOD: GET
+
+   RESPONSE (200): { "success": true, "data": { /* Survey */ }, "timestamp": "..." }
+   RESPONSE (404): { "error": "Not Found", "message": "Survey not found" }
+
+3. POST /api/survey-management
+   PATH: /api/survey-management
+   METHOD: POST
+   PAYLOAD:
+   {
+     "name": "New Survey",           // required
+     "categoryId": "CAT_001",        // required
+     "startDate": "2024-05-01",      // required (YYYY-MM-DD)
+     "endDate": "2024-06-01",        // required (YYYY-MM-DD)
+     "status": "ACTIVE",             // required
+     "createdBy": "Admin User",      // required
+     "categoryName": "Gas Pipeline"  // optional (for display)
+   }
+
+   RESPONSE (201): { "success": true, "data": { /* Survey */ }, "message": "Survey created successfully", "timestamp": "..." }
+   RESPONSE (400): { "error": "Bad Request", "message": "Missing required fields: name, categoryId, startDate, endDate, status, createdBy" }
+   RESPONSE (400): { "error": "Bad Request", "message": "End date must be after start date" }
+
+4. PUT /api/survey-management/{id}
+   PATH: /api/survey-management/SUR_001
+   METHOD: PUT
+   PAYLOAD: { "name"?: string, "categoryId"?: string, "categoryName"?: string, "startDate"?: string, "endDate"?: string, "status"?: "ACTIVE"|"CLOSED" }
+
+   RESPONSE (200): { "success": true, "data": { /* Survey */ }, "message": "Survey updated successfully", "timestamp": "..." }
+   RESPONSE (404): { "error": "Not Found", "message": "Survey not found" }
+   RESPONSE (400): { "error": "Bad Request", "message": "End date must be after start date" }
+
+5. DELETE /api/survey-management/{id}
+   PATH: /api/survey-management/SUR_001
+   METHOD: DELETE
+
+   RESPONSE (200): { "success": true, "message": "Survey deleted successfully", "timestamp": "..." }
+   RESPONSE (404): { "error": "Not Found", "message": "Survey not found" }
 =====================================
 
 SurveyHistoryLog fields:

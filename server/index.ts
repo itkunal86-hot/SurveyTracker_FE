@@ -18,6 +18,7 @@ import { userRoutes } from "./routes/users";
 import { surveyCategoryRoutes } from "./routes/survey-categories";
 import { assetTypeRoutes } from "./routes/asset-types";
 import { assetPropertyRoutes } from "./routes/asset-properties";
+import { surveyManagementRoutes } from "./routes/survey-management";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -137,6 +138,7 @@ app.use("/api/User", userRoutes);
 app.use("/api/survey-categories", surveyCategoryRoutes);
 app.use("/api/asset-types", assetTypeRoutes);
 app.use("/api/asset-properties", assetPropertyRoutes);
+app.use("/api/survey-management", surveyManagementRoutes);
 
 // 404 handler
 app.use("*", (req, res) => {
