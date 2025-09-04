@@ -16,6 +16,7 @@ import {
 
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || "https://localhost:7215";
+const REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS) || 15000;
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -371,9 +372,9 @@ class ApiClient {
     };
 
     try {
-      // Add timeout to requests using AbortController
+      // Add timeout to requests using AbortController (configurable)
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000); // Reduced timeout
+      const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
       const configWithTimeout = {
         ...config,
