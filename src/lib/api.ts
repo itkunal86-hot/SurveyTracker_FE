@@ -348,45 +348,8 @@ class ApiClient {
 
   constructor(baseURL: string = API_BASE_URL) {
     this.baseURL = baseURL?.endsWith('/') ? baseURL.slice(0, -1) : baseURL;
-    // Check server health on initialization
-    this.checkServerHealth();
   }
 
-  private async checkServerHealth(): Promise<boolean> {
-    if (this.useMockData) return false;
-
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2000); // Reduced timeout
-
-      const response = await fetch(`${this.baseURL}/health`, {
-        method: 'GET',
-        signal: controller.signal,
-        headers: {
-          'Cache-Control': 'no-cache'
-        }
-      });
-
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        console.log("✅ Server is healthy, using live API");
-        return true;
-      } else {
-        throw new Error("Server health check failed");
-      }
-    } catch (error) {
-      // Only log non-abort errors to reduce console noise
-      if ((error as any).name !== 'AbortError') {
-        console.warn("⚠️ Server health check failed");
-      }
-      // Only switch to mock mode when using relative (dev) API base like '/api'
-      if (!/^https?:\/\//i.test(this.baseURL)) {
-        this.useMockData = true;
-      }
-      return false;
-    }
-  }
 
   private async request<T>(
     endpoint: string,
