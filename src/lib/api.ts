@@ -697,7 +697,7 @@ class ApiClient {
   }): Promise<PaginatedResponse<Valve>> {
     // If already in mock mode, return mock data immediately
     if (this.useMockData) {
-      console.log("��� Using mock data for valves");
+      console.log("📊 Using mock data for valves");
       const filteredData = this.filterMockData(mockValves, params);
       return createMockPaginatedResponse(filteredData, params);
     }
@@ -774,13 +774,18 @@ class ApiClient {
           ? raw.data
           : [];
 
-      const mapped: SurveyCategoryType[] = items.map((it: any) => ({
-        id: String(it.id ?? it.ID ?? it.categoryId ?? it.CategoryId ?? crypto.randomUUID?.() || `${Date.now()}`),
-        name: it.name ?? it.Name ?? "",
-        description: it.description ?? it.Description ?? "",
-        createdAt: raw?.timestamp || new Date().toISOString(),
-        updatedAt: raw?.timestamp || new Date().toISOString(),
-      }));
+      const mapped: SurveyCategoryType[] = items.map((it: any) => {
+        const fallbackId = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
+          ? crypto.randomUUID()
+          : `${Date.now()}`;
+        return {
+          id: String(it.id ?? it.ID ?? it.categoryId ?? it.CategoryId ?? fallbackId),
+          name: it.name ?? it.Name ?? "",
+          description: it.description ?? it.Description ?? "",
+          createdAt: raw?.timestamp || new Date().toISOString(),
+          updatedAt: raw?.timestamp || new Date().toISOString(),
+        };
+      });
 
       const pagination = raw?.data?.pagination || {
         page: params?.page ?? 1,
