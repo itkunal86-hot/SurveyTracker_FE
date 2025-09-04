@@ -778,12 +778,14 @@ class ApiClient {
         const fallbackId = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
           ? crypto.randomUUID()
           : `${Date.now()}`;
+        const createdAt = it.createdAt ?? it.CreatedAt ?? it.created_at ?? raw?.timestamp ?? new Date().toISOString();
+        const updatedAt = it.updatedAt ?? it.UpdatedAt ?? it.updated_at ?? "";
         return {
           id: String(it.id ?? it.ID ?? it.categoryId ?? it.CategoryId ?? fallbackId),
           name: it.name ?? it.Name ?? "",
           description: it.description ?? it.Description ?? "",
-          createdAt: raw?.timestamp || new Date().toISOString(),
-          updatedAt: raw?.timestamp || new Date().toISOString(),
+          createdAt,
+          updatedAt,
         };
       });
 

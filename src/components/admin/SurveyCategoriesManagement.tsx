@@ -246,10 +246,10 @@ export default function SurveyCategoriesManagement() {
                       </p>
                     </TableCell>
                     <TableCell>
-                      {new Date(category.createdAt).toLocaleDateString()}
+                      {category.createdAt ? new Date(category.createdAt).toLocaleString() : "—"}
                     </TableCell>
                     <TableCell>
-                      {new Date(category.updatedAt).toLocaleDateString()}
+                      {category.updatedAt ? new Date(category.updatedAt).toLocaleString() : "—"}
                     </TableCell>
                     <TableCell className="text-right space-x-2">
                       <Button
