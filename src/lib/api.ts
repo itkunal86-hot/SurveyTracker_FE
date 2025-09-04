@@ -697,7 +697,7 @@ class ApiClient {
   }): Promise<PaginatedResponse<Valve>> {
     // If already in mock mode, return mock data immediately
     if (this.useMockData) {
-      console.log("📊 Using mock data for valves");
+      console.log("��� Using mock data for valves");
       const filteredData = this.filterMockData(mockValves, params);
       return createMockPaginatedResponse(filteredData, params);
     }
@@ -765,7 +765,37 @@ class ApiClient {
       if (params?.limit) sp.append("limit", String(params.limit));
       if (params?.search) sp.append("search", params.search);
       const q = sp.toString();
-      return await this.request<PaginatedResponse<SurveyCategoryType>>(`/api/SurveyCategories${q ? `?${q}` : ""}`);
+      const raw: any = await this.request<any>(`/api/SurveyCategories${q ? `?${q}` : ""}`);
+
+      const timestamp = raw?.timestamp || new Date().toISOString();
+      const items = Array.isArray(raw?.data?.items)
+        ? raw.data.items
+        : Array.isArray(raw?.data)
+          ? raw.data
+          : [];
+
+      const mapped: SurveyCategoryType[] = items.map((it: any) => ({
+        id: String(it.id ?? it.ID ?? it.categoryId ?? it.CategoryId ?? crypto.randomUUID?.() || `${Date.now()}`),
+        name: it.name ?? it.Name ?? "",
+        description: it.description ?? it.Description ?? "",
+        createdAt: raw?.timestamp || new Date().toISOString(),
+        updatedAt: raw?.timestamp || new Date().toISOString(),
+      }));
+
+      const pagination = raw?.data?.pagination || {
+        page: params?.page ?? 1,
+        limit: params?.limit ?? mapped.length,
+        total: mapped.length,
+        totalPages: 1,
+      };
+
+      return {
+        success: (raw?.status_code ?? 200) >= 200 && (raw?.status_code ?? 200) < 300,
+        data: mapped,
+        message: raw?.message,
+        timestamp,
+        pagination,
+      };
     } catch (error) {
       return createMockPaginatedResponse<SurveyCategoryType>([], params);
     }
