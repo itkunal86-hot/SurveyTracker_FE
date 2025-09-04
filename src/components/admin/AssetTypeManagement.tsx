@@ -30,12 +30,11 @@ export default function AssetTypeManagement() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch(`${API}/survey-categories?limit=100`);
-        if (res.ok) {
-          const json = await res.json();
-          setCategories(json.data || []);
-        }
-      } catch {}
+        const res = await apiClient.getSurveyCategories({ limit: 100 });
+        setCategories(res.data || []);
+      } catch {
+        setCategories([]);
+      }
     };
     fetchCategories();
   }, []);
