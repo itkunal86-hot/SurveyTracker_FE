@@ -967,7 +967,7 @@ class ApiClient {
   // User endpoints
   async loginUser(credentials: UserLoginRequest): Promise<UserLoginResponse> {
     try {
-      return await this.request<UserLoginResponse>("/User/login", {
+      return await this.request<UserLoginResponse>("/api/User/login", {
         method: "POST",
         body: JSON.stringify(credentials),
       });
@@ -986,7 +986,7 @@ class ApiClient {
 
   async forgotPassword(request: ForgotPasswordRequest): Promise<ForgotPasswordResponse> {
     try {
-      return await this.request<ForgotPasswordResponse>("/User/forgot-password", {
+      return await this.request<ForgotPasswordResponse>("/api/User/forgot-password", {
         method: "POST",
         body: JSON.stringify(request),
       });
@@ -1005,7 +1005,7 @@ class ApiClient {
 
   async resetPassword(request: ResetPasswordRequest): Promise<ResetPasswordResponse> {
     try {
-      return await this.request<ResetPasswordResponse>("/User/reset-password", {
+      return await this.request<ResetPasswordResponse>("/api/User/reset-password", {
         method: "POST",
         body: JSON.stringify(request),
       });
@@ -1024,7 +1024,7 @@ class ApiClient {
 
   async changePassword(request: ChangePasswordRequest): Promise<ChangePasswordResponse> {
     try {
-      return await this.request<ChangePasswordResponse>("/User/change-password", {
+      return await this.request<ChangePasswordResponse>("/api/User/change-password", {
         method: "POST",
         body: JSON.stringify(request),
       });
@@ -1043,7 +1043,7 @@ class ApiClient {
 
   async registerUser(userData: UserRegistrationRequest): Promise<UserRegistrationResponse> {
     try {
-      return await this.request<UserRegistrationResponse>("/User/register", {
+      return await this.request<UserRegistrationResponse>("/api/User/register", {
         method: "POST",
         body: JSON.stringify(userData),
       });
@@ -1073,7 +1073,7 @@ class ApiClient {
 
       const query = searchParams.toString();
       return await this.request<UserListResponse>(
-        `/User${query ? `?${query}` : ""}`,
+        `/api/User${query ? `?${query}` : ""}`,
       );
     } catch (error) {
       console.warn("Failed to fetch users from API, using mock data");
@@ -1150,7 +1150,7 @@ class ApiClient {
 
   async getUser(id: string): Promise<UserRegistrationResponse> {
     try {
-      return await this.request<UserRegistrationResponse>(`/User/${id}`);
+      return await this.request<UserRegistrationResponse>(`/api/User/${id}`);
     } catch (error) {
       // Fallback to mock data
       return {
@@ -1164,7 +1164,7 @@ class ApiClient {
 
   async updateUser(id: string, userData: UserUpdateRequest): Promise<UserRegistrationResponse> {
     try {
-      return await this.request<UserRegistrationResponse>(`/User/${id}`, {
+      return await this.request<UserRegistrationResponse>(`/api/User/${id}`, {
         method: "PUT",
         body: JSON.stringify(userData),
       });
@@ -1182,7 +1182,7 @@ class ApiClient {
 
   async deleteUser(id: string): Promise<UserRegistrationResponse> {
     try {
-      return await this.request<UserRegistrationResponse>(`/User/${id}`, {
+      return await this.request<UserRegistrationResponse>(`/api/User/${id}`, {
         method: "DELETE",
       });
     } catch (error) {
