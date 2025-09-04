@@ -343,6 +343,8 @@ export interface ChangePasswordResponse {
   data: string;
 }
 
+import type { SurveyCategory as SurveyCategoryType } from "@/types/admin";
+
 class ApiClient {
   private baseURL: string;
   private useMockData: boolean = false;
@@ -753,6 +755,46 @@ class ApiClient {
     return this.request<ApiResponse<void>>(`/valves/${id}`, {
       method: "DELETE",
     });
+  }
+
+  // Survey Categories endpoints
+  async getSurveyCategories(params?: { page?: number; limit?: number; search?: string; }): Promise<PaginatedResponse<SurveyCategoryType>> {
+    try {
+      const sp = new URLSearchParams();
+      if (params?.page) sp.append("page", String(params.page));
+      if (params?.limit) sp.append("limit", String(params.limit));
+      if (params?.search) sp.append("search", params.search);
+      const q = sp.toString();
+      return await this.request<PaginatedResponse<SurveyCategoryType>>(`/api/survey-categories${q ? `?${q}` : ""}`);
+    } catch (error) {
+      return createMockPaginatedResponse<SurveyCategoryType>([], params);
+    }
+  }
+
+  async createSurveyCategory(payload: { name: string; description?: string; }): Promise<ApiResponse<SurveyCategoryType>> {
+    try {
+      return await this.request<ApiResponse<SurveyCategoryType>>(`/api/survey-categories`, { method: "POST", body: JSON.stringify(payload) });
+    } catch (error) {
+      const item: SurveyCategoryType = { id: `CAT_${Date.now()}`, name: payload.name, description: payload.description || "", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as SurveyCategoryType;
+      return createMockApiResponse(item);
+    }
+  }
+
+  async updateSurveyCategory(id: string, payload: Partial<SurveyCategoryType>): Promise<ApiResponse<SurveyCategoryType>> {
+    try {
+      return await this.request<ApiResponse<SurveyCategoryType>>(`/api/survey-categories/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+    } catch (error) {
+      const item: SurveyCategoryType = { id, name: payload.name || "", description: payload.description || "", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as SurveyCategoryType;
+      return createMockApiResponse(item);
+    }
+  }
+
+  async deleteSurveyCategory(id: string): Promise<ApiResponse<void>> {
+    try {
+      return await this.request<ApiResponse<void>>(`/api/survey-categories/${id}`, { method: "DELETE" });
+    } catch (error) {
+      return createMockApiResponse(undefined as unknown as void);
+    }
   }
 
   // Catastrophe endpoints
