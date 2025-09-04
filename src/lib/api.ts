@@ -765,7 +765,7 @@ class ApiClient {
       if (params?.limit) sp.append("limit", String(params.limit));
       if (params?.search) sp.append("search", params.search);
       const q = sp.toString();
-      return await this.request<PaginatedResponse<SurveyCategoryType>>(`/api/survey-categories${q ? `?${q}` : ""}`);
+      return await this.request<PaginatedResponse<SurveyCategoryType>>(`/api/SurveyCategories${q ? `?${q}` : ""}`);
     } catch (error) {
       return createMockPaginatedResponse<SurveyCategoryType>([], params);
     }
@@ -773,7 +773,7 @@ class ApiClient {
 
   async createSurveyCategory(payload: { name: string; description?: string; }): Promise<ApiResponse<SurveyCategoryType>> {
     try {
-      return await this.request<ApiResponse<SurveyCategoryType>>(`/api/survey-categories`, { method: "POST", body: JSON.stringify(payload) });
+      return await this.request<ApiResponse<SurveyCategoryType>>(`/api/SurveyCategories`, { method: "POST", body: JSON.stringify(payload) });
     } catch (error) {
       const item: SurveyCategoryType = { id: `CAT_${Date.now()}`, name: payload.name, description: payload.description || "", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as SurveyCategoryType;
       return createMockApiResponse(item);
@@ -782,7 +782,7 @@ class ApiClient {
 
   async updateSurveyCategory(id: string, payload: Partial<SurveyCategoryType>): Promise<ApiResponse<SurveyCategoryType>> {
     try {
-      return await this.request<ApiResponse<SurveyCategoryType>>(`/api/survey-categories/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+      return await this.request<ApiResponse<SurveyCategoryType>>(`/api/SurveyCategories/${id}`, { method: "PUT", body: JSON.stringify(payload) });
     } catch (error) {
       const item: SurveyCategoryType = { id, name: payload.name || "", description: payload.description || "", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as SurveyCategoryType;
       return createMockApiResponse(item);
@@ -791,7 +791,7 @@ class ApiClient {
 
   async deleteSurveyCategory(id: string): Promise<ApiResponse<void>> {
     try {
-      return await this.request<ApiResponse<void>>(`/api/survey-categories/${id}`, { method: "DELETE" });
+      return await this.request<ApiResponse<void>>(`/api/SurveyCategories/${id}`, { method: "DELETE" });
     } catch (error) {
       return createMockApiResponse(undefined as unknown as void);
     }
