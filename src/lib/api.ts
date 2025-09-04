@@ -15,7 +15,7 @@ import {
 } from "./mockData";
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "/api";
+  import.meta.env.VITE_API_URL || "https://localhost:7215";
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -347,7 +347,7 @@ class ApiClient {
   private useMockData: boolean = false;
 
   constructor(baseURL: string = API_BASE_URL) {
-    this.baseURL = baseURL;
+    this.baseURL = baseURL?.endsWith('/') ? baseURL.slice(0, -1) : baseURL;
     // Check server health on initialization
     this.checkServerHealth();
   }
@@ -377,10 +377,13 @@ class ApiClient {
       }
     } catch (error) {
       // Only log non-abort errors to reduce console noise
-      if (error.name !== 'AbortError') {
-        console.warn("⚠️ Server health check failed, switching to mock data mode");
+      if ((error as any).name !== 'AbortError') {
+        console.warn("⚠️ Server health check failed");
       }
-      this.useMockData = true;
+      // Only switch to mock mode when using relative (dev) API base like '/api'
+      if (!/^https?:\/\//i.test(this.baseURL)) {
+        this.useMockData = true;
+      }
       return false;
     }
   }
@@ -427,8 +430,11 @@ class ApiClient {
       return await response.json();
     } catch (error) {
       console.error(`API request failed: ${url}`, error);
-      console.warn("Switching to mock data mode due to API failure");
-      this.useMockData = true;
+      // Only switch to mock mode when using relative (dev) API base like '/api'
+      if (!/^https?:\/\//i.test(this.baseURL)) {
+        console.warn("Switching to mock data mode due to API failure");
+        this.useMockData = true;
+      }
       throw error;
     }
   }
