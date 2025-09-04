@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 interface SurveyCategory { id: string; name: string; description?: string }
 import { apiClient, type AssetType } from "@/lib/api";
 
-const API = "/api";
+const API = "";
 
 export default function AssetTypeManagement() {
   const [categories, setCategories] = useState<SurveyCategory[]>([]);
