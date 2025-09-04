@@ -67,11 +67,13 @@ export default function SurveyCategoriesManagement() {
     load();
   }, []);
 
-  const filteredCategories = categories.filter(
-    (category) =>
-      category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      category.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCategories = Array.isArray(categories)
+    ? categories.filter(
+        (category) =>
+          category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          category.description.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : [];
 
   const validateForm = () => {
     const newErrors: { name?: string; description?: string } = {};
