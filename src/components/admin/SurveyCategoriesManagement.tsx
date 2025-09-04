@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { SurveyCategory } from "@/types/admin";
+import { apiClient } from "@/lib/api";
 
 const mockCategories: SurveyCategory[] = [
   {
@@ -43,12 +44,28 @@ const mockCategories: SurveyCategory[] = [
 ];
 
 export default function SurveyCategoriesManagement() {
-  const [categories, setCategories] = useState<SurveyCategory[]>(mockCategories);
+  const [categories, setCategories] = useState<SurveyCategory[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<SurveyCategory | null>(null);
   const [formData, setFormData] = useState({ name: "", description: "" });
   const [errors, setErrors] = useState<{ name?: string; description?: string }>({});
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      try {
+        const res = await apiClient.getSurveyCategories({ limit: 100 });
+        setCategories(res.data || []);
+      } catch (e) {
+        setCategories([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
 
   const filteredCategories = categories.filter(
     (category) =>
@@ -69,24 +86,17 @@ export default function SurveyCategoriesManagement() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validateForm()) return;
 
     if (editingCategory) {
-      setCategories(categories.map(cat => 
-        cat.id === editingCategory.id 
-          ? { ...cat, ...formData, updatedAt: new Date().toISOString() }
-          : cat
-      ));
+      await apiClient.updateSurveyCategory(editingCategory.id, { ...formData });
     } else {
-      const newCategory: SurveyCategory = {
-        id: `CAT_${Date.now()}`,
-        ...formData,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      setCategories([...categories, newCategory]);
+      await apiClient.createSurveyCategory({ ...formData });
     }
+
+    const res = await apiClient.getSurveyCategories({ limit: 100 });
+    setCategories(res.data || []);
 
     resetForm();
   };
@@ -97,10 +107,11 @@ export default function SurveyCategoriesManagement() {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this category? This action cannot be undone.")) {
-      setCategories(categories.filter(cat => cat.id !== id));
-    }
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this category? This action cannot be undone.")) return;
+    await apiClient.deleteSurveyCategory(id);
+    const res = await apiClient.getSurveyCategories({ limit: 100 });
+    setCategories(res.data || []);
   };
 
   const resetForm = () => {
@@ -194,7 +205,11 @@ export default function SurveyCategoriesManagement() {
           />
         </div>
 
-        {filteredCategories.length === 0 ? (
+        {loading ? (
+          <Alert>
+            <AlertDescription>Loading categories…</AlertDescription>
+          </Alert>
+        ) : filteredCategories.length === 0 ? (
           <Alert>
             <AlertDescription>
               {searchTerm ? "No categories found matching your search." : "No survey categories found. Create your first category to get started."}

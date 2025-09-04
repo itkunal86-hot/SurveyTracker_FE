@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 interface SurveyCategory { id: string; name: string; description?: string }
 import { apiClient, type AssetType } from "@/lib/api";
 
-const API = "/api";
+const API = "";
 
 export default function AssetTypeManagement() {
   const [categories, setCategories] = useState<SurveyCategory[]>([]);
@@ -30,12 +30,11 @@ export default function AssetTypeManagement() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch(`${API}/survey-categories?limit=100`);
-        if (res.ok) {
-          const json = await res.json();
-          setCategories(json.data || []);
-        }
-      } catch {}
+        const res = await apiClient.getSurveyCategories({ limit: 100 });
+        setCategories(res.data || []);
+      } catch {
+        setCategories([]);
+      }
     };
     fetchCategories();
   }, []);
