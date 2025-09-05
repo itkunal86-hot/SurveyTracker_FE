@@ -3,7 +3,7 @@ import { Helmet } from "react-helmet-async";
 import { useSearchParams } from "react-router-dom";
 import { LoginForm } from "@/components/LoginForm";
 import { Sidebar } from "@/components/Sidebar";
-import { ApiStatusBanner } from "@/components/ApiStatusBanner";
+// ApiStatusBanner intentionally hidden per requirements
 import { MapDashboard } from "@/components/MapDashboard";
 import { DeviceStatus } from "@/components/DeviceStatus";
 import { DailyPersonalMaps } from "./DailyPersonalMaps";
