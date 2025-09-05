@@ -693,7 +693,7 @@ class ApiClient {
         if (params?.limit) sp.append("limit", String(params.limit));
         if (params?.assetTypeId) sp.append("assetTypeId", params.assetTypeId);
         if (params?.search) sp.append("search", params.search);
-        return await this.request<PaginatedResponse<AssetProperty>>(`/asset-properties?${sp.toString()}`);
+        return await this.request<PaginatedResponse<AssetProperty>>(`/AssetProperties?${sp.toString()}`);
       } catch (error) {
         let data = [...this.mockAssetProperties];
         if (params?.assetTypeId) data = data.filter(p => p.assetTypeId === params.assetTypeId);
@@ -708,7 +708,7 @@ class ApiClient {
 
   async createAssetProperty(payload: Omit<AssetProperty, "id" | "createdAt" | "updatedAt">): Promise<ApiResponse<AssetProperty>> {
     try {
-      return await this.request<ApiResponse<AssetProperty>>(`/asset-properties`, { method: "POST", body: JSON.stringify(payload) });
+      return await this.request<ApiResponse<AssetProperty>>(`/AssetProperties`, { method: "POST", body: JSON.stringify(payload) });
     } catch (error) {
       const item: AssetProperty = { ...payload, id: `AP_${Date.now()}`, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as AssetProperty;
       this.mockAssetProperties.push(item);
@@ -718,7 +718,7 @@ class ApiClient {
 
   async updateAssetProperty(id: string, payload: Partial<AssetProperty>): Promise<ApiResponse<AssetProperty>> {
     try {
-      return await this.request<ApiResponse<AssetProperty>>(`/asset-properties/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+      return await this.request<ApiResponse<AssetProperty>>(`/AssetProperties/${id}`, { method: "PUT", body: JSON.stringify(payload) });
     } catch (error) {
       const idx = this.mockAssetProperties.findIndex(p => p.id === id);
       if (idx === -1) throw error;
@@ -729,7 +729,7 @@ class ApiClient {
 
   async deleteAssetProperty(id: string): Promise<ApiResponse<void>> {
     try {
-      return await this.request<ApiResponse<void>>(`/asset-properties/${id}`, { method: "DELETE" });
+      return await this.request<ApiResponse<void>>(`/AssetProperties/${id}`, { method: "DELETE" });
     } catch (error) {
       this.mockAssetProperties = this.mockAssetProperties.filter(p => p.id !== id);
       return createMockApiResponse(undefined as unknown as void);

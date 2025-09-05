@@ -29,7 +29,7 @@ export default function AssetPropertyManagement() {
     const loadAssetTypes = async () => {
       try {
         const res = await apiClient.getAssetTypes({ limit: 200 });
-        setAssetTypes((res.data || []).map((i: any) => ({ id: i.id, name: i.name })));
+        setAssetTypes(res.data || []);
       } catch {}
     };
     loadAssetTypes();
@@ -76,7 +76,7 @@ export default function AssetPropertyManagement() {
       order: form.order === "" ? null : Number(form.order),
       options: form.options?.trim() || null,
       valueUnit: form.valueUnit?.trim() || null,
-      assetTypeId: form.assetTypeId,
+      atId: form.assetTypeId,
     };
     if (editing) {
       await apiClient.updateAssetProperty(editing.id, payload as any);
