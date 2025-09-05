@@ -14,17 +14,21 @@ interface ApiStatusProviderProps {
   children: ReactNode;
 }
 
+const DISABLE_API_HEALTH = (import.meta as any)?.env?.VITE_DISABLE_API_HEALTH === '1' || (import.meta as any)?.env?.VITE_DISABLE_API_HEALTH === 'true';
+
 export const ApiStatusProvider: React.FC<ApiStatusProviderProps> = ({ children }) => {
   const [isUsingMockData, setIsUsingMockData] = useState(false);
   const [serverStatus, setServerStatus] = useState<'checking' | 'online' | 'offline' | 'error'>('checking');
 
   useEffect(() => {
-    // Check API status on component mount
+    if (DISABLE_API_HEALTH) {
+      setServerStatus('online');
+      setIsUsingMockData(false);
+      return;
+    }
+
     checkApiStatus();
-    
-    // Set up periodic health checks every 60 seconds
     const interval = setInterval(checkApiStatus, 60000);
-    
     return () => clearInterval(interval);
   }, []);
 
@@ -53,8 +57,8 @@ export const ApiStatusProvider: React.FC<ApiStatusProviderProps> = ({ children }
       }
     } catch (error) {
       // Only log non-abort errors to reduce console noise
-      if (error.name !== 'AbortError') {
-        console.warn('API health check failed:', error.message);
+      if ((error as any).name !== 'AbortError') {
+        console.warn('API health check failed:', (error as any).message);
       }
       setServerStatus('offline');
       setIsUsingMockData(true);
