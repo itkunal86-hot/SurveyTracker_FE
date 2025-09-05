@@ -211,7 +211,8 @@ export default function AssetPropertyManagement() {
                   <TableHead>Unit</TableHead>
                   <TableHead>Order</TableHead>
                   <TableHead>Required</TableHead>
-                  <TableHead>Updated</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead>Last updated</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -227,7 +228,8 @@ export default function AssetPropertyManagement() {
                     <TableCell>{item.valueUnit || <span className="text-muted-foreground">—</span>}</TableCell>
                     <TableCell>{item.order ?? <span className="text-muted-foreground">—</span>}</TableCell>
                     <TableCell>{item.isRequired ? <Badge className="bg-success text-success-foreground">Yes</Badge> : <Badge variant="outline">No</Badge>}</TableCell>
-                    <TableCell>{new Date(item.updatedAt).toLocaleDateString()}</TableCell>
+                    <TableCell>{item.createdAt ? new Date(item.createdAt).toLocaleString() : "—"}</TableCell>
+                    <TableCell>{item.updatedAt ? new Date(item.updatedAt).toLocaleString() : "-"}</TableCell>
                     <TableCell className="text-right space-x-2">
                       <Button variant="outline" size="sm" onClick={() => onEdit(item)} className="gap-1"><Pencil className="h-3 w-3" />Edit</Button>
                       <Button variant="outline" size="sm" onClick={() => onDelete(item.id)} className="gap-1 text-destructive hover:text-destructive"><Trash2 className="h-3 w-3" />Delete</Button>
