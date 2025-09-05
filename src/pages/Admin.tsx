@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
 import AdminDashboard from "@/components/admin/AdminDashboard";
-import { ApiStatusBanner } from "@/components/ApiStatusBanner";
+// ApiStatusBanner intentionally hidden per requirements
 
 export default function Admin() {
   return (
