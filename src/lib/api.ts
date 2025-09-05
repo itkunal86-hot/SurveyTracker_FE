@@ -501,45 +501,69 @@ class ApiClient {
       if (params?.surveyCategoryId) sp.append("surveyCategoryId", params.surveyCategoryId);
       if (params?.search) sp.append("search", params.search);
       const q = sp.toString();
-      return await this.request<PaginatedResponse<AssetType>>(`/asset-types${q ? `?${q}` : ""}`);
-    } catch (error) {
-      let data = [...this.mockAssetTypes];
-      if (params?.surveyCategoryId) data = data.filter(a => a.surveyCategoryId === params.surveyCategoryId);
-      if (params?.search) {
-        const t = params.search.toLowerCase();
-        data = data.filter(a => a.name.toLowerCase().includes(t) || (a.menuName || "").toLowerCase().includes(t));
+      // Prefer external API naming
+      return await this.request<PaginatedResponse<AssetType>>(`/AssetTypes${q ? `?${q}` : ""}`);
+    } catch (primaryError) {
+      try {
+        // Fallback to internal route naming
+        const sp = new URLSearchParams();
+        if (params?.page) sp.append("page", String(params.page));
+        if (params?.limit) sp.append("limit", String(params.limit));
+        if (params?.surveyCategoryId) sp.append("surveyCategoryId", params.surveyCategoryId);
+        if (params?.search) sp.append("search", params.search);
+        const q = sp.toString();
+        return await this.request<PaginatedResponse<AssetType>>(`/asset-types${q ? `?${q}` : ""}`);
+      } catch {
+        let data = [...this.mockAssetTypes];
+        if (params?.surveyCategoryId) data = data.filter(a => a.surveyCategoryId === params.surveyCategoryId);
+        if (params?.search) {
+          const t = params.search.toLowerCase();
+          data = data.filter(a => a.name.toLowerCase().includes(t) || (a.menuName || "").toLowerCase().includes(t));
+        }
+        return createMockPaginatedResponse(data, params);
       }
-      return createMockPaginatedResponse(data, params);
     }
   }
 
   async createAssetType(payload: Omit<AssetType, "id" | "createdAt" | "updatedAt">): Promise<ApiResponse<AssetType>> {
     try {
-      return await this.request<ApiResponse<AssetType>>(`/asset-types`, { method: "POST", body: JSON.stringify(payload) });
-    } catch (error) {
-      const item: AssetType = { ...payload, id: `AT_${Date.now()}`, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as AssetType;
-      this.mockAssetTypes.push(item);
-      return createMockApiResponse(item);
+      return await this.request<ApiResponse<AssetType>>(`/AssetTypes`, { method: "POST", body: JSON.stringify(payload) });
+    } catch (primaryError) {
+      try {
+        return await this.request<ApiResponse<AssetType>>(`/asset-types`, { method: "POST", body: JSON.stringify(payload) });
+      } catch {
+        const item: AssetType = { ...payload, id: `AT_${Date.now()}`, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as AssetType;
+        this.mockAssetTypes.push(item);
+        return createMockApiResponse(item);
+      }
     }
   }
 
   async updateAssetType(id: string, payload: Partial<AssetType>): Promise<ApiResponse<AssetType>> {
     try {
-      return await this.request<ApiResponse<AssetType>>(`/asset-types/${id}`, { method: "PUT", body: JSON.stringify(payload) });
-    } catch (error) {
-      const idx = this.mockAssetTypes.findIndex(a => a.id === id);
-      if (idx === -1) throw error;
-      this.mockAssetTypes[idx] = { ...this.mockAssetTypes[idx], ...payload, updatedAt: new Date().toISOString() };
-      return createMockApiResponse(this.mockAssetTypes[idx]);
+      return await this.request<ApiResponse<AssetType>>(`/AssetTypes/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+    } catch (primaryError) {
+      try {
+        return await this.request<ApiResponse<AssetType>>(`/asset-types/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+      } catch (error) {
+        const idx = this.mockAssetTypes.findIndex(a => a.id === id);
+        if (idx === -1) throw error;
+        this.mockAssetTypes[idx] = { ...this.mockAssetTypes[idx], ...payload, updatedAt: new Date().toISOString() };
+        return createMockApiResponse(this.mockAssetTypes[idx]);
+      }
     }
   }
 
   async deleteAssetType(id: string): Promise<ApiResponse<void>> {
     try {
-      return await this.request<ApiResponse<void>>(`/asset-types/${id}`, { method: "DELETE" });
-    } catch (error) {
-      this.mockAssetTypes = this.mockAssetTypes.filter(a => a.id !== id);
-      return createMockApiResponse(undefined as unknown as void);
+      return await this.request<ApiResponse<void>>(`/AssetTypes/${id}`, { method: "DELETE" });
+    } catch (primaryError) {
+      try {
+        return await this.request<ApiResponse<void>>(`/asset-types/${id}`, { method: "DELETE" });
+      } catch (error) {
+        this.mockAssetTypes = this.mockAssetTypes.filter(a => a.id !== id);
+        return createMockApiResponse(undefined as unknown as void);
+      }
     }
   }
 
@@ -1256,7 +1280,7 @@ class ApiClient {
 
   async updateUser(id: string, userData: UserUpdateRequest): Promise<UserRegistrationResponse> {
     try {
-      return await this.request<UserRegistrationResponse>(`/api/User/${id}`, {
+      return await this.request<UserRegistrationResponse>(`/User/${id}`, {
         method: "PUT",
         body: JSON.stringify(userData),
       });
@@ -1274,7 +1298,7 @@ class ApiClient {
 
   async deleteUser(id: string): Promise<UserRegistrationResponse> {
     try {
-      return await this.request<UserRegistrationResponse>(`/api/User/${id}`, {
+      return await this.request<UserRegistrationResponse>(`/User/${id}`, {
         method: "DELETE",
       });
     } catch (error) {
