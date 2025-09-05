@@ -830,13 +830,21 @@ class ApiClient {
 
   // Survey Categories endpoints
   async getSurveyCategories(params?: { page?: number; limit?: number; search?: string; }): Promise<PaginatedResponse<SurveyCategoryType>> {
-    const mapResponse = (raw: any) => {
+    try {
+      const sp = new URLSearchParams();
+      if (params?.page) sp.append("page", String(params.page));
+      if (params?.limit) sp.append("limit", String(params.limit));
+      if (params?.search) sp.append("search", params.search);
+      const q = sp.toString();
+      const raw: any = await this.request<any>(`/api/SurveyCategories${q ? `?${q}` : ""}`);
+
       const timestamp = raw?.timestamp || new Date().toISOString();
       const items = Array.isArray(raw?.data?.items)
         ? raw.data.items
         : Array.isArray(raw?.data)
           ? raw.data
           : [];
+
       const mapped: SurveyCategoryType[] = items.map((it: any) => {
         const fallbackId = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
           ? crypto.randomUUID()
@@ -851,43 +859,23 @@ class ApiClient {
           updatedAt,
         };
       });
+
       const pagination = raw?.data?.pagination || {
         page: params?.page ?? 1,
         limit: params?.limit ?? mapped.length,
         total: mapped.length,
         totalPages: 1,
       };
+
       return {
         success: (raw?.status_code ?? 200) >= 200 && (raw?.status_code ?? 200) < 300,
         data: mapped,
         message: raw?.message,
         timestamp,
         pagination,
-      } as PaginatedResponse<SurveyCategoryType>;
-    };
-
-    try {
-      const sp = new URLSearchParams();
-      if (params?.page) sp.append("page", String(params.page));
-      if (params?.limit) sp.append("limit", String(params.limit));
-      if (params?.search) sp.append("search", params.search);
-      const q = sp.toString();
-      // Try .NET-style route first
-      const rawUpper = await this.request<any>(`/SurveyCategories${q ? `?${q}` : ""}`);
-      return mapResponse(rawUpper);
-    } catch (primaryError) {
-      try {
-        // Fallback to Node route
-        const sp = new URLSearchParams();
-        if (params?.page) sp.append("page", String(params.page));
-        if (params?.limit) sp.append("limit", String(params.limit));
-        if (params?.search) sp.append("search", params.search);
-        const q = sp.toString();
-        const rawLower = await this.request<any>(`/survey-categories${q ? `?${q}` : ""}`);
-        return mapResponse(rawLower);
-      } catch {
-        return createMockPaginatedResponse<SurveyCategoryType>([], params);
-      }
+      };
+    } catch (error) {
+      return createMockPaginatedResponse<SurveyCategoryType>([], params);
     }
   }
 
