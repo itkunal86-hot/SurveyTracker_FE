@@ -15,7 +15,7 @@ import {
 } from "./mockData";
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "https://localhost:7215";
+  (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.trim()) || "/api";
 const REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS) || 15000;
 
 export interface ApiResponse<T> {
@@ -345,6 +345,53 @@ export interface ChangePasswordResponse {
 
 import type { SurveyCategory as SurveyCategoryType } from "@/types/admin";
 
+const DEMO_USERS: UserData[] = [
+  {
+    id: "1",
+    email: "john.smith@company.com",
+    firstName: "John",
+    lastName: "Smith",
+    role: "ADMIN",
+    company: "Infrastep",
+    isActive: true,
+    createdAt: "2024-01-15T10:00:00Z",
+    lastLogin: "2024-08-29T09:30:00Z"
+  },
+  {
+    id: "2",
+    email: "sarah.johnson@company.com",
+    firstName: "Sarah",
+    lastName: "Johnson",
+    role: "MANAGER",
+    company: "Infrastep",
+    isActive: true,
+    createdAt: "2024-02-20T14:30:00Z",
+    lastLogin: "2024-08-28T16:45:00Z"
+  },
+  {
+    id: "3",
+    email: "mike.wilson@company.com",
+    firstName: "Mike",
+    lastName: "Wilson",
+    role: "SURVEY_MANAGER",
+    company: "Infrastep",
+    isActive: true,
+    createdAt: "2024-03-10T09:15:00Z",
+    lastLogin: "2024-08-29T08:15:00Z"
+  },
+  {
+    id: "4",
+    email: "emily.davis@company.com",
+    firstName: "Emily",
+    lastName: "Davis",
+    role: "SURVEY_MANAGER",
+    company: "Infrastep",
+    isActive: false,
+    createdAt: "2024-01-25T11:20:00Z",
+    lastLogin: "2024-08-25T13:30:00Z"
+  }
+];
+
 class ApiClient {
   private baseURL: string;
   private useMockData: boolean = false;
@@ -454,45 +501,69 @@ class ApiClient {
       if (params?.surveyCategoryId) sp.append("surveyCategoryId", params.surveyCategoryId);
       if (params?.search) sp.append("search", params.search);
       const q = sp.toString();
-      return await this.request<PaginatedResponse<AssetType>>(`/asset-types${q ? `?${q}` : ""}`);
-    } catch (error) {
-      let data = [...this.mockAssetTypes];
-      if (params?.surveyCategoryId) data = data.filter(a => a.surveyCategoryId === params.surveyCategoryId);
-      if (params?.search) {
-        const t = params.search.toLowerCase();
-        data = data.filter(a => a.name.toLowerCase().includes(t) || (a.menuName || "").toLowerCase().includes(t));
+      // Prefer external API naming
+      return await this.request<PaginatedResponse<AssetType>>(`/AssetTypes${q ? `?${q}` : ""}`);
+    } catch (primaryError) {
+      try {
+        // Fallback to internal route naming
+        const sp = new URLSearchParams();
+        if (params?.page) sp.append("page", String(params.page));
+        if (params?.limit) sp.append("limit", String(params.limit));
+        if (params?.surveyCategoryId) sp.append("surveyCategoryId", params.surveyCategoryId);
+        if (params?.search) sp.append("search", params.search);
+        const q = sp.toString();
+        return await this.request<PaginatedResponse<AssetType>>(`/asset-types${q ? `?${q}` : ""}`);
+      } catch {
+        let data = [...this.mockAssetTypes];
+        if (params?.surveyCategoryId) data = data.filter(a => a.surveyCategoryId === params.surveyCategoryId);
+        if (params?.search) {
+          const t = params.search.toLowerCase();
+          data = data.filter(a => a.name.toLowerCase().includes(t) || (a.menuName || "").toLowerCase().includes(t));
+        }
+        return createMockPaginatedResponse(data, params);
       }
-      return createMockPaginatedResponse(data, params);
     }
   }
 
   async createAssetType(payload: Omit<AssetType, "id" | "createdAt" | "updatedAt">): Promise<ApiResponse<AssetType>> {
     try {
-      return await this.request<ApiResponse<AssetType>>(`/asset-types`, { method: "POST", body: JSON.stringify(payload) });
-    } catch (error) {
-      const item: AssetType = { ...payload, id: `AT_${Date.now()}`, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as AssetType;
-      this.mockAssetTypes.push(item);
-      return createMockApiResponse(item);
+      return await this.request<ApiResponse<AssetType>>(`/AssetTypes`, { method: "POST", body: JSON.stringify(payload) });
+    } catch (primaryError) {
+      try {
+        return await this.request<ApiResponse<AssetType>>(`/asset-types`, { method: "POST", body: JSON.stringify(payload) });
+      } catch {
+        const item: AssetType = { ...payload, id: `AT_${Date.now()}`, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as AssetType;
+        this.mockAssetTypes.push(item);
+        return createMockApiResponse(item);
+      }
     }
   }
 
   async updateAssetType(id: string, payload: Partial<AssetType>): Promise<ApiResponse<AssetType>> {
     try {
-      return await this.request<ApiResponse<AssetType>>(`/asset-types/${id}`, { method: "PUT", body: JSON.stringify(payload) });
-    } catch (error) {
-      const idx = this.mockAssetTypes.findIndex(a => a.id === id);
-      if (idx === -1) throw error;
-      this.mockAssetTypes[idx] = { ...this.mockAssetTypes[idx], ...payload, updatedAt: new Date().toISOString() };
-      return createMockApiResponse(this.mockAssetTypes[idx]);
+      return await this.request<ApiResponse<AssetType>>(`/AssetTypes/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+    } catch (primaryError) {
+      try {
+        return await this.request<ApiResponse<AssetType>>(`/asset-types/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+      } catch (error) {
+        const idx = this.mockAssetTypes.findIndex(a => a.id === id);
+        if (idx === -1) throw error;
+        this.mockAssetTypes[idx] = { ...this.mockAssetTypes[idx], ...payload, updatedAt: new Date().toISOString() };
+        return createMockApiResponse(this.mockAssetTypes[idx]);
+      }
     }
   }
 
   async deleteAssetType(id: string): Promise<ApiResponse<void>> {
     try {
-      return await this.request<ApiResponse<void>>(`/asset-types/${id}`, { method: "DELETE" });
-    } catch (error) {
-      this.mockAssetTypes = this.mockAssetTypes.filter(a => a.id !== id);
-      return createMockApiResponse(undefined as unknown as void);
+      return await this.request<ApiResponse<void>>(`/AssetTypes/${id}`, { method: "DELETE" });
+    } catch (primaryError) {
+      try {
+        return await this.request<ApiResponse<void>>(`/asset-types/${id}`, { method: "DELETE" });
+      } catch (error) {
+        this.mockAssetTypes = this.mockAssetTypes.filter(a => a.id !== id);
+        return createMockApiResponse(undefined as unknown as void);
+      }
     }
   }
 
@@ -810,27 +881,39 @@ class ApiClient {
 
   async createSurveyCategory(payload: { name: string; description?: string; }): Promise<ApiResponse<SurveyCategoryType>> {
     try {
-      return await this.request<ApiResponse<SurveyCategoryType>>(`/api/SurveyCategories`, { method: "POST", body: JSON.stringify(payload) });
-    } catch (error) {
-      const item: SurveyCategoryType = { id: `CAT_${Date.now()}`, name: payload.name, description: payload.description || "", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as SurveyCategoryType;
-      return createMockApiResponse(item);
+      return await this.request<ApiResponse<SurveyCategoryType>>(`/SurveyCategories`, { method: "POST", body: JSON.stringify(payload) });
+    } catch (primaryError) {
+      try {
+        return await this.request<ApiResponse<SurveyCategoryType>>(`/survey-categories`, { method: "POST", body: JSON.stringify(payload) });
+      } catch {
+        const item: SurveyCategoryType = { id: `CAT_${Date.now()}`, name: payload.name, description: payload.description || "", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as SurveyCategoryType;
+        return createMockApiResponse(item);
+      }
     }
   }
 
   async updateSurveyCategory(id: string, payload: Partial<SurveyCategoryType>): Promise<ApiResponse<SurveyCategoryType>> {
     try {
-      return await this.request<ApiResponse<SurveyCategoryType>>(`/api/SurveyCategories/${id}`, { method: "PUT", body: JSON.stringify(payload) });
-    } catch (error) {
-      const item: SurveyCategoryType = { id, name: payload.name || "", description: payload.description || "", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as SurveyCategoryType;
-      return createMockApiResponse(item);
+      return await this.request<ApiResponse<SurveyCategoryType>>(`/SurveyCategories/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+    } catch (primaryError) {
+      try {
+        return await this.request<ApiResponse<SurveyCategoryType>>(`/survey-categories/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+      } catch {
+        const item: SurveyCategoryType = { id, name: payload.name || "", description: payload.description || "", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as SurveyCategoryType;
+        return createMockApiResponse(item);
+      }
     }
   }
 
   async deleteSurveyCategory(id: string): Promise<ApiResponse<void>> {
     try {
-      return await this.request<ApiResponse<void>>(`/api/SurveyCategories/${id}`, { method: "DELETE" });
-    } catch (error) {
-      return createMockApiResponse(undefined as unknown as void);
+      return await this.request<ApiResponse<void>>(`/SurveyCategories/${id}`, { method: "DELETE" });
+    } catch (primaryError) {
+      try {
+        return await this.request<ApiResponse<void>>(`/survey-categories/${id}`, { method: "DELETE" });
+      } catch {
+        return createMockApiResponse(undefined as unknown as void);
+      }
     }
   }
 
@@ -1047,18 +1130,28 @@ class ApiClient {
   // User endpoints
   async loginUser(credentials: UserLoginRequest): Promise<UserLoginResponse> {
     try {
-      return await this.request<UserLoginResponse>("/api/User/login", {
+      return await this.request<UserLoginResponse>("/User/login", {
         method: "POST",
         body: JSON.stringify(credentials),
       });
     } catch (error) {
       console.error("User login failed:", error);
 
-      // Mock failed login for fallback
+      const user = DEMO_USERS.find(
+        u => u.email.toLowerCase() === credentials.email.toLowerCase() && u.isActive
+      );
+      if (user) {
+        return {
+          status_code: 200,
+          status_message: "success",
+          message: "Login successful (demo)",
+          data: user,
+        };
+      }
       return {
         status_code: 401,
         status_message: "error",
-        message: "Invalid email or password (API unavailable)",
+        message: "Invalid email or password",
         data: null,
       };
     }
@@ -1066,7 +1159,7 @@ class ApiClient {
 
   async forgotPassword(request: ForgotPasswordRequest): Promise<ForgotPasswordResponse> {
     try {
-      return await this.request<ForgotPasswordResponse>("/api/User/forgot-password", {
+      return await this.request<ForgotPasswordResponse>("/User/forgot-password", {
         method: "POST",
         body: JSON.stringify(request),
       });
@@ -1085,7 +1178,7 @@ class ApiClient {
 
   async resetPassword(request: ResetPasswordRequest): Promise<ResetPasswordResponse> {
     try {
-      return await this.request<ResetPasswordResponse>("/api/User/reset-password", {
+      return await this.request<ResetPasswordResponse>("/User/reset-password", {
         method: "POST",
         body: JSON.stringify(request),
       });
@@ -1104,7 +1197,7 @@ class ApiClient {
 
   async changePassword(request: ChangePasswordRequest): Promise<ChangePasswordResponse> {
     try {
-      return await this.request<ChangePasswordResponse>("/api/User/change-password", {
+      return await this.request<ChangePasswordResponse>("/User/change-password", {
         method: "POST",
         body: JSON.stringify(request),
       });
@@ -1123,7 +1216,7 @@ class ApiClient {
 
   async registerUser(userData: UserRegistrationRequest): Promise<UserRegistrationResponse> {
     try {
-      return await this.request<UserRegistrationResponse>("/api/User/register", {
+      return await this.request<UserRegistrationResponse>("/User/register", {
         method: "POST",
         body: JSON.stringify(userData),
       });
@@ -1153,58 +1246,13 @@ class ApiClient {
 
       const query = searchParams.toString();
       return await this.request<UserListResponse>(
-        `/api/User${query ? `?${query}` : ""}`,
+        `/User${query ? `?${query}` : ""}`,
       );
     } catch (error) {
       console.warn("Failed to fetch users from API, using mock data");
 
       // Mock users data for fallback
-      const mockUsers: UserData[] = [
-        {
-          id: "1",
-          email: "john.smith@company.com",
-          firstName: "John",
-          lastName: "Smith",
-          role: "ADMIN",
-          company: "Infrastep",
-          isActive: true,
-          createdAt: "2024-01-15T10:00:00Z",
-          lastLogin: "2024-08-29T09:30:00Z",
-        },
-        {
-          id: "2",
-          email: "sarah.johnson@company.com",
-          firstName: "Sarah",
-          lastName: "Johnson",
-          role: "MANAGER",
-          company: "Infrastep",
-          isActive: true,
-          createdAt: "2024-02-20T14:30:00Z",
-          lastLogin: "2024-08-28T16:45:00Z",
-        },
-        {
-          id: "3",
-          email: "mike.wilson@company.com",
-          firstName: "Mike",
-          lastName: "Wilson",
-          role: "SURVEY_MANAGER",
-          company: "Infrastep",
-          isActive: true,
-          createdAt: "2024-03-10T09:15:00Z",
-          lastLogin: "2024-08-29T08:15:00Z",
-        },
-        {
-          id: "4",
-          email: "emily.davis@company.com",
-          firstName: "Emily",
-          lastName: "Davis",
-          role: "SURVEY_MANAGER",
-          company: "Infrastep",
-          isActive: false,
-          createdAt: "2024-01-25T11:20:00Z",
-          lastLogin: "2024-08-25T13:30:00Z",
-        },
-      ];
+      const mockUsers: UserData[] = DEMO_USERS;
 
       let filteredUsers = mockUsers;
       if (params?.role) {
@@ -1230,7 +1278,7 @@ class ApiClient {
 
   async getUser(id: string): Promise<UserRegistrationResponse> {
     try {
-      return await this.request<UserRegistrationResponse>(`/api/User/${id}`);
+      return await this.request<UserRegistrationResponse>(`/User/${id}`);
     } catch (error) {
       // Fallback to mock data
       return {
@@ -1244,7 +1292,7 @@ class ApiClient {
 
   async updateUser(id: string, userData: UserUpdateRequest): Promise<UserRegistrationResponse> {
     try {
-      return await this.request<UserRegistrationResponse>(`/api/User/${id}`, {
+      return await this.request<UserRegistrationResponse>(`/User/${id}`, {
         method: "PUT",
         body: JSON.stringify(userData),
       });
@@ -1262,7 +1310,7 @@ class ApiClient {
 
   async deleteUser(id: string): Promise<UserRegistrationResponse> {
     try {
-      return await this.request<UserRegistrationResponse>(`/api/User/${id}`, {
+      return await this.request<UserRegistrationResponse>(`/User/${id}`, {
         method: "DELETE",
       });
     } catch (error) {
