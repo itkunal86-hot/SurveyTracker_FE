@@ -496,8 +496,61 @@ class ApiClient {
       if (params?.surveyCategoryId) sp.append("surveyCategoryId", params.surveyCategoryId);
       if (params?.search) sp.append("search", params.search);
       const q = sp.toString();
-      // Prefer external API naming
-      return await this.request<PaginatedResponse<AssetType>>(`/AssetTypes${q ? `?${q}` : ""}`);
+
+      // Prefer external API naming and normalize its shape
+      const raw: any = await this.request<any>(`/AssetTypes${q ? `?${q}` : ""}`);
+
+      const timestamp = raw?.timestamp || new Date().toISOString();
+
+      const rawItems = Array.isArray(raw?.data?.data)
+        ? raw.data.data
+        : Array.isArray(raw?.data?.items)
+          ? raw.data.items
+          : Array.isArray(raw?.data)
+            ? raw.data
+            : Array.isArray(raw)
+              ? raw
+              : [];
+
+      const mapped: AssetType[] = rawItems.map((it: any) => {
+        const fallbackId = (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function")
+          ? crypto.randomUUID()
+          : `${Date.now()}`;
+        const createdAt = it.createdAt ?? it.CreatedAt ?? it.created_at ?? raw?.timestamp ?? new Date().toISOString();
+        const updatedAt = it.updatedAt ?? it.UpdatedAt ?? it.updated_at ?? "";
+        const id = String(it.id ?? it.ID ?? it.atId ?? it.AT_ID ?? fallbackId);
+        const name = it.name ?? it.Name ?? it.atName ?? it.AT_NAME ?? "";
+        const isSurveyElement = Boolean(it.isSurveyElement ?? it.IsSurveyElement ?? it.atIsSurveyElement ?? it.AT_IS_SURVEY_ELEMENT ?? false);
+        const surveyCategoryId = it.surveyCategoryId ?? it.SurveyCategoryId ?? it.scId ?? it.SC_ID ?? null;
+        const menuName = it.menuName ?? it.MenuName ?? it.atMenuName ?? it.AT_MENU_NAME ?? null;
+        const menuOrder = it.menuOrder ?? it.MenuOrder ?? it.atMenuOrder ?? it.AT_MENU_ORDER ?? null;
+
+        return {
+          id: String(id),
+          name: String(name),
+          isSurveyElement,
+          surveyCategoryId: surveyCategoryId != null ? String(surveyCategoryId) : null,
+          menuName: menuName != null ? String(menuName) : null,
+          menuOrder: menuOrder != null ? Number(menuOrder) : null,
+          createdAt,
+          updatedAt,
+        } as AssetType;
+      });
+
+      const pagination = raw?.data?.pagination || {
+        page: params?.page ?? 1,
+        limit: params?.limit ?? mapped.length,
+        total: mapped.length,
+        totalPages: 1,
+      };
+
+      return {
+        success: (raw?.status_code ?? 200) >= 200 && (raw?.status_code ?? 200) < 300,
+        data: mapped,
+        message: raw?.message,
+        timestamp,
+        pagination,
+      };
     } catch (primaryError) {
       try {
         // Fallback to internal route naming
