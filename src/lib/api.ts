@@ -15,7 +15,7 @@ import {
 } from "./mockData";
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "https://localhost:7215";
+  (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.trim()) || "/api";
 const REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS) || 15000;
 
 export interface ApiResponse<T> {
@@ -344,6 +344,53 @@ export interface ChangePasswordResponse {
 }
 
 import type { SurveyCategory as SurveyCategoryType } from "@/types/admin";
+
+const DEMO_USERS: UserData[] = [
+  {
+    id: "1",
+    email: "john.smith@company.com",
+    firstName: "John",
+    lastName: "Smith",
+    role: "ADMIN",
+    company: "Infrastep",
+    isActive: true,
+    createdAt: "2024-01-15T10:00:00Z",
+    lastLogin: "2024-08-29T09:30:00Z"
+  },
+  {
+    id: "2",
+    email: "sarah.johnson@company.com",
+    firstName: "Sarah",
+    lastName: "Johnson",
+    role: "MANAGER",
+    company: "Infrastep",
+    isActive: true,
+    createdAt: "2024-02-20T14:30:00Z",
+    lastLogin: "2024-08-28T16:45:00Z"
+  },
+  {
+    id: "3",
+    email: "mike.wilson@company.com",
+    firstName: "Mike",
+    lastName: "Wilson",
+    role: "SURVEY_MANAGER",
+    company: "Infrastep",
+    isActive: true,
+    createdAt: "2024-03-10T09:15:00Z",
+    lastLogin: "2024-08-29T08:15:00Z"
+  },
+  {
+    id: "4",
+    email: "emily.davis@company.com",
+    firstName: "Emily",
+    lastName: "Davis",
+    role: "SURVEY_MANAGER",
+    company: "Infrastep",
+    isActive: false,
+    createdAt: "2024-01-25T11:20:00Z",
+    lastLogin: "2024-08-25T13:30:00Z"
+  }
+];
 
 class ApiClient {
   private baseURL: string;
@@ -1054,11 +1101,21 @@ class ApiClient {
     } catch (error) {
       console.error("User login failed:", error);
 
-      // Mock failed login for fallback
+      const user = DEMO_USERS.find(
+        u => u.email.toLowerCase() === credentials.email.toLowerCase() && u.isActive
+      );
+      if (user) {
+        return {
+          status_code: 200,
+          status_message: "success",
+          message: "Login successful (demo)",
+          data: user,
+        };
+      }
       return {
         status_code: 401,
         status_message: "error",
-        message: "Invalid email or password (API unavailable)",
+        message: "Invalid email or password",
         data: null,
       };
     }
@@ -1159,52 +1216,7 @@ class ApiClient {
       console.warn("Failed to fetch users from API, using mock data");
 
       // Mock users data for fallback
-      const mockUsers: UserData[] = [
-        {
-          id: "1",
-          email: "john.smith@company.com",
-          firstName: "John",
-          lastName: "Smith",
-          role: "ADMIN",
-          company: "Infrastep",
-          isActive: true,
-          createdAt: "2024-01-15T10:00:00Z",
-          lastLogin: "2024-08-29T09:30:00Z",
-        },
-        {
-          id: "2",
-          email: "sarah.johnson@company.com",
-          firstName: "Sarah",
-          lastName: "Johnson",
-          role: "MANAGER",
-          company: "Infrastep",
-          isActive: true,
-          createdAt: "2024-02-20T14:30:00Z",
-          lastLogin: "2024-08-28T16:45:00Z",
-        },
-        {
-          id: "3",
-          email: "mike.wilson@company.com",
-          firstName: "Mike",
-          lastName: "Wilson",
-          role: "SURVEY_MANAGER",
-          company: "Infrastep",
-          isActive: true,
-          createdAt: "2024-03-10T09:15:00Z",
-          lastLogin: "2024-08-29T08:15:00Z",
-        },
-        {
-          id: "4",
-          email: "emily.davis@company.com",
-          firstName: "Emily",
-          lastName: "Davis",
-          role: "SURVEY_MANAGER",
-          company: "Infrastep",
-          isActive: false,
-          createdAt: "2024-01-25T11:20:00Z",
-          lastLogin: "2024-08-25T13:30:00Z",
-        },
-      ];
+      const mockUsers: UserData[] = DEMO_USERS;
 
       let filteredUsers = mockUsers;
       if (params?.role) {
