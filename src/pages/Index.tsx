@@ -146,9 +146,7 @@ const Index = () => {
         <main
           className={`transition-all duration-300 ${sidebarCollapsed ? "ml-16" : "ml-64"}`}
         >
-          <div className="p-4">
-            <ApiStatusBanner />
-          </div>
+          {/* Status banner hidden as requested */}
           {renderContent()}
         </main>
       </div>
