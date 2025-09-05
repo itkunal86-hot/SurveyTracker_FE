@@ -191,7 +191,8 @@ export default function AssetTypeManagement() {
                   <TableHead>Menu</TableHead>
                   <TableHead>Order</TableHead>
                   <TableHead>Survey Element</TableHead>
-                  <TableHead>Updated</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead>Last updated</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -208,7 +209,8 @@ export default function AssetTypeManagement() {
                     <TableCell>{item.menuName || <span className="text-muted-foreground">—</span>}</TableCell>
                     <TableCell>{item.menuOrder ?? <span className="text-muted-foreground">—</span>}</TableCell>
                     <TableCell>{item.isSurveyElement ? <Badge className="bg-success text-success-foreground">Yes</Badge> : <Badge variant="outline">No</Badge>}</TableCell>
-                    <TableCell>{new Date(item.updatedAt).toLocaleDateString()}</TableCell>
+                    <TableCell>{item.createdAt ? new Date(item.createdAt).toLocaleString() : "—"}</TableCell>
+                    <TableCell>{item.updatedAt ? new Date(item.updatedAt).toLocaleString() : "-"}</TableCell>
                     <TableCell className="text-right space-x-2">
                       <Button variant="outline" size="sm" onClick={() => onEdit(item)} className="gap-1"><Pencil className="h-3 w-3" />Edit</Button>
                       <Button variant="outline" size="sm" onClick={() => onDelete(item.id)} className="gap-1 text-destructive hover:text-destructive"><Trash2 className="h-3 w-3" />Delete</Button>
