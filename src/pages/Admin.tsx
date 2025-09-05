@@ -10,9 +10,7 @@ export default function Admin() {
         <meta name="description" content="Administrative dashboard for managing survey categories, surveys, devices, and attributes" />
       </Helmet>
       <div className="min-h-screen bg-background">
-        <div className="p-4">
-          <ApiStatusBanner />
-        </div>
+        {/* Status banner hidden as requested */}
         <AdminDashboard />
       </div>
     </>
