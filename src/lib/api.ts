@@ -443,11 +443,6 @@ class ApiClient {
       return await response.json();
     } catch (error) {
       console.error(`API request failed: ${url}`, error);
-      // Only switch to mock mode when using relative (dev) API base like '/api'
-      if (!/^https?:\/\//i.test(this.baseURL)) {
-        console.warn("Switching to mock data mode due to API failure");
-        this.useMockData = true;
-      }
       throw error;
     }
   }
@@ -513,14 +508,19 @@ class ApiClient {
         if (params?.search) sp.append("search", params.search);
         const q = sp.toString();
         return await this.request<PaginatedResponse<AssetType>>(`/asset-types${q ? `?${q}` : ""}`);
-      } catch {
-        let data = [...this.mockAssetTypes];
-        if (params?.surveyCategoryId) data = data.filter(a => a.surveyCategoryId === params.surveyCategoryId);
-        if (params?.search) {
-          const t = params.search.toLowerCase();
-          data = data.filter(a => a.name.toLowerCase().includes(t) || (a.menuName || "").toLowerCase().includes(t));
-        }
-        return createMockPaginatedResponse(data, params);
+      } catch (secondaryError) {
+        return {
+          success: true,
+          data: [],
+          message: "",
+          timestamp: new Date().toISOString(),
+          pagination: {
+            page: params?.page ?? 1,
+            limit: params?.limit ?? 0,
+            total: 0,
+            totalPages: 0,
+          },
+        };
       }
     }
   }
@@ -531,10 +531,8 @@ class ApiClient {
     } catch (primaryError) {
       try {
         return await this.request<ApiResponse<AssetType>>(`/asset-types`, { method: "POST", body: JSON.stringify(payload) });
-      } catch {
-        const item: AssetType = { ...payload, id: `AT_${Date.now()}`, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as AssetType;
-        this.mockAssetTypes.push(item);
-        return createMockApiResponse(item);
+      } catch (secondaryError) {
+        throw secondaryError;
       }
     }
   }
@@ -545,11 +543,8 @@ class ApiClient {
     } catch (primaryError) {
       try {
         return await this.request<ApiResponse<AssetType>>(`/asset-types/${id}`, { method: "PUT", body: JSON.stringify(payload) });
-      } catch (error) {
-        const idx = this.mockAssetTypes.findIndex(a => a.id === id);
-        if (idx === -1) throw error;
-        this.mockAssetTypes[idx] = { ...this.mockAssetTypes[idx], ...payload, updatedAt: new Date().toISOString() };
-        return createMockApiResponse(this.mockAssetTypes[idx]);
+      } catch (secondaryError) {
+        throw secondaryError;
       }
     }
   }
@@ -560,9 +555,8 @@ class ApiClient {
     } catch (primaryError) {
       try {
         return await this.request<ApiResponse<void>>(`/asset-types/${id}`, { method: "DELETE" });
-      } catch (error) {
-        this.mockAssetTypes = this.mockAssetTypes.filter(a => a.id !== id);
-        return createMockApiResponse(undefined as unknown as void);
+      } catch (secondaryError) {
+        throw secondaryError;
       }
     }
   }
@@ -836,7 +830,7 @@ class ApiClient {
       if (params?.limit) sp.append("limit", String(params.limit));
       if (params?.search) sp.append("search", params.search);
       const q = sp.toString();
-      const raw: any = await this.request<any>(`/api/SurveyCategories${q ? `?${q}` : ""}`);
+      const raw: any = await this.request<any>(`/SurveyCategories${q ? `?${q}` : ""}`);
 
       const timestamp = raw?.timestamp || new Date().toISOString();
       const items = Array.isArray(raw?.data?.items)
