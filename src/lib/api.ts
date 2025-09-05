@@ -830,21 +830,13 @@ class ApiClient {
 
   // Survey Categories endpoints
   async getSurveyCategories(params?: { page?: number; limit?: number; search?: string; }): Promise<PaginatedResponse<SurveyCategoryType>> {
-    try {
-      const sp = new URLSearchParams();
-      if (params?.page) sp.append("page", String(params.page));
-      if (params?.limit) sp.append("limit", String(params.limit));
-      if (params?.search) sp.append("search", params.search);
-      const q = sp.toString();
-      const raw: any = await this.request<any>(`/SurveyCategories${q ? `?${q}` : ""}`);
-
+    const mapResponse = (raw: any) => {
       const timestamp = raw?.timestamp || new Date().toISOString();
       const items = Array.isArray(raw?.data?.items)
         ? raw.data.items
         : Array.isArray(raw?.data)
           ? raw.data
           : [];
-
       const mapped: SurveyCategoryType[] = items.map((it: any) => {
         const fallbackId = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
           ? crypto.randomUUID()
@@ -859,49 +851,81 @@ class ApiClient {
           updatedAt,
         };
       });
-
       const pagination = raw?.data?.pagination || {
         page: params?.page ?? 1,
         limit: params?.limit ?? mapped.length,
         total: mapped.length,
         totalPages: 1,
       };
-
       return {
         success: (raw?.status_code ?? 200) >= 200 && (raw?.status_code ?? 200) < 300,
         data: mapped,
         message: raw?.message,
         timestamp,
         pagination,
-      };
-    } catch (error) {
-      return createMockPaginatedResponse<SurveyCategoryType>([], params);
+      } as PaginatedResponse<SurveyCategoryType>;
+    };
+
+    try {
+      const sp = new URLSearchParams();
+      if (params?.page) sp.append("page", String(params.page));
+      if (params?.limit) sp.append("limit", String(params.limit));
+      if (params?.search) sp.append("search", params.search);
+      const q = sp.toString();
+      // Try .NET-style route first
+      const rawUpper = await this.request<any>(`/SurveyCategories${q ? `?${q}` : ""}`);
+      return mapResponse(rawUpper);
+    } catch (primaryError) {
+      try {
+        // Fallback to Node route
+        const sp = new URLSearchParams();
+        if (params?.page) sp.append("page", String(params.page));
+        if (params?.limit) sp.append("limit", String(params.limit));
+        if (params?.search) sp.append("search", params.search);
+        const q = sp.toString();
+        const rawLower = await this.request<any>(`/survey-categories${q ? `?${q}` : ""}`);
+        return mapResponse(rawLower);
+      } catch {
+        return createMockPaginatedResponse<SurveyCategoryType>([], params);
+      }
     }
   }
 
   async createSurveyCategory(payload: { name: string; description?: string; }): Promise<ApiResponse<SurveyCategoryType>> {
     try {
       return await this.request<ApiResponse<SurveyCategoryType>>(`/SurveyCategories`, { method: "POST", body: JSON.stringify(payload) });
-    } catch (error) {
-      const item: SurveyCategoryType = { id: `CAT_${Date.now()}`, name: payload.name, description: payload.description || "", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as SurveyCategoryType;
-      return createMockApiResponse(item);
+    } catch (primaryError) {
+      try {
+        return await this.request<ApiResponse<SurveyCategoryType>>(`/survey-categories`, { method: "POST", body: JSON.stringify(payload) });
+      } catch {
+        const item: SurveyCategoryType = { id: `CAT_${Date.now()}`, name: payload.name, description: payload.description || "", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as SurveyCategoryType;
+        return createMockApiResponse(item);
+      }
     }
   }
 
   async updateSurveyCategory(id: string, payload: Partial<SurveyCategoryType>): Promise<ApiResponse<SurveyCategoryType>> {
     try {
       return await this.request<ApiResponse<SurveyCategoryType>>(`/SurveyCategories/${id}`, { method: "PUT", body: JSON.stringify(payload) });
-    } catch (error) {
-      const item: SurveyCategoryType = { id, name: payload.name || "", description: payload.description || "", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as SurveyCategoryType;
-      return createMockApiResponse(item);
+    } catch (primaryError) {
+      try {
+        return await this.request<ApiResponse<SurveyCategoryType>>(`/survey-categories/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+      } catch {
+        const item: SurveyCategoryType = { id, name: payload.name || "", description: payload.description || "", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as SurveyCategoryType;
+        return createMockApiResponse(item);
+      }
     }
   }
 
   async deleteSurveyCategory(id: string): Promise<ApiResponse<void>> {
     try {
       return await this.request<ApiResponse<void>>(`/SurveyCategories/${id}`, { method: "DELETE" });
-    } catch (error) {
-      return createMockApiResponse(undefined as unknown as void);
+    } catch (primaryError) {
+      try {
+        return await this.request<ApiResponse<void>>(`/survey-categories/${id}`, { method: "DELETE" });
+      } catch {
+        return createMockApiResponse(undefined as unknown as void);
+      }
     }
   }
 
