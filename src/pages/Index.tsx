@@ -3,7 +3,7 @@ import { Helmet } from "react-helmet-async";
 import { useSearchParams } from "react-router-dom";
 import { LoginForm } from "@/components/LoginForm";
 import { Sidebar } from "@/components/Sidebar";
-import { ApiStatusBanner } from "@/components/ApiStatusBanner";
+// ApiStatusBanner intentionally hidden per requirements
 import { MapDashboard } from "@/components/MapDashboard";
 import { DeviceStatus } from "@/components/DeviceStatus";
 import { DailyPersonalMaps } from "./DailyPersonalMaps";
@@ -146,9 +146,7 @@ const Index = () => {
         <main
           className={`transition-all duration-300 ${sidebarCollapsed ? "ml-16" : "ml-64"}`}
         >
-          <div className="p-4">
-            <ApiStatusBanner />
-          </div>
+          {/* Status banner hidden as requested */}
           {renderContent()}
         </main>
       </div>
