@@ -620,17 +620,89 @@ class ApiClient {
       const sp = new URLSearchParams();
       if (params?.page) sp.append("page", String(params.page));
       if (params?.limit) sp.append("limit", String(params.limit));
-      if (params?.assetTypeId) sp.append("assetTypeId", params.assetTypeId);
-      if (params?.search) sp.append("search", params.search);
-      return await this.request<PaginatedResponse<AssetProperty>>(`/asset-properties?${sp.toString()}`);
-    } catch (error) {
-      let data = [...this.mockAssetProperties];
-      if (params?.assetTypeId) data = data.filter(p => p.assetTypeId === params.assetTypeId);
-      if (params?.search) {
-        const t = params.search.toLowerCase();
-        data = data.filter(p => p.name.toLowerCase().includes(t));
+      if (params?.assetTypeId) {
+        sp.append("assetTypeId", params.assetTypeId);
+        sp.append("atId", params.assetTypeId); // try both for compatibility
       }
-      return createMockPaginatedResponse(data, params);
+      if (params?.search) sp.append("search", params.search);
+
+      // Prefer external API naming and normalize its shape
+      const raw: any = await this.request<any>(`/AssetProperties${sp.toString() ? `?${sp.toString()}` : ""}`);
+
+      const timestamp = raw?.timestamp || new Date().toISOString();
+
+      const rawItems = Array.isArray(raw?.data?.data)
+        ? raw.data.data
+        : Array.isArray(raw?.data?.items)
+          ? raw.data.items
+          : Array.isArray(raw?.data)
+            ? raw.data
+            : Array.isArray(raw)
+              ? raw
+              : [];
+
+      const mapped: AssetProperty[] = rawItems.map((it: any) => {
+        const fallbackId = (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function")
+          ? crypto.randomUUID()
+          : `${Date.now()}`;
+
+        const id = String(it.id ?? it.ID ?? it.apId ?? it.AP_ID ?? fallbackId);
+        const name = it.name ?? it.Name ?? it.apName ?? it.AP_NAME ?? "";
+        const dataType = Number(it.dataType ?? it.DataType ?? it.apDataType ?? it.AP_DATA_TYPE ?? 0);
+        const isRequired = Boolean(it.isRequired ?? it.IsRequired ?? it.apIsRequired ?? it.AP_IS_REQUIRED ?? false);
+        const order = it.order ?? it.Order ?? it.apOrder ?? it.AP_ORDER ?? null;
+        const options = it.options ?? it.Options ?? it.apOptions ?? it.AP_OPTIONS ?? null;
+        const valueUnit = it.valueUnit ?? it.ValueUnit ?? it.apValueUnit ?? it.AP_VALUE_UNIT ?? null;
+        const assetTypeId = String(it.assetTypeId ?? it.AssetTypeId ?? it.atId ?? it.AT_ID ?? "");
+        const createdAt = it.createdAt ?? it.CreatedAt ?? it.created_at ?? timestamp;
+        const updatedAt = it.updatedAt ?? it.UpdatedAt ?? it.updated_at ?? "";
+
+        return {
+          id,
+          name: String(name),
+          dataType,
+          isRequired,
+          order: order != null ? Number(order) : null,
+          options: options != null && options !== "" ? String(options) : null,
+          valueUnit: valueUnit != null && valueUnit !== "" ? String(valueUnit) : null,
+          assetTypeId,
+          createdAt,
+          updatedAt,
+        } as AssetProperty;
+      });
+
+      const pagination = raw?.data?.pagination || {
+        page: params?.page ?? 1,
+        limit: params?.limit ?? mapped.length,
+        total: mapped.length,
+        totalPages: 1,
+      };
+
+      return {
+        success: (raw?.status_code ?? 200) >= 200 && (raw?.status_code ?? 200) < 300,
+        data: mapped,
+        message: raw?.message,
+        timestamp,
+        pagination,
+      };
+    } catch (primaryError) {
+      try {
+        // Fallback to internal route naming
+        const sp = new URLSearchParams();
+        if (params?.page) sp.append("page", String(params.page));
+        if (params?.limit) sp.append("limit", String(params.limit));
+        if (params?.assetTypeId) sp.append("assetTypeId", params.assetTypeId);
+        if (params?.search) sp.append("search", params.search);
+        return await this.request<PaginatedResponse<AssetProperty>>(`/asset-properties?${sp.toString()}`);
+      } catch (error) {
+        let data = [...this.mockAssetProperties];
+        if (params?.assetTypeId) data = data.filter(p => p.assetTypeId === params.assetTypeId);
+        if (params?.search) {
+          const t = params.search.toLowerCase();
+          data = data.filter(p => p.name.toLowerCase().includes(t));
+        }
+        return createMockPaginatedResponse(data, params);
+      }
     }
   }
 
