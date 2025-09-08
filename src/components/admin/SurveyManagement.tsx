@@ -10,56 +10,13 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Survey, SurveyCategory } from "@/types/admin";
+import { useSurveyMasters, useCreateSurveyMaster, useUpdateSurveyMaster, useDeleteSurveyMaster } from "@/hooks/useApiQueries";
 
-const mockCategories: SurveyCategory[] = [
-  { id: "CAT_001", name: "Gas Pipeline", description: "", createdAt: "", updatedAt: "" },
-  { id: "CAT_002", name: "Fiber Optics", description: "", createdAt: "", updatedAt: "" },
-  { id: "CAT_003", name: "Waterline", description: "", createdAt: "", updatedAt: "" },
-  { id: "CAT_004", name: "Electrical", description: "", createdAt: "", updatedAt: "" },
-];
-
-const mockSurveys: Survey[] = [
-  {
-    id: "SUR_001",
-    name: "Mumbai Gas Main Line Survey",
-    categoryId: "CAT_001",
-    categoryName: "Gas Pipeline",
-    startDate: "2024-01-15",
-    endDate: "2024-03-15",
-    status: "ACTIVE",
-    createdBy: "Admin User",
-    createdAt: "2024-01-10T08:00:00Z",
-    updatedAt: "2024-01-10T08:00:00Z",
-  },
-  {
-    id: "SUR_002",
-    name: "Fiber Network Expansion",
-    categoryId: "CAT_002",
-    categoryName: "Fiber Optics",
-    startDate: "2024-02-01",
-    endDate: "2024-04-01",
-    status: "ACTIVE",
-    createdBy: "Admin User",
-    createdAt: "2024-01-25T09:30:00Z",
-    updatedAt: "2024-01-25T09:30:00Z",
-  },
-  {
-    id: "SUR_003",
-    name: "Water Distribution Assessment",
-    categoryId: "CAT_003",
-    categoryName: "Waterline",
-    startDate: "2023-11-01",
-    endDate: "2023-12-31",
-    status: "CLOSED",
-    createdBy: "Admin User",
-    createdAt: "2023-10-25T10:15:00Z",
-    updatedAt: "2024-01-05T10:15:00Z",
-  },
-];
 
 export default function SurveyManagement() {
-  const [surveys, setSurveys] = useState<Survey[]>(mockSurveys);
-  const [categories] = useState<SurveyCategory[]>(mockCategories);
+  const { data: surveysResp } = useSurveyMasters({ limit: 1000 });
+  const surveys: Survey[] = surveysResp?.data ?? [];
+  const [categories] = useState<SurveyCategory[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -72,6 +29,9 @@ export default function SurveyManagement() {
     status: "ACTIVE" as Survey["status"],
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const createSurvey = useCreateSurveyMaster();
+  const updateSurvey = useUpdateSurveyMaster();
+  const deleteSurvey = useDeleteSurveyMaster();
 
   const filteredSurveys = surveys.filter((survey) => {
     const matchesSearch = 
@@ -84,60 +44,28 @@ export default function SurveyManagement() {
 
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
-    
-    if (!formData.name.trim()) {
-      newErrors.name = "Survey name is required";
-    }
-    
-    if (!formData.categoryId) {
-      newErrors.categoryId = "Category selection is required";
-    }
-    
-    if (!formData.startDate) {
-      newErrors.startDate = "Start date is required";
-    }
-    
-    if (!formData.endDate) {
-      newErrors.endDate = "End date is required";
-    }
-    
+    if (!formData.name.trim()) newErrors.name = "Survey name is required";
+    if (!formData.startDate) newErrors.startDate = "Start date is required";
+    if (!formData.endDate) newErrors.endDate = "End date is required";
     if (formData.startDate && formData.endDate && formData.startDate > formData.endDate) {
       newErrors.endDate = "End date must be after start date";
     }
-    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validateForm()) return;
-
-    const categoryName = categories.find(cat => cat.id === formData.categoryId)?.name || "";
-
-    if (editingSurvey) {
-      setSurveys(surveys.map(survey => 
-        survey.id === editingSurvey.id 
-          ? { 
-              ...survey, 
-              ...formData, 
-              categoryName,
-              updatedAt: new Date().toISOString() 
-            }
-          : survey
-      ));
-    } else {
-      const newSurvey: Survey = {
-        id: `SUR_${Date.now()}`,
-        ...formData,
-        categoryName,
-        createdBy: "Admin User", // This would come from auth context
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      setSurveys([...surveys, newSurvey]);
+    try {
+      if (editingSurvey) {
+        await updateSurvey.mutateAsync({ id: editingSurvey.id, payload: { ...formData } });
+      } else {
+        await createSurvey.mutateAsync({ ...formData });
+      }
+      resetForm();
+    } catch (error) {
+      setErrors({ name: (error as Error).message || "Failed to save survey" });
     }
-
-    resetForm();
   };
 
   const handleEdit = (survey: Survey) => {
@@ -154,17 +82,13 @@ export default function SurveyManagement() {
 
   const handleCloseSurvey = (id: string) => {
     if (confirm("Are you sure you want to close this survey? This action cannot be undone.")) {
-      setSurveys(surveys.map(survey => 
-        survey.id === id 
-          ? { ...survey, status: "CLOSED" as Survey["status"], updatedAt: new Date().toISOString() }
-          : survey
-      ));
+      updateSurvey.mutate({ id, payload: { status: "CLOSED" } });
     }
   };
 
   const handleDelete = (id: string) => {
     if (confirm("Are you sure you want to delete this survey? This action cannot be undone.")) {
-      setSurveys(surveys.filter(survey => survey.id !== id));
+      deleteSurvey.mutate(id);
     }
   };
 
@@ -339,15 +263,6 @@ export default function SurveyManagement() {
             </SelectContent>
           </Select>
         </div>
-
-        {categories.length === 0 && (
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              No survey categories found. Please create categories first before adding surveys.
-            </AlertDescription>
-          </Alert>
-        )}
 
         {filteredSurveys.length === 0 ? (
           <Alert>
