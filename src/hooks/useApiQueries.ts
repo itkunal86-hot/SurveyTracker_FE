@@ -38,6 +38,7 @@ export const QUERY_KEYS = {
   valveTypes: "valveTypes",
   pipelineMaterials: "pipelineMaterials",
   statusOptions: "statusOptions",
+  surveyCategories: "surveyCategories",
 } as const;
 
 // Device hooks
@@ -524,5 +525,13 @@ export function useStatusOptions(
     queryKey: [QUERY_KEYS.statusOptions, type],
     queryFn: () => apiClient.getStatusOptions(type),
     staleTime: 30 * 60 * 1000,
+  });
+}
+
+export function useSurveyCategories(params?: { page?: number; limit?: number; search?: string }) {
+  return useQuery({
+    queryKey: [QUERY_KEYS.surveyCategories, params],
+    queryFn: () => apiClient.getSurveyCategories(params),
+    staleTime: 5 * 60 * 1000,
   });
 }
