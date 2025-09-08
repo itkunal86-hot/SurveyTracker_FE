@@ -343,7 +343,7 @@ export interface ChangePasswordResponse {
   data: string;
 }
 
-import type { SurveyCategory as SurveyCategoryType, DeviceAssignment } from "@/types/admin";
+import type { SurveyCategory as SurveyCategoryType, DeviceAssignment, Survey as AdminSurvey } from "@/types/admin";
 
 const DEMO_USERS: UserData[] = [
   {
@@ -1304,6 +1304,86 @@ class ApiClient {
         return createMockApiResponse<any[]>([]);
       }
     }
+  }
+
+  // Survey Master endpoints (admin surveys)
+  private mapSurveyMaster(raw: any): AdminSurvey {
+    const id = String(raw.id ?? raw.ID ?? raw.surveyId ?? raw.SurveyId ?? `SUR_${Date.now()}`);
+    const name = String(raw.name ?? raw.surveyName ?? raw.SurveyName ?? "");
+    const categoryId = String(raw.categoryId ?? raw.CategoryId ?? raw.category_id ?? "");
+    const categoryName = raw.categoryName ?? raw.CategoryName ?? undefined;
+    const start = raw.startDate ?? raw.StartDate ?? raw.fromDate ?? raw.FromDate;
+    const end = raw.endDate ?? raw.EndDate ?? raw.toDate ?? raw.ToDate;
+    const status = (raw.status ?? raw.Status ?? "ACTIVE").toString().toUpperCase();
+    const createdBy = String(raw.createdBy ?? raw.CreatedBy ?? "");
+    const createdAt = String(raw.createdAt ?? raw.CreatedAt ?? new Date().toISOString());
+    const updatedAt = String(raw.updatedAt ?? raw.UpdatedAt ?? createdAt);
+    return {
+      id,
+      name,
+      categoryId,
+      categoryName,
+      startDate: start ? String(start) : createdAt.substring(0,10),
+      endDate: end ? String(end) : createdAt.substring(0,10),
+      status: status === "CLOSED" ? "CLOSED" : "ACTIVE",
+      createdBy,
+      createdAt,
+      updatedAt,
+    } as AdminSurvey;
+  }
+
+  async getSurveyMasters(params?: { page?: number; limit?: number; status?: string; }): Promise<PaginatedResponse<AdminSurvey>> {
+    const sp = new URLSearchParams();
+    if (params?.page) sp.append("page", String(params.page));
+    if (params?.limit) sp.append("limit", String(params.limit));
+    if (params?.status) sp.append("status", params.status);
+    const q = sp.toString();
+    const raw = await this.request<any>(`/SurveyMaster${q ? `?${q}` : ""}`);
+    const items = Array.isArray(raw?.data) ? raw.data : Array.isArray(raw) ? raw : [];
+    const mapped = items.map((it: any) => this.mapSurveyMaster(it));
+    const pagination = raw?.pagination || raw?.data?.pagination || {
+      page: params?.page ?? 1,
+      limit: params?.limit ?? mapped.length,
+      total: mapped.length,
+      totalPages: 1,
+    };
+    return { success: true, data: mapped, timestamp: new Date().toISOString(), pagination };
+  }
+
+  async getSurveyMaster(id: string): Promise<ApiResponse<AdminSurvey>> {
+    const raw = await this.request<any>(`/SurveyMaster/${id}`);
+    const item = this.mapSurveyMaster(raw?.data ?? raw);
+    return { success: true, data: item, timestamp: new Date().toISOString(), message: raw?.message };
+  }
+
+  async createSurveyMaster(payload: Partial<AdminSurvey>): Promise<ApiResponse<AdminSurvey>> {
+    const body: any = {
+      name: payload.name,
+      categoryId: payload.categoryId,
+      startDate: payload.startDate,
+      endDate: payload.endDate,
+      status: payload.status,
+    };
+    const raw = await this.request<any>(`/SurveyMaster`, { method: "POST", body: JSON.stringify(body) });
+    const item = this.mapSurveyMaster(raw?.data ?? raw);
+    return { success: true, data: item, timestamp: new Date().toISOString(), message: raw?.message };
+  }
+
+  async updateSurveyMaster(id: string, payload: Partial<AdminSurvey>): Promise<ApiResponse<AdminSurvey>> {
+    const body: any = {
+      ...(payload.name !== undefined ? { name: payload.name } : {}),
+      ...(payload.categoryId !== undefined ? { categoryId: payload.categoryId } : {}),
+      ...(payload.startDate !== undefined ? { startDate: payload.startDate } : {}),
+      ...(payload.endDate !== undefined ? { endDate: payload.endDate } : {}),
+      ...(payload.status !== undefined ? { status: payload.status } : {}),
+    };
+    const raw = await this.request<any>(`/SurveyMaster/${id}`, { method: "PUT", body: JSON.stringify(body) });
+    const item = this.mapSurveyMaster(raw?.data ?? raw);
+    return { success: true, data: item, timestamp: new Date().toISOString(), message: raw?.message };
+  }
+
+  async deleteSurveyMaster(id: string): Promise<ApiResponse<void>> {
+    return this.request<ApiResponse<void>>(`/SurveyMaster/${id}`, { method: "DELETE" });
   }
 
   // Valve Operations endpoints
