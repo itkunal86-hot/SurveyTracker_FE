@@ -10,13 +10,14 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Survey, SurveyCategory } from "@/types/admin";
-import { useSurveyMasters, useCreateSurveyMaster, useUpdateSurveyMaster, useDeleteSurveyMaster } from "@/hooks/useApiQueries";
+import { useSurveyMasters, useCreateSurveyMaster, useUpdateSurveyMaster, useDeleteSurveyMaster, useSurveyCategories } from "@/hooks/useApiQueries";
 
 
 export default function SurveyManagement() {
   const { data: surveysResp } = useSurveyMasters({ limit: 1000 });
   const surveys: Survey[] = surveysResp?.data ?? [];
-  const [categories] = useState<SurveyCategory[]>([]);
+  const { data: categoriesResp } = useSurveyCategories({ limit: 1000 });
+  const categories: SurveyCategory[] = categoriesResp?.data ?? [];
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
