@@ -10,6 +10,7 @@ import {
   ValveOperation,
 } from "../lib/api";
 import { extendPipelines, withLegacyProperties } from "../lib/pipelineUtils";
+import type { DeviceAssignment } from "@/types/admin";
 
 // Query keys
 export const QUERY_KEYS = {
@@ -25,6 +26,10 @@ export const QUERY_KEYS = {
   survey: "survey",
   valveOperations: "valveOperations",
   valveOperation: "valveOperation",
+  deviceAssignments: "deviceAssignments",
+  deviceAssignment: "deviceAssignment",
+  assignmentsBySurvey: "assignmentsBySurvey",
+  assignmentConflicts: "assignmentConflicts",
   config: "config",
   catastropheTypes: "catastropheTypes",
   deviceTypes: "deviceTypes",
@@ -296,6 +301,73 @@ export function useSurvey(id: string) {
     queryKey: [QUERY_KEYS.survey, id],
     queryFn: () => apiClient.getSurvey(id),
     enabled: !!id,
+  });
+}
+
+// Device Assignments hooks
+export function useDeviceAssignments(params?: { page?: number; limit?: number; deviceId?: string; surveyId?: string; status?: string; }) {
+  return useQuery({
+    queryKey: [QUERY_KEYS.deviceAssignments, params],
+    queryFn: () => apiClient.getDeviceAssignments(params),
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useDeviceAssignment(id: string) {
+  return useQuery({
+    queryKey: [QUERY_KEYS.deviceAssignment, id],
+    queryFn: () => apiClient.getDeviceAssignment(id),
+    enabled: !!id,
+  });
+}
+
+export function useCreateDeviceAssignment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: { deviceId: string; surveyId: string; fromDate: string; toDate: string; assignedBy?: string; notes?: string; }) =>
+      apiClient.createDeviceAssignment(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.deviceAssignments] });
+    },
+  });
+}
+
+export function useUpdateDeviceAssignment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: { unassignedDate?: string; status?: string; notes?: string; toDate?: string; } }) =>
+      apiClient.updateDeviceAssignment(id, payload),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.deviceAssignments] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.deviceAssignment, id] });
+    },
+  });
+}
+
+export function useDeleteDeviceAssignment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.deleteDeviceAssignment(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.deviceAssignments] });
+    },
+  });
+}
+
+export function useAssignmentsBySurvey(surveyId: string) {
+  return useQuery({
+    queryKey: [QUERY_KEYS.assignmentsBySurvey, surveyId],
+    queryFn: () => apiClient.getAssignmentsBySurvey(surveyId),
+    enabled: !!surveyId,
+  });
+}
+
+export function useAssignmentConflicts(params: { deviceId: string; startDate: string; endDate: string; }) {
+  return useQuery({
+    queryKey: [QUERY_KEYS.assignmentConflicts, params],
+    queryFn: () => apiClient.getAssignmentConflicts(params),
+    enabled: Boolean(params.deviceId && params.startDate && params.endDate),
+    staleTime: 10 * 1000,
   });
 }
 

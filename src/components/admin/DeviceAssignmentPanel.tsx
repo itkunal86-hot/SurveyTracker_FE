@@ -11,88 +11,15 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { DeviceAssignment, Survey } from "@/types/admin";
 import { Device } from "../../types/valve";
-
-const mockDevices: Device[] = [
-  {
-    id: "TRIMBLE_001",
-    name: "Trimble SPS986 - Unit 1",
-    type: "TRIMBLE_SPS986",
-    status: "ACTIVE",
-    coordinates: { lat: 19.076, lng: 72.8777 },
-    batteryLevel: 85,
-  },
-  {
-    id: "TRIMBLE_002", 
-    name: "Trimble SPS986 - Unit 2",
-    type: "TRIMBLE_SPS986",
-    status: "ACTIVE",
-    coordinates: { lat: 19.08, lng: 72.881 },
-    batteryLevel: 92,
-  },
-  {
-    id: "TRIMBLE_003",
-    name: "Trimble SPS986 - Unit 3", 
-    type: "SURVEY_EQUIPMENT",
-    status: "MAINTENANCE",
-    coordinates: { lat: 19.075, lng: 72.879 },
-    batteryLevel: 45,
-  },
-];
-
-const mockSurveys: Survey[] = [
-  {
-    id: "SUR_001",
-    name: "Mumbai Gas Main Line Survey",
-    categoryId: "CAT_001",
-    startDate: "2024-01-15",
-    endDate: "2024-03-15", 
-    status: "ACTIVE",
-    createdBy: "Admin User",
-    createdAt: "2024-01-10T08:00:00Z",
-    updatedAt: "2024-01-10T08:00:00Z",
-  },
-  {
-    id: "SUR_002",
-    name: "Fiber Network Expansion",
-    categoryId: "CAT_002",
-    startDate: "2024-02-01",
-    endDate: "2024-04-01",
-    status: "ACTIVE", 
-    createdBy: "Admin User",
-    createdAt: "2024-01-25T09:30:00Z",
-    updatedAt: "2024-01-25T09:30:00Z",
-  },
-];
-
-const mockAssignments: DeviceAssignment[] = [
-  {
-    id: "ASSIGN_001",
-    deviceId: "TRIMBLE_001",
-    deviceName: "Trimble SPS986 - Unit 1",
-    surveyId: "SUR_001",
-    surveyName: "Mumbai Gas Main Line Survey",
-    fromDate: "2024-01-15",
-    toDate: "2024-03-15",
-    isActive: true,
-    createdAt: "2024-01-15T08:00:00Z",
-  },
-  {
-    id: "ASSIGN_002",
-    deviceId: "TRIMBLE_002", 
-    deviceName: "Trimble SPS986 - Unit 2",
-    surveyId: "SUR_002",
-    surveyName: "Fiber Network Expansion",
-    fromDate: "2024-02-01",
-    toDate: "2024-04-01",
-    isActive: true,
-    createdAt: "2024-02-01T09:30:00Z",
-  },
-];
+import { useDevices, useDeviceAssignments, useCreateDeviceAssignment, useUpdateDeviceAssignment } from "@/hooks/useApiQueries";
+import { apiClient } from "@/lib/api";
 
 export default function DeviceAssignmentPanel() {
-  const [assignments, setAssignments] = useState<DeviceAssignment[]>(mockAssignments);
-  const [devices] = useState<Device[]>(mockDevices);
-  const [surveys] = useState<Survey[]>(mockSurveys);
+  const { data: assignmentsResp } = useDeviceAssignments({ limit: 1000 });
+  const { data: devicesResp } = useDevices({ limit: 1000 });
+  const assignments: DeviceAssignment[] = assignmentsResp?.data ?? [];
+  const devices: Device[] = (devicesResp?.data as unknown as Device[]) ?? [];
+  const [surveys] = useState<Survey[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -103,6 +30,8 @@ export default function DeviceAssignmentPanel() {
     toDate: "",
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const createAssignment = useCreateDeviceAssignment();
+  const updateAssignment = useUpdateDeviceAssignment();
 
   const filteredAssignments = assignments.filter((assignment) => {
     const matchesSearch = 
@@ -126,90 +55,62 @@ export default function DeviceAssignmentPanel() {
     return surveys.filter(s => s.status === "ACTIVE");
   };
 
-  const checkDateConflict = (deviceId: string, fromDate: string, toDate: string) => {
-    return assignments.some(assignment => 
-      assignment.deviceId === deviceId &&
-      assignment.isActive &&
-      (
-        (fromDate >= assignment.fromDate && fromDate <= assignment.toDate) ||
-        (toDate >= assignment.fromDate && toDate <= assignment.toDate) ||
-        (fromDate <= assignment.fromDate && toDate >= assignment.toDate)
-      )
-    );
+  const checkDateConflict = async (deviceId: string, fromDate: string, toDate: string) => {
+    try {
+      const res = await apiClient.getAssignmentConflicts({ deviceId, startDate: fromDate, endDate: toDate });
+      return Array.isArray(res.data) && res.data.length > 0;
+    } catch {
+      return false;
+    }
   };
 
-  const validateForm = () => {
+  const validateForm = async () => {
     const newErrors: { [key: string]: string } = {};
-    
-    if (!formData.deviceId) {
-      newErrors.deviceId = "Device selection is required";
-    }
-    
-    if (!formData.surveyId) {
-      newErrors.surveyId = "Survey selection is required";
-    }
-    
-    if (!formData.fromDate) {
-      newErrors.fromDate = "From date is required";
-    }
-    
-    if (!formData.toDate) {
-      newErrors.toDate = "To date is required";
-    }
-    
+    if (!formData.deviceId) newErrors.deviceId = "Device selection is required";
+    if (!formData.surveyId) newErrors.surveyId = "Survey selection is required";
+    if (!formData.fromDate) newErrors.fromDate = "From date is required";
+    if (!formData.toDate) newErrors.toDate = "To date is required";
     if (formData.fromDate && formData.toDate && formData.fromDate > formData.toDate) {
       newErrors.toDate = "To date must be after from date";
     }
-
-    if (formData.deviceId && formData.fromDate && formData.toDate && 
-        checkDateConflict(formData.deviceId, formData.fromDate, formData.toDate)) {
-      newErrors.deviceId = "Device is already assigned during this time period";
+    if (formData.deviceId && formData.fromDate && formData.toDate) {
+      const hasConflict = await checkDateConflict(formData.deviceId, formData.fromDate, formData.toDate);
+      if (hasConflict) newErrors.deviceId = "Device is already assigned during this time period";
     }
-    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
-    if (!validateForm()) return;
+  const handleSubmit = async () => {
+    const isValid = await validateForm();
+    if (!isValid) return;
 
-    const device = devices.find(d => d.id === formData.deviceId);
-    const survey = surveys.find(s => s.id === formData.surveyId);
-
-    const newAssignment: DeviceAssignment = {
-      id: `ASSIGN_${Date.now()}`,
-      deviceId: formData.deviceId,
-      deviceName: device?.name || "",
-      surveyId: formData.surveyId,
-      surveyName: survey?.name || "",
-      fromDate: formData.fromDate,
-      toDate: formData.toDate,
-      isActive: true,
-      createdAt: new Date().toISOString(),
-    };
-
-    setAssignments([...assignments, newAssignment]);
-    resetForm();
+    try {
+      await createAssignment.mutateAsync({
+        deviceId: formData.deviceId,
+        surveyId: formData.surveyId,
+        fromDate: formData.fromDate,
+        toDate: formData.toDate,
+        assignedBy: "Admin",
+      });
+      resetForm();
+    } catch (error) {
+      setErrors({ deviceId: (error as Error).message || "Failed to create assignment" });
+    }
   };
 
   const handleRevoke = (id: string) => {
     if (confirm("Are you sure you want to revoke this device assignment?")) {
-      setAssignments(assignments.map(assignment => 
-        assignment.id === id 
-          ? { ...assignment, isActive: false, toDate: new Date().toISOString().split('T')[0] }
-          : assignment
-      ));
+      const nowIso = new Date().toISOString();
+      updateAssignment.mutate({ id, payload: { status: "COMPLETED", unassignedDate: nowIso, toDate: nowIso } });
     }
   };
 
   const handleExtend = (id: string) => {
     const newToDate = prompt("Enter new end date (YYYY-MM-DD):");
     if (newToDate) {
-      setAssignments(assignments.map(assignment => 
-        assignment.id === id 
-          ? { ...assignment, toDate: newToDate }
-          : assignment
-      ));
+      const iso = /T/.test(newToDate) ? newToDate : `${newToDate}T00:00:00Z`;
+      updateAssignment.mutate({ id, payload: { toDate: iso } });
     }
   };
 

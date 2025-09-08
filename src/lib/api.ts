@@ -343,7 +343,7 @@ export interface ChangePasswordResponse {
   data: string;
 }
 
-import type { SurveyCategory as SurveyCategoryType } from "@/types/admin";
+import type { SurveyCategory as SurveyCategoryType, DeviceAssignment } from "@/types/admin";
 
 const DEMO_USERS: UserData[] = [
   {
@@ -1143,6 +1143,168 @@ class ApiClient {
     }
   }
 
+  // Device Assignments endpoints
+  private mapDeviceAssignment(raw: any): DeviceAssignment {
+    const id = String(raw.id ?? raw.ID ?? raw.assignmentId ?? raw.AssignmentId ?? `ASN_${Date.now()}`);
+    const deviceId = String(raw.deviceId ?? raw.DeviceId ?? raw.devId ?? raw.DEVICE_ID ?? "");
+    const surveyId = String(raw.surveyId ?? raw.SurveyId ?? raw.srvId ?? raw.SURVEY_ID ?? "");
+    const deviceName = raw.deviceName ?? raw.DeviceName ?? null;
+    const surveyName = raw.surveyName ?? raw.SurveyName ?? null;
+
+    const from = raw.fromDate ?? raw.FromDate ?? raw.assignedDate ?? raw.AssignedDate ?? raw.startDate ?? raw.StartDate;
+    const to = raw.toDate ?? raw.ToDate ?? raw.unassignedDate ?? raw.UnassignedDate ?? raw.endDate ?? raw.EndDate;
+
+    const status = raw.status ?? raw.Status ?? null;
+    const isActive = typeof raw.isActive === "boolean" ? raw.isActive : (status ? String(status).toUpperCase() === "ACTIVE" : (to ? new Date(to) > new Date() : true));
+
+    const createdAt = raw.createdAt ?? raw.CreatedAt ?? raw.created_at ?? new Date().toISOString();
+
+    return {
+      id,
+      deviceId,
+      deviceName: deviceName ?? "",
+      surveyId,
+      surveyName: surveyName ?? undefined,
+      fromDate: from ? String(from) : new Date().toISOString(),
+      toDate: to ? String(to) : new Date(Date.now() + 7*24*60*60*1000).toISOString(),
+      isActive,
+      createdAt: String(createdAt),
+    } as DeviceAssignment;
+  }
+
+  async getDeviceAssignments(params?: { page?: number; limit?: number; deviceId?: string; surveyId?: string; status?: string; }): Promise<PaginatedResponse<DeviceAssignment>> {
+    const sp = new URLSearchParams();
+    if (params?.page) sp.append("page", String(params.page));
+    if (params?.limit) sp.append("limit", String(params.limit));
+    if (params?.deviceId) sp.append("deviceId", params.deviceId);
+    if (params?.surveyId) sp.append("surveyId", params.surveyId);
+    if (params?.status) sp.append("status", params.status);
+    const q = sp.toString();
+
+    try {
+      const raw: any = await this.request<any>(`/DeviceAssignments${q ? `?${q}` : ""}`);
+      const items = Array.isArray(raw?.data?.items) ? raw.data.items : Array.isArray(raw?.data?.data) ? raw.data.data : Array.isArray(raw?.data) ? raw.data : Array.isArray(raw) ? raw : [];
+      const mapped = items.map((it: any) => this.mapDeviceAssignment(it));
+      const pagination = raw?.data?.pagination || raw?.pagination || {
+        page: params?.page ?? 1,
+        limit: params?.limit ?? mapped.length,
+        total: mapped.length,
+        totalPages: 1,
+      };
+      return {
+        success: true,
+        data: mapped,
+        message: raw?.message,
+        timestamp: raw?.timestamp || new Date().toISOString(),
+        pagination,
+      };
+    } catch (primaryError) {
+      try {
+        return await this.request<PaginatedResponse<DeviceAssignment>>(`/device-assignments${q ? `?${q}` : ""}`);
+      } catch (secondaryError) {
+        // Fallback to empty when API unavailable
+        return createMockPaginatedResponse<DeviceAssignment>([], params);
+      }
+    }
+  }
+
+  async getDeviceAssignment(id: string): Promise<ApiResponse<DeviceAssignment>> {
+    try {
+      const raw = await this.request<any>(`/DeviceAssignments/${id}`);
+      const item = this.mapDeviceAssignment(raw?.data ?? raw);
+      return { success: true, data: item, message: raw?.message, timestamp: raw?.timestamp || new Date().toISOString() };
+    } catch (primaryError) {
+      try {
+        return await this.request<ApiResponse<DeviceAssignment>>(`/device-assignments/${id}`);
+      } catch (secondaryError) {
+        throw secondaryError;
+      }
+    }
+  }
+
+  async createDeviceAssignment(payload: { deviceId: string; surveyId: string; fromDate: string; toDate: string; assignedBy?: string; notes?: string; }): Promise<ApiResponse<DeviceAssignment>> {
+    const body = {
+      deviceId: payload.deviceId,
+      surveyId: payload.surveyId,
+      assignedDate: payload.fromDate,
+      unassignedDate: payload.toDate,
+      fromDate: payload.fromDate,
+      toDate: payload.toDate,
+      assignedBy: payload.assignedBy || "Admin",
+      notes: payload.notes,
+    };
+    try {
+      const raw = await this.request<any>(`/DeviceAssignments`, { method: "POST", body: JSON.stringify(body) });
+      const item = this.mapDeviceAssignment(raw?.data ?? raw);
+      return { success: true, data: item, message: raw?.message, timestamp: raw?.timestamp || new Date().toISOString() };
+    } catch (primaryError) {
+      try {
+        return await this.request<ApiResponse<DeviceAssignment>>(`/device-assignments`, { method: "POST", body: JSON.stringify(body) });
+      } catch (secondaryError) {
+        throw secondaryError;
+      }
+    }
+  }
+
+  async updateDeviceAssignment(id: string, payload: { unassignedDate?: string; status?: string; notes?: string; toDate?: string; }): Promise<ApiResponse<DeviceAssignment>> {
+    const body = {
+      ...(payload.unassignedDate ? { unassignedDate: payload.unassignedDate } : {}),
+      ...(payload.toDate ? { toDate: payload.toDate } : {}),
+      ...(payload.status ? { status: payload.status } : {}),
+      ...(payload.notes !== undefined ? { notes: payload.notes } : {}),
+    };
+    try {
+      const raw = await this.request<any>(`/DeviceAssignments/${id}`, { method: "PUT", body: JSON.stringify(body) });
+      const item = this.mapDeviceAssignment(raw?.data ?? raw);
+      return { success: true, data: item, message: raw?.message, timestamp: raw?.timestamp || new Date().toISOString() };
+    } catch (primaryError) {
+      try {
+        return await this.request<ApiResponse<DeviceAssignment>>(`/device-assignments/${id}`, { method: "PUT", body: JSON.stringify(body) });
+      } catch (secondaryError) {
+        throw secondaryError;
+      }
+    }
+  }
+
+  async deleteDeviceAssignment(id: string): Promise<ApiResponse<void>> {
+    try {
+      return await this.request<ApiResponse<void>>(`/DeviceAssignments/${id}`, { method: "DELETE" });
+    } catch (primaryError) {
+      return await this.request<ApiResponse<void>>(`/device-assignments/${id}`, { method: "DELETE" });
+    }
+  }
+
+  async getAssignmentsBySurvey(surveyId: string): Promise<ApiResponse<DeviceAssignment[]>> {
+    try {
+      const raw = await this.request<any>(`/DeviceAssignments/by-survey/${encodeURIComponent(surveyId)}`);
+      const items = Array.isArray(raw?.data) ? raw.data : Array.isArray(raw) ? raw : [];
+      return {
+        success: true,
+        data: items.map((it: any) => this.mapDeviceAssignment(it)),
+        message: raw?.message,
+        timestamp: raw?.timestamp || new Date().toISOString(),
+      };
+    } catch (primaryError) {
+      try {
+        return await this.request<ApiResponse<DeviceAssignment[]>>(`/device-assignments/by-survey/${encodeURIComponent(surveyId)}`);
+      } catch (secondaryError) {
+        return createMockApiResponse<DeviceAssignment[]>([]);
+      }
+    }
+  }
+
+  async getAssignmentConflicts(params: { deviceId: string; startDate: string; endDate: string; }): Promise<ApiResponse<any[]>> {
+    const sp = new URLSearchParams({ deviceId: params.deviceId, startDate: params.startDate, endDate: params.endDate });
+    try {
+      return await this.request<ApiResponse<any>>(`/DeviceAssignments/conflicts?${sp.toString()}`);
+    } catch (primaryError) {
+      try {
+        return await this.request<ApiResponse<any>>(`/device-assignments/conflicts?${sp.toString()}`);
+      } catch (secondaryError) {
+        return createMockApiResponse<any[]>([]);
+      }
+    }
+  }
 
   // Valve Operations endpoints
   async getValveOperations(params?: {
