@@ -949,53 +949,63 @@ class ApiClient {
 
   // Survey Categories endpoints
   async getSurveyCategories(params?: { page?: number; limit?: number; search?: string; }): Promise<PaginatedResponse<SurveyCategoryType>> {
-    try {
-      const sp = new URLSearchParams();
-      if (params?.page) sp.append("page", String(params.page));
-      if (params?.limit) sp.append("limit", String(params.limit));
-      if (params?.search) sp.append("search", params.search);
-      const q = sp.toString();
-      const raw: any = await this.request<any>(`/SurveyCategories${q ? `?${q}` : ""}`);
+    const sp = new URLSearchParams();
+    if (params?.page) sp.append("page", String(params.page));
+    if (params?.limit) sp.append("limit", String(params.limit));
+    if (params?.search) sp.append("search", params.search);
+    const q = sp.toString();
 
-      const timestamp = raw?.timestamp || new Date().toISOString();
-      const items = Array.isArray(raw?.data?.items)
-        ? raw.data.items
-        : Array.isArray(raw?.data)
-          ? raw.data
-          : [];
+    const tryPaths = [
+      `/SurveyCategories${q ? `?${q}` : ""}`,
+      `/surveyCategories${q ? `?${q}` : ""}`,
+      `/survey-categories${q ? `?${q}` : ""}`,
+    ];
 
-      const mapped: SurveyCategoryType[] = items.map((it: any) => {
-        const fallbackId = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
-          ? crypto.randomUUID()
-          : `${Date.now()}`;
-        const createdAt = it.createdAt ?? it.CreatedAt ?? it.created_at ?? raw?.timestamp ?? new Date().toISOString();
-        const updatedAt = it.updatedAt ?? it.UpdatedAt ?? it.updated_at ?? "";
-        return {
-          id: String(it.id ?? it.ID ?? it.categoryId ?? it.CategoryId ?? fallbackId),
-          name: it.name ?? it.Name ?? "",
-          description: it.description ?? it.Description ?? "",
-          createdAt,
-          updatedAt,
+    for (const path of tryPaths) {
+      try {
+        const raw: any = await this.request<any>(path);
+        const timestamp = raw?.timestamp || new Date().toISOString();
+        const items = Array.isArray(raw?.data?.items)
+          ? raw.data.items
+          : Array.isArray(raw?.data)
+            ? raw.data
+            : Array.isArray(raw) ? raw : [];
+
+        const mapped: SurveyCategoryType[] = items.map((it: any) => {
+          const fallbackId = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
+            ? crypto.randomUUID()
+            : `${Date.now()}`;
+          const createdAt = it.createdAt ?? it.CreatedAt ?? it.created_at ?? raw?.timestamp ?? new Date().toISOString();
+          const updatedAt = it.updatedAt ?? it.UpdatedAt ?? it.updated_at ?? "";
+          return {
+            id: String(it.id ?? it.ID ?? it.categoryId ?? it.CategoryId ?? fallbackId),
+            name: it.name ?? it.Name ?? "",
+            description: it.description ?? it.Description ?? "",
+            createdAt,
+            updatedAt,
+          };
+        });
+
+        const pagination = raw?.data?.pagination || raw?.pagination || {
+          page: params?.page ?? 1,
+          limit: params?.limit ?? mapped.length,
+          total: mapped.length,
+          totalPages: 1,
         };
-      });
 
-      const pagination = raw?.data?.pagination || {
-        page: params?.page ?? 1,
-        limit: params?.limit ?? mapped.length,
-        total: mapped.length,
-        totalPages: 1,
-      };
-
-      return {
-        success: (raw?.status_code ?? 200) >= 200 && (raw?.status_code ?? 200) < 300,
-        data: mapped,
-        message: raw?.message,
-        timestamp,
-        pagination,
-      };
-    } catch (error) {
-      return createMockPaginatedResponse<SurveyCategoryType>([], params);
+        return {
+          success: true,
+          data: mapped,
+          message: raw?.message,
+          timestamp,
+          pagination,
+        };
+      } catch (_) {
+        // try next
+      }
     }
+
+    return createMockPaginatedResponse<SurveyCategoryType>([], params);
   }
 
   async createSurveyCategory(payload: { name: string; description?: string; }): Promise<ApiResponse<SurveyCategoryType>> {
