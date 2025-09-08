@@ -24,6 +24,8 @@ export const QUERY_KEYS = {
   catastrophe: "catastrophe",
   surveys: "surveys",
   survey: "survey",
+  surveyMasters: "surveyMasters",
+  surveyMaster: "surveyMaster",
   valveOperations: "valveOperations",
   valveOperation: "valveOperation",
   deviceAssignments: "deviceAssignments",
@@ -301,6 +303,54 @@ export function useSurvey(id: string) {
     queryKey: [QUERY_KEYS.survey, id],
     queryFn: () => apiClient.getSurvey(id),
     enabled: !!id,
+  });
+}
+
+// SurveyMaster (Admin) hooks
+export function useSurveyMasters(params?: { page?: number; limit?: number; status?: string }) {
+  return useQuery({
+    queryKey: [QUERY_KEYS.surveyMasters, params],
+    queryFn: () => apiClient.getSurveyMasters(params),
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useSurveyMaster(id: string) {
+  return useQuery({
+    queryKey: [QUERY_KEYS.surveyMaster, id],
+    queryFn: () => apiClient.getSurveyMaster(id),
+    enabled: !!id,
+  });
+}
+
+export function useCreateSurveyMaster() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: any) => apiClient.createSurveyMaster(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.surveyMasters] });
+    },
+  });
+}
+
+export function useUpdateSurveyMaster() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: any }) => apiClient.updateSurveyMaster(id, payload),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.surveyMasters] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.surveyMaster, id] });
+    },
+  });
+}
+
+export function useDeleteSurveyMaster() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.deleteSurveyMaster(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.surveyMasters] });
+    },
   });
 }
 
