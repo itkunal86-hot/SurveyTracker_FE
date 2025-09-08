@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { DeviceAssignment, Survey } from "@/types/admin";
 import { Device } from "../../types/valve";
 import { useDevices, useDeviceAssignments, useCreateDeviceAssignment, useUpdateDeviceAssignment } from "@/hooks/useApiQueries";
+import { apiClient } from "@/lib/api";
 
 export default function DeviceAssignmentPanel() {
   const { data: assignmentsResp } = useDeviceAssignments({ limit: 1000 });
