@@ -759,21 +759,79 @@ class ApiClient {
 
       const query = searchParams.toString();
       // Prefer uppercase /Device per backend convention, fallback to lowercase /devices
-      try {
-        return await this.request<PaginatedResponse<Device>>(
-          `/Device${query ? `?${query}` : ""}`,
-        );
-      } catch (primaryError) {
+      const raw: any = await (async () => {
         try {
-          return await this.request<PaginatedResponse<Device>>(
-            `/devices${query ? `?${query}` : ""}`,
-          );
-        } catch (secondaryError) {
-          console.log("📊 API failed, falling back to mock data for devices");
-          const filteredData = this.filterMockData(mockDevices, params);
-          return createMockPaginatedResponse(filteredData, params);
+          return await this.request<any>(`/Device${query ? `?${query}` : ""}`);
+        } catch (primaryError) {
+          return await this.request<any>(`/devices${query ? `?${query}` : ""}`);
         }
-      }
+      })();
+
+      const timestamp = raw?.timestamp || new Date().toISOString();
+
+      const rawItems = Array.isArray(raw?.data?.items)
+        ? raw.data.items
+        : Array.isArray(raw?.data?.data)
+          ? raw.data.data
+          : Array.isArray(raw?.data)
+            ? raw.data
+            : Array.isArray(raw)
+              ? raw
+              : [];
+
+      const mapped: Device[] = rawItems.map((it: any) => {
+        const id = String(it.id ?? it.ID ?? it.deviceId ?? it.DeviceId ?? it.device_id ?? `${Date.now()}`);
+        const name = String(it.name ?? it.Name ?? it.deviceName ?? it.DeviceName ?? id);
+
+        // Normalize status into allowed set
+        const rawStatus = String(it.status ?? it.Status ?? it.deviceStatus ?? it.DeviceStatus ?? "").toUpperCase();
+        const allowedStatuses = new Set(["ACTIVE", "INACTIVE", "MAINTENANCE", "ERROR"]);
+        const status = (allowedStatuses.has(rawStatus) ? rawStatus : "ACTIVE") as Device["status"];
+
+        // Normalize type into allowed set
+        const rawType = String(it.type ?? it.Type ?? it.deviceType ?? it.DeviceType ?? "SURVEY_EQUIPMENT").toUpperCase();
+        const allowedTypes = new Set(["TRIMBLE_SPS986", "MONITORING_STATION", "SURVEY_EQUIPMENT"]);
+        const type = (allowedTypes.has(rawType) ? rawType : "SURVEY_EQUIPMENT") as Device["type"];
+
+        const lat = Number(it.lat ?? it.latitude ?? it.Latitude);
+        const lng = Number(it.lng ?? it.longitude ?? it.Longitude);
+        const coordinates = (!Number.isNaN(lat) && !Number.isNaN(lng))
+          ? { lat, lng }
+          : (it.coordinates && typeof it.coordinates.lat === "number" && typeof it.coordinates.lng === "number")
+            ? { lat: it.coordinates.lat, lng: it.coordinates.lng }
+            : { lat: 0, lng: 0 };
+
+        const batteryLevel = typeof it.batteryLevel === "number" ? it.batteryLevel : undefined;
+        const lastSeen = typeof it.lastSeen === "string" ? it.lastSeen : undefined;
+        const accuracy = typeof it.accuracy === "number" ? it.accuracy : undefined;
+
+        return {
+          id,
+          name,
+          type,
+          status,
+          coordinates,
+          surveyor: it.surveyor ?? it.Surveyor ?? undefined,
+          batteryLevel,
+          lastSeen,
+          accuracy,
+        } as Device;
+      });
+
+      const pagination = raw?.data?.pagination || {
+        page: params?.page ?? 1,
+        limit: params?.limit ?? mapped.length,
+        total: mapped.length,
+        totalPages: 1,
+      };
+
+      return {
+        success: (raw?.status_code ?? 200) >= 200 && (raw?.status_code ?? 200) < 300,
+        data: mapped,
+        message: raw?.message ?? raw?.status_message,
+        timestamp,
+        pagination,
+      };
     } catch (error) {
       console.log("📊 Unexpected error while fetching devices, using mock");
       const filteredData = this.filterMockData(mockDevices, params);
