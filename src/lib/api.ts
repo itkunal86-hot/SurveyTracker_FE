@@ -1342,13 +1342,29 @@ class ApiClient {
     const createdAt = String(raw.createdAt ?? raw.CreatedAt ?? raw.timestamp ?? new Date().toISOString());
     const updatedAt = String(raw.updatedAt ?? raw.UpdatedAt ?? createdAt);
 
+    const toDateOnly = (val: any): string | undefined => {
+      if (!val) return undefined;
+      const s = String(val);
+      const m = s.match(/^(\d{4}-\d{2}-\d{2})/);
+      if (m) return m[1];
+      if (s.includes("T")) return s.split("T")[0];
+      const d = new Date(s);
+      if (!isNaN(d.getTime())) {
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const dd = String(d.getDate()).padStart(2, "0");
+        return `${yyyy}-${mm}-${dd}`;
+      }
+      return s.slice(0, 10);
+    };
+
     return {
       id,
       name,
       categoryId,
       categoryName,
-      startDate: start ? String(start) : createdAt.substring(0, 10),
-      endDate: end ? String(end) : createdAt.substring(0, 10),
+      startDate: toDateOnly(start) || createdAt.substring(0, 10),
+      endDate: toDateOnly(end) || createdAt.substring(0, 10),
       status,
       createdBy,
       createdAt,
