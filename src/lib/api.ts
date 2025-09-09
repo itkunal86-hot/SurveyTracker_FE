@@ -758,12 +758,24 @@ class ApiClient {
       if (params?.type) searchParams.append("type", params.type);
 
       const query = searchParams.toString();
-      return await this.request<PaginatedResponse<Device>>(
-        `/devices${query ? `?${query}` : ""}`,
-      );
+      // Prefer uppercase /Device per backend convention, fallback to lowercase /devices
+      try {
+        return await this.request<PaginatedResponse<Device>>(
+          `/Device${query ? `?${query}` : ""}`,
+        );
+      } catch (primaryError) {
+        try {
+          return await this.request<PaginatedResponse<Device>>(
+            `/devices${query ? `?${query}` : ""}`,
+          );
+        } catch (secondaryError) {
+          console.log("📊 API failed, falling back to mock data for devices");
+          const filteredData = this.filterMockData(mockDevices, params);
+          return createMockPaginatedResponse(filteredData, params);
+        }
+      }
     } catch (error) {
-      // Fallback to mock data
-      console.log("📊 API failed, falling back to mock data for devices");
+      console.log("📊 Unexpected error while fetching devices, using mock");
       const filteredData = this.filterMockData(mockDevices, params);
       return createMockPaginatedResponse(filteredData, params);
     }
