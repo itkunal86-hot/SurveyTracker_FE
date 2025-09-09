@@ -1368,11 +1368,11 @@ class ApiClient {
 
   async createSurveyMaster(payload: Partial<AdminSurvey>): Promise<ApiResponse<AdminSurvey>> {
     const body: any = {
-      name: payload.name,
-      categoryId: payload.categoryId,
-      startDate: payload.startDate,
-      endDate: payload.endDate,
-      status: payload.status,
+      SmName: payload.name,
+      ScId: payload.categoryId,
+      SmStartDate: payload.startDate,
+      SmEndDate: payload.endDate,
+      SmStatus: payload.status,
     };
     const raw = await this.request<any>(`/SurveyMaster`, { method: "POST", body: JSON.stringify(body) });
     const item = this.mapSurveyMaster(raw?.data ?? raw);
