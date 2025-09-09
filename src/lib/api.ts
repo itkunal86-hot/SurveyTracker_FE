@@ -1314,33 +1314,58 @@ class ApiClient {
   }
 
   async createDeviceAssignment(payload: { deviceId: string; surveyId: string; fromDate: string; toDate: string; assignedBy?: string; notes?: string; }): Promise<ApiResponse<DeviceAssignment>> {
-    const body = {
-      deviceId: payload.deviceId,
-      surveyId: payload.surveyId,
-      assignedDate: payload.fromDate,
-      unassignedDate: payload.toDate,
+    // Normalize IDs to numbers when possible (some backends require ints)
+    const deviceIdNum = Number(payload.deviceId);
+    const surveyIdNum = Number(payload.surveyId);
+    const assignedByNum = Number.isFinite(Number(payload.assignedBy))
+      ? Number(payload.assignedBy)
+      : 1; // default admin user id
+
+    // Provide multiple field aliases for broad backend compatibility
+    const body: any = {
+      // canonical
+      deviceId: Number.isFinite(deviceIdNum) ? deviceIdNum : payload.deviceId,
+      surveyId: Number.isFinite(surveyIdNum) ? surveyIdNum : payload.surveyId,
       fromDate: payload.fromDate,
       toDate: payload.toDate,
-      assignedBy: payload.assignedBy || "Admin",
+      // aliases commonly expected by .NET backends
+      from: payload.fromDate,
+      to: payload.toDate,
+      assignedDate: payload.fromDate,
+      unassignedDate: payload.toDate,
+      assignedBy: assignedByNum,
       notes: payload.notes,
     };
+
     try {
-      const raw = await this.request<any>(`/DeviceAssignments`, { method: "POST", body: JSON.stringify(body) });
+      const raw = await this.request<any>(`/DeviceAssignments`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
       const item = this.mapDeviceAssignment(raw?.data ?? raw);
-      return { success: true, data: item, message: raw?.message, timestamp: raw?.timestamp || new Date().toISOString() };
-    } catch (primaryError) {
-      try {
-        return await this.request<ApiResponse<DeviceAssignment>>(`/device-assignments`, { method: "POST", body: JSON.stringify(body) });
-      } catch (secondaryError) {
-        throw secondaryError;
+      return {
+        success: true,
+        data: item,
+        message: raw?.message,
+        timestamp: raw?.timestamp || new Date().toISOString(),
+      };
+    } catch (primaryError: any) {
+      const msg = String(primaryError?.message || "");
+      // Only try lowercase fallback on true 404; otherwise bubble the original error (e.g., 400 validation)
+      if (/404/.test(msg)) {
+        return await this.request<ApiResponse<DeviceAssignment>>(`/device-assignments`, {
+          method: "POST",
+          body: JSON.stringify(body),
+        });
       }
+      throw primaryError;
     }
   }
 
   async updateDeviceAssignment(id: string, payload: { unassignedDate?: string; status?: string; notes?: string; toDate?: string; }): Promise<ApiResponse<DeviceAssignment>> {
-    const body = {
+    const body: any = {
       ...(payload.unassignedDate ? { unassignedDate: payload.unassignedDate } : {}),
-      ...(payload.toDate ? { toDate: payload.toDate } : {}),
+      ...(payload.toDate ? { toDate: payload.toDate, to: payload.toDate } : {}),
       ...(payload.status ? { status: payload.status } : {}),
       ...(payload.notes !== undefined ? { notes: payload.notes } : {}),
     };
@@ -1348,12 +1373,12 @@ class ApiClient {
       const raw = await this.request<any>(`/DeviceAssignments/${id}`, { method: "PUT", body: JSON.stringify(body) });
       const item = this.mapDeviceAssignment(raw?.data ?? raw);
       return { success: true, data: item, message: raw?.message, timestamp: raw?.timestamp || new Date().toISOString() };
-    } catch (primaryError) {
-      try {
+    } catch (primaryError: any) {
+      const msg = String(primaryError?.message || "");
+      if (/404/.test(msg)) {
         return await this.request<ApiResponse<DeviceAssignment>>(`/device-assignments/${id}`, { method: "PUT", body: JSON.stringify(body) });
-      } catch (secondaryError) {
-        throw secondaryError;
       }
+      throw primaryError;
     }
   }
 
