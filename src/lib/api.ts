@@ -1328,7 +1328,7 @@ class ApiClient {
     const categoryId = String(
       raw.categoryId ?? raw.CategoryId ?? raw.category_id ?? raw.scId ?? raw.SC_ID ?? ""
     );
-    const categoryName = raw.categoryName ?? raw.CategoryName ?? raw.scName ?? raw.SC_NAME ?? undefined;
+    const categoryName = raw.categoryName ?? raw.CategoryName ?? raw.scName ?? raw.ScName ?? undefined;
 
     const start =
       raw.startDate ?? raw.StartDate ?? raw.fromDate ?? raw.FromDate ?? raw.smStartDate ?? raw.SM_START_DATE;
@@ -1338,7 +1338,7 @@ class ApiClient {
     const statusRaw = (raw.status ?? raw.Status ?? raw.smStatus ?? raw.SM_STATUS ?? "ACTIVE").toString();
     const status = statusRaw.toUpperCase() === "CLOSED" ? "CLOSED" : "ACTIVE";
 
-    const createdBy = String(raw.createdBy ?? raw.CreatedBy ?? raw.audId ?? raw.AUD_ID ?? "");
+    const createdBy = String(raw.createdBy ?? raw.CreatedBy ??  raw.createdByName ?? "");
     const createdAt = String(raw.createdAt ?? raw.CreatedAt ?? raw.timestamp ?? new Date().toISOString());
     const updatedAt = String(raw.updatedAt ?? raw.UpdatedAt ?? createdAt);
 
@@ -1415,11 +1415,11 @@ class ApiClient {
 
   async updateSurveyMaster(id: string, payload: Partial<AdminSurvey>): Promise<ApiResponse<AdminSurvey>> {
     const body: any = {
-      ...(payload.name !== undefined ? { name: payload.name } : {}),
-      ...(payload.categoryId !== undefined ? { categoryId: payload.categoryId } : {}),
-      ...(payload.startDate !== undefined ? { startDate: payload.startDate } : {}),
-      ...(payload.endDate !== undefined ? { endDate: payload.endDate } : {}),
-      ...(payload.status !== undefined ? { status: payload.status } : {}),
+      ...(payload.name !== undefined ? { SmName: payload.name } : {}),
+      ...(payload.categoryId !== undefined ? { ScId: payload.categoryId } : {}),
+      ...(payload.startDate !== undefined ? { SmStartDate: payload.startDate } : {}),
+      ...(payload.endDate !== undefined ? { SmEndDate: payload.endDate } : {}),
+      ...(payload.status !== undefined ? { SmStatus: payload.status } : {}),
     };
     const raw = await this.request<any>(`/SurveyMaster/${id}`, { method: "PUT", body: JSON.stringify(body) });
     const item = this.mapSurveyMaster(raw?.data ?? raw);
