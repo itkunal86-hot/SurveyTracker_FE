@@ -783,12 +783,23 @@ class ApiClient {
 
   async getDevice(id: string): Promise<ApiResponse<Device>> {
     try {
-      return await this.request<ApiResponse<Device>>(`/devices/${id}`);
+      try {
+        return await this.request<ApiResponse<Device>>(`/Device/${id}`);
+      } catch (primaryError) {
+        try {
+          return await this.request<ApiResponse<Device>>(`/devices/${id}`);
+        } catch (secondaryError) {
+          const device = mockDevices.find(d => d.id === id);
+          if (!device) {
+            throw secondaryError;
+          }
+          return createMockApiResponse(device);
+        }
+      }
     } catch (error) {
-      // Fallback to mock data
       const device = mockDevices.find(d => d.id === id);
       if (!device) {
-        throw new Error(`Device with id ${id} not found`);
+        throw error;
       }
       return createMockApiResponse(device);
     }
