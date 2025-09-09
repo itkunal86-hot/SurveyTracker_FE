@@ -18,9 +18,23 @@ export default function DeviceAssignmentPanel() {
   const { data: assignmentsResp } = useDeviceAssignments({ limit: 1000 });
   const { data: devicesResp } = useDevices({ limit: 1000 });
   const { data: surveyMastersResp } = useSurveyMasters({ limit: 1000, status: "ACTIVE" });
-  const assignments: DeviceAssignment[] = assignmentsResp?.data ?? [];
-  const devices: Device[] = (devicesResp?.data as unknown as Device[]) ?? [];
-  const surveys: Survey[] = surveyMastersResp?.data ?? [];
+
+  const assignments: DeviceAssignment[] = Array.isArray(assignmentsResp?.data)
+    ? (assignmentsResp!.data as DeviceAssignment[])
+    : [];
+
+  const devicesData = (devicesResp as any)?.data;
+  const devices: Device[] = Array.isArray(devicesData)
+    ? (devicesData as Device[])
+    : Array.isArray((devicesResp as any)?.data?.data)
+      ? ((devicesResp as any).data.data as Device[])
+      : Array.isArray(devicesResp as any)
+        ? ((devicesResp as unknown) as Device[])
+        : [];
+
+  const surveys: Survey[] = Array.isArray(surveyMastersResp?.data)
+    ? (surveyMastersResp!.data as Survey[])
+    : [];
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -46,14 +60,19 @@ export default function DeviceAssignmentPanel() {
   });
 
   const getAvailableDevices = () => {
-    const assignedDeviceIds = assignments
-      .filter(a => a.isActive)
-      .map(a => a.deviceId);
-    return devices.filter(d => d.status === "ACTIVE" && !assignedDeviceIds.includes(d.id));
+    const safeAssignments = Array.isArray(assignments) ? assignments : [];
+    const assignedDeviceIds = safeAssignments
+      .filter((a) => a.isActive)
+      .map((a) => a.deviceId);
+    const safeDevices = Array.isArray(devices) ? devices : [];
+    return safeDevices.filter(
+      (d) => (d as any)?.status === "ACTIVE" && !assignedDeviceIds.includes((d as any)?.id)
+    );
   };
 
   const getActiveSurveys = () => {
-    return surveys.filter(s => s.status === "ACTIVE");
+    const safeSurveys = Array.isArray(surveys) ? surveys : [];
+    return safeSurveys.filter((s) => s.status === "ACTIVE");
   };
 
   const checkDateConflict = async (deviceId: string, fromDate: string, toDate: string) => {
