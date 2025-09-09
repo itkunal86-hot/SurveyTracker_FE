@@ -17,7 +17,7 @@ import { apiClient } from "@/lib/api";
 export default function DeviceAssignmentPanel() {
   const { data: assignmentsResp } = useDeviceAssignments({ limit: 1000 });
   const { data: devicesResp } = useDevices({ limit: 1000 });
-  const { data: surveyMastersResp } = useSurveyMasters({ limit: 1000, status: "ACTIVE" });
+  const { data: surveyMastersResp } = useSurveyMasters({ limit: 1000 });
 
   const assignments: DeviceAssignment[] = Array.isArray(assignmentsResp?.data)
     ? (assignmentsResp!.data as DeviceAssignment[])
@@ -65,9 +65,7 @@ export default function DeviceAssignmentPanel() {
       .filter((a) => a.isActive)
       .map((a) => a.deviceId);
     const safeDevices = Array.isArray(devices) ? devices : [];
-    return safeDevices.filter(
-      (d) => (d as any)?.status === "ACTIVE" && !assignedDeviceIds.includes((d as any)?.id)
-    );
+    return safeDevices.filter((d: any) => d && String(d.id) && !assignedDeviceIds.includes(String(d.id)));
   };
 
   const getActiveSurveys = () => {
