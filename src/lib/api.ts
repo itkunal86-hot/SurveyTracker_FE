@@ -1318,24 +1318,38 @@ class ApiClient {
 
   // Survey Master endpoints (admin surveys)
   private mapSurveyMaster(raw: any): AdminSurvey {
-    const id = String(raw.id ?? raw.ID ?? raw.surveyId ?? raw.SurveyId ?? `SUR_${Date.now()}`);
-    const name = String(raw.name ?? raw.surveyName ?? raw.SurveyName ?? "");
-    const categoryId = String(raw.categoryId ?? raw.CategoryId ?? raw.category_id ?? "");
-    const categoryName = raw.categoryName ?? raw.CategoryName ?? undefined;
-    const start = raw.startDate ?? raw.StartDate ?? raw.fromDate ?? raw.FromDate;
-    const end = raw.endDate ?? raw.EndDate ?? raw.toDate ?? raw.ToDate;
-    const status = (raw.status ?? raw.Status ?? "ACTIVE").toString().toUpperCase();
-    const createdBy = String(raw.createdBy ?? raw.CreatedBy ?? "");
-    const createdAt = String(raw.createdAt ?? raw.CreatedAt ?? new Date().toISOString());
+    // Support multiple backend field conventions
+    const id = String(
+      raw.id ?? raw.ID ?? raw.surveyId ?? raw.SurveyId ?? raw.smId ?? raw.SM_ID ?? `SUR_${Date.now()}`
+    );
+    const name = String(
+      raw.name ?? raw.surveyName ?? raw.SurveyName ?? raw.smName ?? raw.SM_NAME ?? ""
+    );
+    const categoryId = String(
+      raw.categoryId ?? raw.CategoryId ?? raw.category_id ?? raw.scId ?? raw.SC_ID ?? ""
+    );
+    const categoryName = raw.categoryName ?? raw.CategoryName ?? raw.scName ?? raw.SC_NAME ?? undefined;
+
+    const start =
+      raw.startDate ?? raw.StartDate ?? raw.fromDate ?? raw.FromDate ?? raw.smStartDate ?? raw.SM_START_DATE;
+    const end =
+      raw.endDate ?? raw.EndDate ?? raw.toDate ?? raw.ToDate ?? raw.smEndDate ?? raw.SM_END_DATE;
+
+    const statusRaw = (raw.status ?? raw.Status ?? raw.smStatus ?? raw.SM_STATUS ?? "ACTIVE").toString();
+    const status = statusRaw.toUpperCase() === "CLOSED" ? "CLOSED" : "ACTIVE";
+
+    const createdBy = String(raw.createdBy ?? raw.CreatedBy ?? raw.audId ?? raw.AUD_ID ?? "");
+    const createdAt = String(raw.createdAt ?? raw.CreatedAt ?? raw.timestamp ?? new Date().toISOString());
     const updatedAt = String(raw.updatedAt ?? raw.UpdatedAt ?? createdAt);
+
     return {
       id,
       name,
       categoryId,
       categoryName,
-      startDate: start ? String(start) : createdAt.substring(0,10),
-      endDate: end ? String(end) : createdAt.substring(0,10),
-      status: status === "CLOSED" ? "CLOSED" : "ACTIVE",
+      startDate: start ? String(start) : createdAt.substring(0, 10),
+      endDate: end ? String(end) : createdAt.substring(0, 10),
+      status,
       createdBy,
       createdAt,
       updatedAt,
@@ -1348,16 +1362,36 @@ class ApiClient {
     if (params?.limit) sp.append("limit", String(params.limit));
     if (params?.status) sp.append("status", params.status);
     const q = sp.toString();
-    const raw = await this.request<any>(`/SurveyMaster${q ? `?${q}` : ""}`);
-    const items = Array.isArray(raw?.data) ? raw.data : Array.isArray(raw) ? raw : [];
-    const mapped = items.map((it: any) => this.mapSurveyMaster(it));
-    const pagination = raw?.pagination || raw?.data?.pagination || {
+
+    const raw: any = await this.request<any>(`/SurveyMaster${q ? `?${q}` : ""}`);
+    const timestamp = raw?.timestamp || new Date().toISOString();
+
+    const rawItems = Array.isArray(raw?.data?.data)
+      ? raw.data.data
+      : Array.isArray(raw?.data?.items)
+        ? raw.data.items
+        : Array.isArray(raw?.data)
+          ? raw.data
+          : Array.isArray(raw)
+            ? raw
+            : [];
+
+    const mapped: AdminSurvey[] = rawItems.map((it: any) => this.mapSurveyMaster(it));
+
+    const pagination = raw?.data?.pagination || raw?.pagination || {
       page: params?.page ?? 1,
       limit: params?.limit ?? mapped.length,
       total: mapped.length,
       totalPages: 1,
     };
-    return { success: true, data: mapped, timestamp: new Date().toISOString(), pagination };
+
+    return {
+      success: (raw?.status_code ?? 200) >= 200 && (raw?.status_code ?? 200) < 300,
+      data: mapped,
+      message: raw?.message,
+      timestamp,
+      pagination,
+    };
   }
 
   async getSurveyMaster(id: string): Promise<ApiResponse<AdminSurvey>> {
