@@ -10,16 +10,17 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { DeviceAssignment, Survey } from "@/types/admin";
-import { Device } from "../../types/valve";
-import { useDevices, useDeviceAssignments, useCreateDeviceAssignment, useUpdateDeviceAssignment } from "@/hooks/useApiQueries";
+import type { Device } from "@/lib/api";
+import { useDevices, useDeviceAssignments, useCreateDeviceAssignment, useUpdateDeviceAssignment, useSurveyMasters } from "@/hooks/useApiQueries";
 import { apiClient } from "@/lib/api";
 
 export default function DeviceAssignmentPanel() {
   const { data: assignmentsResp } = useDeviceAssignments({ limit: 1000 });
   const { data: devicesResp } = useDevices({ limit: 1000 });
+  const { data: surveyMastersResp } = useSurveyMasters({ limit: 1000, status: "ACTIVE" });
   const assignments: DeviceAssignment[] = assignmentsResp?.data ?? [];
   const devices: Device[] = (devicesResp?.data as unknown as Device[]) ?? [];
-  const [surveys] = useState<Survey[]>([]);
+  const surveys: Survey[] = surveyMastersResp?.data ?? [];
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [isDialogOpen, setIsDialogOpen] = useState(false);

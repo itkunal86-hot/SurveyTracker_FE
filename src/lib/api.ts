@@ -758,12 +758,24 @@ class ApiClient {
       if (params?.type) searchParams.append("type", params.type);
 
       const query = searchParams.toString();
-      return await this.request<PaginatedResponse<Device>>(
-        `/devices${query ? `?${query}` : ""}`,
-      );
+      // Prefer uppercase /Device per backend convention, fallback to lowercase /devices
+      try {
+        return await this.request<PaginatedResponse<Device>>(
+          `/Device${query ? `?${query}` : ""}`,
+        );
+      } catch (primaryError) {
+        try {
+          return await this.request<PaginatedResponse<Device>>(
+            `/devices${query ? `?${query}` : ""}`,
+          );
+        } catch (secondaryError) {
+          console.log("📊 API failed, falling back to mock data for devices");
+          const filteredData = this.filterMockData(mockDevices, params);
+          return createMockPaginatedResponse(filteredData, params);
+        }
+      }
     } catch (error) {
-      // Fallback to mock data
-      console.log("📊 API failed, falling back to mock data for devices");
+      console.log("📊 Unexpected error while fetching devices, using mock");
       const filteredData = this.filterMockData(mockDevices, params);
       return createMockPaginatedResponse(filteredData, params);
     }
@@ -771,12 +783,23 @@ class ApiClient {
 
   async getDevice(id: string): Promise<ApiResponse<Device>> {
     try {
-      return await this.request<ApiResponse<Device>>(`/devices/${id}`);
+      try {
+        return await this.request<ApiResponse<Device>>(`/Device/${id}`);
+      } catch (primaryError) {
+        try {
+          return await this.request<ApiResponse<Device>>(`/devices/${id}`);
+        } catch (secondaryError) {
+          const device = mockDevices.find(d => d.id === id);
+          if (!device) {
+            throw secondaryError;
+          }
+          return createMockApiResponse(device);
+        }
+      }
     } catch (error) {
-      // Fallback to mock data
       const device = mockDevices.find(d => d.id === id);
       if (!device) {
-        throw new Error(`Device with id ${id} not found`);
+        throw error;
       }
       return createMockApiResponse(device);
     }
