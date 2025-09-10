@@ -95,7 +95,7 @@ export interface InstallationDetails {
 export interface Device {
   id: string;
   name: string;
-  type: "TRIMBLE_SPS986" | "MONITORING_STATION" | "SURVEY_EQUIPMENT";
+  type: string;
   status: "ACTIVE" | "INACTIVE" | "MAINTENANCE" | "ERROR";
   coordinates: Coordinates;
   modelName?: string;
@@ -107,7 +107,7 @@ export interface Device {
 
 export interface DeviceCreateUpdate {
   name: string;
-  type: Device["type"];
+  type: string;
   status: Device["status"];
   modelName?: string;
 }
@@ -796,10 +796,8 @@ class ApiClient {
         const allowedStatuses = new Set(["ACTIVE", "INACTIVE", "MAINTENANCE", "ERROR"]);
         const status = (allowedStatuses.has(rawStatus) ? rawStatus : "ACTIVE") as Device["status"];
 
-        // Normalize type into allowed set
-        const rawType = String(it.type ?? it.Type ?? it.deviceType ?? it.DeviceType ?? "SURVEY_EQUIPMENT").toUpperCase();
-        const allowedTypes = new Set(["TRIMBLE_SPS986", "MONITORING_STATION", "SURVEY_EQUIPMENT"]);
-        const type = (allowedTypes.has(rawType) ? rawType : "SURVEY_EQUIPMENT") as Device["type"];
+        // Use backend-provided type directly (uppercased) to support dynamic lists
+        const type = String(it.type ?? it.Type ?? it.deviceType ?? it.DeviceType ?? "SURVEY_EQUIPMENT").toUpperCase();
 
         const lat = Number(it.lat ?? it.latitude ?? it.Latitude);
         const lng = Number(it.lng ?? it.longitude ?? it.Longitude);
