@@ -98,6 +98,7 @@ export interface Device {
   type: "TRIMBLE_SPS986" | "MONITORING_STATION" | "SURVEY_EQUIPMENT";
   status: "ACTIVE" | "INACTIVE" | "MAINTENANCE" | "ERROR";
   coordinates: Coordinates;
+  modelName?: string;
   surveyor?: string;
   batteryLevel?: number;
   lastSeen?: string;
