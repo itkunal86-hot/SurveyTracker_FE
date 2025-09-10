@@ -105,6 +105,13 @@ export interface Device {
   accuracy?: number;
 }
 
+export interface DeviceCreateUpdate {
+  name: string;
+  type: Device["type"];
+  status: Device["status"];
+  modelName?: string;
+}
+
 export interface PipelineSegment {
   id: string;
   name: string;
