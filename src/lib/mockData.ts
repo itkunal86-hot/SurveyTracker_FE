@@ -11,7 +11,7 @@ import {
 // Mock Devices Data
 export const mockDevices: Device[] = [
   {
-    id: "device-1",
+    id: "1",
     name: "Trimble Station Alpha",
     type: "TRIMBLE_SPS986",
     status: "ACTIVE",
@@ -22,7 +22,7 @@ export const mockDevices: Device[] = [
     accuracy: 0.02,
   },
   {
-    id: "device-2",
+    id: "2",
     name: "Monitoring Station Beta",
     type: "MONITORING_STATION",
     status: "ACTIVE",
@@ -33,7 +33,7 @@ export const mockDevices: Device[] = [
     accuracy: 0.01,
   },
   {
-    id: "device-3",
+    id: "3",
     name: "Survey Equipment Gamma",
     type: "SURVEY_EQUIPMENT",
     status: "MAINTENANCE",
@@ -123,7 +123,7 @@ export const mockPipelines: PipelineSegment[] = [
       unit: "LPS"
     },
     connectedValves: ["valve-1"],
-    connectedDevices: ["device-1"],
+    connectedDevices: ["1"],
     standards: ["API 5L", "ASME B31.8"],
     certifications: [
       {
@@ -179,7 +179,7 @@ export const mockPipelines: PipelineSegment[] = [
       { lat: 28.7150, lng: 77.1120, elevation: 227, pointType: "END" },
     ],
     connectedValves: ["valve-2"],
-    connectedDevices: ["device-2"]
+    connectedDevices: ["2"]
   },
   {
     id: "pipeline-3",
@@ -221,7 +221,7 @@ export const mockPipelines: PipelineSegment[] = [
       { lat: 28.5400, lng: 77.3950, elevation: 205, pointType: "END" },
     ],
     connectedValves: ["valve-3"],
-    connectedDevices: ["device-3"]
+    connectedDevices: ["3"]
   },
 ];
 
@@ -299,7 +299,7 @@ export const mockCatastrophes: Catastrophe[] = [
 export const mockSurveys: SurveyData[] = [
   {
     id: "survey-1",
-    deviceId: "device-1",
+    deviceId: "1",
     timestamp: "2024-01-15T10:30:00Z",
     coordinates: { lat: 28.6139, lng: 77.2090, elevation: 216 },
     accuracy: 0.02,
@@ -310,7 +310,7 @@ export const mockSurveys: SurveyData[] = [
   },
   {
     id: "survey-2",
-    deviceId: "device-2",
+    deviceId: "2",
     timestamp: "2024-01-15T10:25:00Z",
     coordinates: { lat: 28.7041, lng: 77.1025, elevation: 223 },
     accuracy: 0.01,
