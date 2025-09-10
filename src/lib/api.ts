@@ -866,15 +866,29 @@ class ApiClient {
   async createDevice(
     device: Omit<Device, "id" | "lastSeen">,
   ): Promise<ApiResponse<Device>> {
+    // Build body with top-level lat/lng and no coordinates object
+    const body: any = {
+      name: device.name,
+      type: device.type,
+      status: device.status,
+      surveyor: device.surveyor,
+      batteryLevel: device.batteryLevel,
+      accuracy: device.accuracy,
+    };
+    const lat = (device as any).lat ?? device.coordinates?.lat;
+    const lng = (device as any).lng ?? device.coordinates?.lng;
+    if (lat !== undefined) body.lat = lat;
+    if (lng !== undefined) body.lng = lng;
+
     try {
       return await this.request<ApiResponse<Device>>("/Device", {
         method: "POST",
-        body: JSON.stringify(device),
+        body: JSON.stringify(body),
       });
     } catch (primaryError) {
       return await this.request<ApiResponse<Device>>("/devices", {
         method: "POST",
-        body: JSON.stringify(device),
+        body: JSON.stringify(body),
       });
     }
   }
@@ -883,15 +897,29 @@ class ApiClient {
     id: string,
     device: Partial<Device>,
   ): Promise<ApiResponse<Device>> {
+    // Map to top-level lat/lng and exclude coordinates object
+    const body: any = {
+      ...(device.name !== undefined ? { name: device.name } : {}),
+      ...(device.type !== undefined ? { type: device.type } : {}),
+      ...(device.status !== undefined ? { status: device.status } : {}),
+      ...(device.surveyor !== undefined ? { surveyor: device.surveyor } : {}),
+      ...(device.batteryLevel !== undefined ? { batteryLevel: device.batteryLevel } : {}),
+      ...(device.accuracy !== undefined ? { accuracy: device.accuracy } : {}),
+    };
+    const latU = (device as any).lat ?? device.coordinates?.lat;
+    const lngU = (device as any).lng ?? device.coordinates?.lng;
+    if (latU !== undefined) body.lat = latU;
+    if (lngU !== undefined) body.lng = lngU;
+
     try {
       return await this.request<ApiResponse<Device>>(`/Device/${id}`, {
         method: "PUT",
-        body: JSON.stringify(device),
+        body: JSON.stringify(body),
       });
     } catch (primaryError) {
       return await this.request<ApiResponse<Device>>(`/devices/${id}`, {
         method: "PUT",
-        body: JSON.stringify(device),
+        body: JSON.stringify(body),
       });
     }
   }
