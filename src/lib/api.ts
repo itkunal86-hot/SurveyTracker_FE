@@ -805,6 +805,7 @@ class ApiClient {
         const batteryLevel = typeof it.batteryLevel === "number" ? it.batteryLevel : undefined;
         const lastSeen = typeof it.lastSeen === "string" ? it.lastSeen : undefined;
         const accuracy = typeof it.accuracy === "number" ? it.accuracy : undefined;
+        const modelName = it.modelName ?? it.ModelName ?? it.deviceModel ?? it.DeviceModel ?? undefined;
 
         return {
           id,
@@ -812,6 +813,7 @@ class ApiClient {
           type,
           status,
           coordinates,
+          modelName: modelName != null ? String(modelName) : undefined,
           surveyor: it.surveyor ?? it.Surveyor ?? undefined,
           batteryLevel,
           lastSeen,
