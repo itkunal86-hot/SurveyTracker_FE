@@ -874,21 +874,15 @@ class ApiClient {
   }
 
   async createDevice(
-    device: Omit<Device, "id" | "lastSeen">,
+    device: DeviceCreateUpdate,
   ): Promise<ApiResponse<Device>> {
-    // Build body with top-level lat/lng and no coordinates object
+    // Build body with only allowed fields
     const body: any = {
       name: device.name,
       type: device.type,
       status: device.status,
-      surveyor: device.surveyor,
-      batteryLevel: device.batteryLevel,
-      accuracy: device.accuracy,
+      ...(device.modelName !== undefined ? { modelName: device.modelName } : {}),
     };
-    const lat = (device as any).lat ?? device.coordinates?.lat;
-    const lng = (device as any).lng ?? device.coordinates?.lng;
-    if (lat !== undefined) body.lat = lat;
-    if (lng !== undefined) body.lng = lng;
 
     try {
       return await this.request<ApiResponse<Device>>("/Device", {
@@ -905,21 +899,15 @@ class ApiClient {
 
   async updateDevice(
     id: string,
-    device: Partial<Device>,
+    device: Partial<DeviceCreateUpdate>,
   ): Promise<ApiResponse<Device>> {
-    // Map to top-level lat/lng and exclude coordinates object
+    // Build body with only allowed fields
     const body: any = {
       ...(device.name !== undefined ? { name: device.name } : {}),
       ...(device.type !== undefined ? { type: device.type } : {}),
       ...(device.status !== undefined ? { status: device.status } : {}),
-      ...(device.surveyor !== undefined ? { surveyor: device.surveyor } : {}),
-      ...(device.batteryLevel !== undefined ? { batteryLevel: device.batteryLevel } : {}),
-      ...(device.accuracy !== undefined ? { accuracy: device.accuracy } : {}),
+      ...(device.modelName !== undefined ? { modelName: device.modelName } : {}),
     };
-    const latU = (device as any).lat ?? device.coordinates?.lat;
-    const lngU = (device as any).lng ?? device.coordinates?.lng;
-    if (latU !== undefined) body.lat = latU;
-    if (lngU !== undefined) body.lng = lngU;
 
     try {
       return await this.request<ApiResponse<Device>>(`/Device/${id}`, {
