@@ -26,13 +26,9 @@ export default function DeviceMaster() {
     name: "",
     type: "SURVEY_EQUIPMENT" as Device["type"],
     status: "ACTIVE" as Device["status"],
-    lat: "",
-    lng: "",
-    surveyor: "",
-    batteryLevel: "" as string | number,
-    accuracy: "" as string | number,
+    modelName: "",
   });
-  const [errors, setErrors] = useState<{ name?: string; lat?: string; lng?: string }>({});
+  const [errors, setErrors] = useState<{ name?: string }>({});
 
   const loadDevices = async () => {
     setLoading(true);
@@ -67,7 +63,7 @@ export default function DeviceMaster() {
   const filtered = useMemo(() => {
     const t = searchTerm.toLowerCase();
     return devices.filter(d => {
-      const matchesSearch = d.name.toLowerCase().includes(t) || d.id.toLowerCase().includes(t) || (d.surveyor || "").toLowerCase().includes(t);
+      const matchesSearch = d.name.toLowerCase().includes(t) || d.id.toLowerCase().includes(t) || (d.modelName || "").toLowerCase().includes(t);
       const matchesStatus = !statusFilter || d.status === statusFilter;
       const matchesType = !typeFilter || d.type === typeFilter;
       return matchesSearch && matchesStatus && matchesType;
@@ -76,7 +72,7 @@ export default function DeviceMaster() {
 
   const resetForm = () => {
     setEditing(null);
-    setForm({ name: "", type: "SURVEY_EQUIPMENT", status: "ACTIVE", lat: "", lng: "", surveyor: "", batteryLevel: "", accuracy: "" });
+    setForm({ name: "", type: "SURVEY_EQUIPMENT", status: "ACTIVE", modelName: "" });
     setErrors({});
     setIsDialogOpen(false);
   };
@@ -84,25 +80,17 @@ export default function DeviceMaster() {
   const validate = () => {
     const e: typeof errors = {};
     if (!form.name.trim()) e.name = "Name is required";
-    if (form.lat !== "" && isNaN(Number(form.lat))) e.lat = "Latitude must be a number";
-    if (form.lng !== "" && isNaN(Number(form.lng))) e.lng = "Longitude must be a number";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
   const onSubmit = async () => {
     if (!validate()) return;
-    const payload: Omit<Device, "id" | "lastSeen"> = {
+    const payload = {
       name: form.name.trim(),
       type: form.type,
       status: form.status,
-      coordinates: {
-        lat: form.lat === "" ? 0 : Number(form.lat),
-        lng: form.lng === "" ? 0 : Number(form.lng),
-      },
-      surveyor: form.surveyor || undefined,
-      batteryLevel: form.batteryLevel === "" ? undefined : Number(form.batteryLevel),
-      accuracy: form.accuracy === "" ? undefined : Number(form.accuracy),
+      modelName: form.modelName || undefined,
     };
 
     if (editing) {
@@ -120,11 +108,7 @@ export default function DeviceMaster() {
       name: item.name,
       type: item.type,
       status: item.status,
-      lat: String(item.coordinates?.lat ?? ""),
-      lng: String(item.coordinates?.lng ?? ""),
-      surveyor: item.surveyor || "",
-      batteryLevel: item.batteryLevel == null ? "" : String(item.batteryLevel),
-      accuracy: item.accuracy == null ? "" : String(item.accuracy),
+      modelName: item.modelName || "",
     });
     setIsDialogOpen(true);
   };
@@ -197,33 +181,10 @@ export default function DeviceMaster() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="lat">Latitude</Label>
-                      <Input id="lat" value={form.lat} onChange={(e) => setForm({ ...form, lat: e.target.value })} className={errors.lat ? "border-destructive" : ""} />
-                      {errors.lat && <p className="text-sm text-destructive">{errors.lat}</p>}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="lng">Longitude</Label>
-                      <Input id="lng" value={form.lng} onChange={(e) => setForm({ ...form, lng: e.target.value })} className={errors.lng ? "border-destructive" : ""} />
-                      {errors.lng && <p className="text-sm text-destructive">{errors.lng}</p>}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="surveyor">Surveyor</Label>
-                      <Input id="surveyor" value={form.surveyor} onChange={(e) => setForm({ ...form, surveyor: e.target.value })} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="battery">Battery %</Label>
-                      <Input id="battery" value={form.batteryLevel} onChange={(e) => setForm({ ...form, batteryLevel: e.target.value })} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="accuracy">Accuracy (m)</Label>
-                      <Input id="accuracy" value={form.accuracy} onChange={(e) => setForm({ ...form, accuracy: e.target.value })} />
-                    </div>
-                  </div>
+                  <div className="space-y-2">
+                  <Label htmlFor="modelName">Model Name</Label>
+                  <Input id="modelName" value={form.modelName} onChange={(e) => setForm({ ...form, modelName: e.target.value })} />
+                </div>
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={resetForm}>Cancel</Button>
@@ -275,10 +236,7 @@ export default function DeviceMaster() {
                   <TableHead>Name</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Coordinates</TableHead>
-                  <TableHead>Surveyor</TableHead>
-                  <TableHead>Battery</TableHead>
-                  <TableHead>Last Seen</TableHead>
+                  <TableHead>Model Name</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -293,16 +251,7 @@ export default function DeviceMaster() {
                     </TableCell>
                     <TableCell>{d.type}</TableCell>
                     <TableCell>{getStatusBadge(d.status)}</TableCell>
-                    <TableCell className="font-mono text-xs text-muted-foreground">
-                      {typeof d.coordinates?.lat === "number" && typeof d.coordinates?.lng === "number" ? (
-                        <span>{d.coordinates.lat.toFixed(4)}, {d.coordinates.lng.toFixed(4)}</span>
-                      ) : (
-                        <span>—</span>
-                      )}
-                    </TableCell>
-                    <TableCell>{d.surveyor || <span className="text-muted-foreground">—</span>}</TableCell>
-                    <TableCell>{d.batteryLevel != null ? `${d.batteryLevel}%` : <span className="text-muted-foreground">—</span>}</TableCell>
-                    <TableCell>{d.lastSeen ? new Date(d.lastSeen).toLocaleString() : <span className="text-muted-foreground">—</span>}</TableCell>
+                    <TableCell>{d.modelName || <span className="text-muted-foreground">—</span>}</TableCell>
                     <TableCell className="text-right space-x-2">
                       <Button variant="outline" size="sm" onClick={() => onEdit(d)} className="gap-1"><Pencil className="h-3 w-3" />Edit</Button>
                     </TableCell>
