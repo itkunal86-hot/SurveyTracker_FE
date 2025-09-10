@@ -66,7 +66,7 @@ export function useDevice(id: string) {
 export function useCreateDevice() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (device: Omit<Device, "id" | "lastSeen">) =>
+    mutationFn: (device: Parameters<typeof apiClient.createDevice>[0]) =>
       apiClient.createDevice(device),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.devices] });
@@ -77,7 +77,7 @@ export function useCreateDevice() {
 export function useUpdateDevice() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, device }: { id: string; device: Partial<Device> }) =>
+    mutationFn: ({ id, device }: { id: string; device: Parameters<typeof apiClient.updateDevice>[1] }) =>
       apiClient.updateDevice(id, device),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.devices] });
