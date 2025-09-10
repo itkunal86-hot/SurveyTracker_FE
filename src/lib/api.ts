@@ -1913,7 +1913,7 @@ class ApiClient {
 
   async getDeviceTypes(): Promise<ApiResponse<any[]>> {
     try {
-      return await this.request<ApiResponse<any[]>>("/config/device-types");
+      return await this.request<ApiResponse<any[]>>("/config/master-data/deviceTypes");
     } catch (error) {
       // Fallback to mock data
       return createMockApiResponse(mockDeviceTypes);
@@ -1942,6 +1942,9 @@ class ApiClient {
     type: "device" | "pipeline" | "valve" | "catastrophe",
   ): Promise<ApiResponse<any[]>> {
     try {
+      if (type === "device") {
+        return await this.request<ApiResponse<any[]>>("/config/master-data/device");
+      }
       return await this.request<ApiResponse<any[]>>(`/config/status-options/${type}`);
     } catch (error) {
       // Fallback to mock data
