@@ -4,10 +4,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Settings, Database, Users, Activity, FileText, History, ArrowLeft, Map, UserPlus } from "lucide-react";
+import { Settings, Database, Users, Activity, FileText, History, ArrowLeft, Map, UserPlus, Smartphone } from "lucide-react";
 import SurveyCategoriesManagement from "./SurveyCategoriesManagement";
 import SurveyManagement from "./SurveyManagement";
 import DeviceAssignmentPanel from "./DeviceAssignmentPanel";
+import DeviceMaster from "./DeviceMaster";
 // import SurveyAttributesMaster from "./SurveyAttributesMaster";
 import SurveyHistoryLog from "./SurveyHistoryLog";
 import AssetTypeManagement from "./AssetTypeManagement";
@@ -61,7 +62,7 @@ export default function AdminDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="grid w-full grid-cols-9">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <Activity className="h-4 w-4" />
             Overview
@@ -84,7 +85,11 @@ export default function AdminDashboard() {
           </TabsTrigger>
           <TabsTrigger value="devices" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
-            Devices
+            Assign Devices
+          </TabsTrigger>
+          <TabsTrigger value="deviceMaster" className="flex items-center gap-2">
+            <Smartphone className="h-4 w-4" />
+            Device Master
           </TabsTrigger>
           <TabsTrigger value="attributes" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
@@ -256,6 +261,10 @@ export default function AdminDashboard() {
 
         <TabsContent value="devices">
           <DeviceAssignmentPanel />
+        </TabsContent>
+
+        <TabsContent value="deviceMaster">
+          <DeviceMaster />
         </TabsContent>
 
         <TabsContent value="assets">
