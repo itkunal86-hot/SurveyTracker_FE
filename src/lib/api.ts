@@ -1940,10 +1940,10 @@ class ApiClient {
     type: "device" | "pipeline" | "valve" | "catastrophe",
   ): Promise<ApiResponse<any[]>> {
     try {
-      if (type === "device") {
-        return await this.request<ApiResponse<any[]>>("/config/master_data/device");
-      }
-      return await this.request<ApiResponse<any[]>>(`/config/status-options/${type}`);
+      // if (type === "device") {
+      //   return await this.request<ApiResponse<any[]>>("/config/master_data/device");
+      // }
+      return await this.request<ApiResponse<any[]>>(`/config/master_data/${type}`);
     } catch (error) {
       // Fallback to mock data
       const statusOptions = mockStatusOptions[type];
