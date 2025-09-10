@@ -242,17 +242,17 @@ export default function DeviceMaster() {
             <Input placeholder="Search devices..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="max-w-sm" />
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v === "__ALL__" ? "" : v)}>
               <SelectTrigger className="w-[200px]"><SelectValue placeholder="Filter by type" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Types</SelectItem>
+                <SelectItem value="__ALL__">All Types</SelectItem>
                 {deviceTypes.map(t => (<SelectItem key={t} value={t}>{t}</SelectItem>))}
               </SelectContent>
             </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v == "__ALL__" ? "" : v)}>
               <SelectTrigger className="w-[200px]"><SelectValue placeholder="Filter by status" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Statuses</SelectItem>
+                <SelectItem value="__ALL__">All Statuses</SelectItem>
                 {statusOptions.map(s => (<SelectItem key={s} value={s}>{s}</SelectItem>))}
               </SelectContent>
             </Select>
