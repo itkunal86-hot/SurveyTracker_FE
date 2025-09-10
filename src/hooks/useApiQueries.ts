@@ -66,7 +66,7 @@ export function useDevice(id: string) {
 export function useCreateDevice() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (device: Omit<Device, "id" | "lastSeen">) =>
+    mutationFn: (device: Parameters<typeof apiClient.createDevice>[0]) =>
       apiClient.createDevice(device),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.devices] });
