@@ -866,20 +866,34 @@ class ApiClient {
   async createDevice(
     device: Omit<Device, "id" | "lastSeen">,
   ): Promise<ApiResponse<Device>> {
-    return this.request<ApiResponse<Device>>("/devices", {
-      method: "POST",
-      body: JSON.stringify(device),
-    });
+    try {
+      return await this.request<ApiResponse<Device>>("/Device", {
+        method: "POST",
+        body: JSON.stringify(device),
+      });
+    } catch (primaryError) {
+      return await this.request<ApiResponse<Device>>("/devices", {
+        method: "POST",
+        body: JSON.stringify(device),
+      });
+    }
   }
 
   async updateDevice(
     id: string,
     device: Partial<Device>,
   ): Promise<ApiResponse<Device>> {
-    return this.request<ApiResponse<Device>>(`/devices/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(device),
-    });
+    try {
+      return await this.request<ApiResponse<Device>>(`/Device/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(device),
+      });
+    } catch (primaryError) {
+      return await this.request<ApiResponse<Device>>(`/devices/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(device),
+      });
+    }
   }
 
   async deleteDevice(id: string): Promise<ApiResponse<void>> {
