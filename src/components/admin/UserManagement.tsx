@@ -306,7 +306,7 @@ export default function UserManagement() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="MANAGER">Manager</SelectItem>
-                    <SelectItem value="SURVEY_MANAGER">Survey Manager</SelectItem>
+                    <SelectItem value="SURVEY MANAGER">Survey Manager</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -451,6 +451,7 @@ export default function UserManagement() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
+                        {user.role !== "ADMIN" && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -459,6 +460,8 @@ export default function UserManagement() {
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
+                        )}
+                        {user.role !== "ADMIN" && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -467,6 +470,7 @@ export default function UserManagement() {
                         >
                           <UserCheck className="h-4 w-4" />
                         </Button>
+                        )}
                         {user.role !== "ADMIN" && (
                           <Button
                             variant="outline"
