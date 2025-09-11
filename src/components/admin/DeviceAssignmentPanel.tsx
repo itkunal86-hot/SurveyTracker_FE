@@ -462,7 +462,7 @@ export default function DeviceAssignmentPanel() {
                       )}
                     </TableCell>
                     <TableCell className="text-right space-x-2">
-                      <Button
+                      {/* <Button
                         variant="outline"
                         size="sm"
                         onClick={() => {
@@ -479,7 +479,7 @@ export default function DeviceAssignmentPanel() {
                         className="gap-1"
                       >
                         Edit
-                      </Button>
+                      </Button> */}
                       <Button
                         variant="outline"
                         size="sm"
