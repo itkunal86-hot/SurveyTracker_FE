@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -44,6 +45,7 @@ export default function DeviceAssignmentPanel() {
     surveyId: "",
     fromDate: "",
     toDate: "",
+    notes: "",
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const createAssignment = useCreateDeviceAssignment();
@@ -112,6 +114,7 @@ export default function DeviceAssignmentPanel() {
         fromDate: formData.fromDate,
         toDate: formData.toDate,
         assignedBy: "Admin",
+        notes: formData.notes || undefined,
       });
       toast({ title: "Device assigned" });
       resetForm();
@@ -145,6 +148,7 @@ export default function DeviceAssignmentPanel() {
       surveyId: "",
       fromDate: "",
       toDate: "",
+      notes: "",
     });
     setIsDialogOpen(false);
     setErrors({});
@@ -280,8 +284,18 @@ export default function DeviceAssignmentPanel() {
                     )}
                   </div>
                 </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="notes">Notes</Label>
+                  <Textarea
+                    id="notes"
+                    placeholder="Add notes (optional)"
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  />
+                </div>
               </div>
-              
+
               <DialogFooter>
                 <Button variant="outline" onClick={resetForm}>
                   Cancel
