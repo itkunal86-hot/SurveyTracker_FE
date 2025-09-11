@@ -110,18 +110,33 @@ export default function DeviceAssignmentPanel() {
     if (!isValid) return;
 
     try {
-      await createAssignment.mutateAsync({
-        deviceId: formData.deviceId,
-        surveyId: formData.surveyId,
-        fromDate: formData.fromDate,
-        toDate: formData.toDate,
-        assignedBy: "Admin",
-        notes: formData.notes || undefined,
-      });
-      toast({ title: "Device assigned" });
+      if (editingId) {
+        await updateAssignment.mutateAsync({
+          id: editingId,
+          payload: {
+            deviceId: formData.deviceId,
+            surveyId: formData.surveyId,
+            fromDate: formData.fromDate,
+            toDate: formData.toDate,
+            assignedBy: "1",
+            notes: formData.notes || undefined,
+          },
+        });
+        toast({ title: "Assignment updated" });
+      } else {
+        await createAssignment.mutateAsync({
+          deviceId: formData.deviceId,
+          surveyId: formData.surveyId,
+          fromDate: formData.fromDate,
+          toDate: formData.toDate,
+          assignedBy: "Admin",
+          notes: formData.notes || undefined,
+        });
+        toast({ title: "Device assigned" });
+      }
       resetForm();
     } catch (error) {
-      setErrors({ deviceId: (error as Error).message || "Failed to create assignment" });
+      setErrors({ deviceId: (error as Error).message || (editingId ? "Failed to update assignment" : "Failed to create assignment") });
     }
   };
 
