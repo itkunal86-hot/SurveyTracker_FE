@@ -213,7 +213,7 @@ export default function DeviceAssignmentPanel() {
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px]">
               <DialogHeader>
-                <DialogTitle>Assign Device to Survey</DialogTitle>
+                <DialogTitle>{editingId ? "Edit Device Assignment" : "Assign Device to Survey"}</DialogTitle>
                 <DialogDescription>
                   Select a device and survey, then define the assignment period. 
                   Devices cannot be double-assigned during the same time window.
