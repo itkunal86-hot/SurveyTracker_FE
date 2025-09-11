@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { SurveyCategory } from "@/types/admin";
 import { apiClient } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 const mockCategories: SurveyCategory[] = [
   {
@@ -50,6 +51,7 @@ export default function SurveyCategoriesManagement() {
   const [editingCategory, setEditingCategory] = useState<SurveyCategory | null>(null);
   const [formData, setFormData] = useState({ name: "", description: "" });
   const [errors, setErrors] = useState<{ name?: string; description?: string }>({});
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -93,8 +95,10 @@ export default function SurveyCategoriesManagement() {
 
     if (editingCategory) {
       await apiClient.updateSurveyCategory(editingCategory.id, { ...formData });
+      toast({ title: "Category updated" });
     } else {
       await apiClient.createSurveyCategory({ ...formData });
+      toast({ title: "Category created" });
     }
 
     const res = await apiClient.getSurveyCategories({ limit: 100 });
@@ -114,6 +118,7 @@ export default function SurveyCategoriesManagement() {
     await apiClient.deleteSurveyCategory(id);
     const res = await apiClient.getSurveyCategories({ limit: 100 });
     setCategories(res.data || []);
+    toast({ title: "Category deleted" });
   };
 
   const resetForm = () => {

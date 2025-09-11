@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Survey, SurveyCategory } from "@/types/admin";
 import { useSurveyMasters, useCreateSurveyMaster, useUpdateSurveyMaster, useDeleteSurveyMaster, useSurveyCategories } from "@/hooks/useApiQueries";
+import { useToast } from "@/hooks/use-toast";
 
 
 export default function SurveyManagement() {
@@ -33,6 +34,7 @@ export default function SurveyManagement() {
   const createSurvey = useCreateSurveyMaster();
   const updateSurvey = useUpdateSurveyMaster();
   const deleteSurvey = useDeleteSurveyMaster();
+  const { toast } = useToast();
 
   const filteredSurveys = surveys.filter((survey) => {
     const matchesSearch = 
@@ -60,8 +62,10 @@ export default function SurveyManagement() {
     try {
       if (editingSurvey) {
         await updateSurvey.mutateAsync({ id: editingSurvey.id, payload: { ...formData } });
+        toast({ title: "Survey updated" });
       } else {
         await createSurvey.mutateAsync({ ...formData });
+        toast({ title: "Survey created" });
       }
       resetForm();
     } catch (error) {
@@ -83,13 +87,17 @@ export default function SurveyManagement() {
 
   const handleCloseSurvey = (id: string) => {
     if (confirm("Are you sure you want to close this survey? This action cannot be undone.")) {
-      updateSurvey.mutate({ id, payload: { status: "CLOSED" } });
+      updateSurvey.mutateAsync({ id, payload: { status: "CLOSED" } }).then(() => {
+        toast({ title: "Survey closed" });
+      });
     }
   };
 
   const handleDelete = (id: string) => {
     if (confirm("Are you sure you want to delete this survey? This action cannot be undone.")) {
-      deleteSurvey.mutate(id);
+      deleteSurvey.mutateAsync(id).then(() => {
+        toast({ title: "Survey deleted" });
+      });
     }
   };
 

@@ -83,13 +83,13 @@ export default function AdminDashboard() {
             <Settings className="h-4 w-4" />
             Assets
           </TabsTrigger>
+          <TabsTrigger value="deviceMaster" className="flex items-center gap-2">
+            <Smartphone className="h-4 w-4" />
+            Device
+          </TabsTrigger>
           <TabsTrigger value="devices" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             Assign Devices
-          </TabsTrigger>
-          <TabsTrigger value="deviceMaster" className="flex items-center gap-2">
-            <Smartphone className="h-4 w-4" />
-            Device Master
           </TabsTrigger>
           <TabsTrigger value="attributes" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />

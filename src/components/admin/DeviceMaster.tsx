@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { apiClient, type Device } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 export default function DeviceMaster() {
   const [devices, setDevices] = useState<Device[]>([]);
@@ -21,6 +22,7 @@ export default function DeviceMaster() {
   const [deviceTypes, setDeviceTypes] = useState<string[]>([]);
   const [statusOptions, setStatusOptions] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
   const [form, setForm] = useState({
     name: "",
@@ -99,6 +101,7 @@ export default function DeviceMaster() {
       await apiClient.createDevice(payload);
     }
     await loadDevices();
+    toast({ title: editing ? "Device updated" : "Device created" });
     resetForm();
   };
 
@@ -131,7 +134,7 @@ export default function DeviceMaster() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="flex items-center gap-2"><Smartphone className="h-4 w-4" /> Device Master</CardTitle>
+            <CardTitle className="flex items-center gap-2"><Smartphone className="h-4 w-4" /> Device</CardTitle>
             <CardDescription>Manage master records of Trimble and related devices</CardDescription>
           </div>
           <div className="flex items-center gap-2">
