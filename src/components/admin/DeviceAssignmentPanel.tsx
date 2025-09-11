@@ -462,6 +462,38 @@ export default function DeviceAssignmentPanel() {
                       )}
                     </TableCell>
                     <TableCell className="text-right space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setEditingId(assignment.id);
+                          setFormData({
+                            deviceId: assignment.deviceId,
+                            surveyId: assignment.surveyId,
+                            fromDate: assignment.fromDate.slice(0, 10),
+                            toDate: assignment.toDate.slice(0, 10),
+                            notes: "",
+                          });
+                          setIsDialogOpen(true);
+                        }}
+                        className="gap-1"
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (confirm("Delete this device assignment?")) {
+                            deleteAssignment.mutateAsync(assignment.id).then(() => {
+                              toast({ title: "Assignment deleted" });
+                            });
+                          }
+                        }}
+                        className="gap-1 text-destructive hover:text-destructive"
+                      >
+                        Delete
+                      </Button>
                       {assignment.isActive && (
                         <>
                           <Button
