@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { DeviceAssignment, Survey } from "@/types/admin";
 import type { Device } from "@/lib/api";
-import { useDevices, useDeviceAssignments, useCreateDeviceAssignment, useUpdateDeviceAssignment, useSurveyMasters } from "@/hooks/useApiQueries";
+import { useDevices, useDeviceAssignments, useCreateDeviceAssignment, useUpdateDeviceAssignment, useSurveyMasters, useDeleteDeviceAssignment } from "@/hooks/useApiQueries";
 import { apiClient } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
