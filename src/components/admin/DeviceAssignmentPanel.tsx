@@ -13,6 +13,7 @@ import { DeviceAssignment, Survey } from "@/types/admin";
 import type { Device } from "@/lib/api";
 import { useDevices, useDeviceAssignments, useCreateDeviceAssignment, useUpdateDeviceAssignment, useSurveyMasters } from "@/hooks/useApiQueries";
 import { apiClient } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 export default function DeviceAssignmentPanel() {
   const { data: assignmentsResp } = useDeviceAssignments({ limit: 1000 });
@@ -47,6 +48,7 @@ export default function DeviceAssignmentPanel() {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const createAssignment = useCreateDeviceAssignment();
   const updateAssignment = useUpdateDeviceAssignment();
+  const { toast } = useToast();
 
   const filteredAssignments = assignments.filter((assignment) => {
     const matchesSearch = 
@@ -111,6 +113,7 @@ export default function DeviceAssignmentPanel() {
         toDate: formData.toDate,
         assignedBy: "Admin",
       });
+      toast({ title: "Device assigned" });
       resetForm();
     } catch (error) {
       setErrors({ deviceId: (error as Error).message || "Failed to create assignment" });
@@ -120,7 +123,9 @@ export default function DeviceAssignmentPanel() {
   const handleRevoke = (id: string) => {
     if (confirm("Are you sure you want to revoke this device assignment?")) {
       const nowIso = new Date().toISOString();
-      updateAssignment.mutate({ id, payload: { status: "COMPLETED", unassignedDate: nowIso, toDate: nowIso } });
+      updateAssignment.mutateAsync({ id, payload: { status: "COMPLETED", unassignedDate: nowIso, toDate: nowIso } }).then(() => {
+        toast({ title: "Assignment revoked" });
+      });
     }
   };
 
@@ -128,7 +133,9 @@ export default function DeviceAssignmentPanel() {
     const newToDate = prompt("Enter new end date (YYYY-MM-DD):");
     if (newToDate) {
       const iso = /T/.test(newToDate) ? newToDate : `${newToDate}T00:00:00Z`;
-      updateAssignment.mutate({ id, payload: { toDate: iso } });
+      updateAssignment.mutateAsync({ id, payload: { toDate: iso } }).then(() => {
+        toast({ title: "Assignment extended" });
+      });
     }
   };
 

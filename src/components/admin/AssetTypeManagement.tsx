@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 interface SurveyCategory { id: string; name: string; description?: string }
 import { apiClient, type AssetType } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 const API = "";
 
@@ -24,6 +25,7 @@ export default function AssetTypeManagement() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editing, setEditing] = useState<AssetType | null>(null);
   const [form, setForm] = useState({ name: "", isSurveyElement: false, surveyCategoryId: "", menuName: "", menuOrder: "" as any });
+  const { toast } = useToast();
   const [errors, setErrors] = useState<{ name?: string; menuOrder?: string; surveyCategoryId?: string }>({});
 
   // Load categories and asset types
@@ -81,10 +83,12 @@ export default function AssetTypeManagement() {
     if (editing) {
       await apiClient.updateAssetType(editing.id, payload as any);
       await loadItems(selectedCategory || undefined);
+      toast({ title: "Asset type updated" });
       resetForm();
     } else {
       await apiClient.createAssetType(payload as any);
       await loadItems(selectedCategory || undefined);
+      toast({ title: "Asset type created" });
       resetForm();
     }
   };
@@ -99,6 +103,7 @@ export default function AssetTypeManagement() {
     if (!confirm("Delete this asset type?")) return;
     await apiClient.deleteAssetType(id);
     await loadItems(selectedCategory || undefined);
+    toast({ title: "Asset type deleted" });
   };
 
   return (

@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { apiClient, type AssetType, type AssetProperty } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 const API = "/api";
 
@@ -22,6 +23,7 @@ export default function AssetPropertyManagement() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editing, setEditing] = useState<AssetProperty | null>(null);
   const [form, setForm] = useState({ name: "", dataType: "", isRequired: false, order: "" as any, options: "", valueUnit: "", assetTypeId: "" });
+  const { toast } = useToast();
   const [errors, setErrors] = useState<{ name?: string; dataType?: string; assetTypeId?: string; order?: string }>({});
   const ALL_VALUE = "__ALL__";
 
@@ -81,10 +83,12 @@ export default function AssetPropertyManagement() {
     if (editing) {
       await apiClient.updateAssetProperty(editing.id, payload as any);
       await loadItems();
+      toast({ title: "Attribute updated" });
       resetForm();
     } else {
       await apiClient.createAssetProperty(payload as any);
       await loadItems();
+      toast({ title: "Attribute created" });
       resetForm();
     }
   };
@@ -99,6 +103,7 @@ export default function AssetPropertyManagement() {
     if (!confirm("Delete this property?")) return;
     await apiClient.deleteAssetProperty(id);
     await loadItems();
+    toast({ title: "Attribute deleted" });
   };
 
   return (
