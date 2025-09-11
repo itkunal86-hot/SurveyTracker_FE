@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { DeviceAssignment, Survey } from "@/types/admin";
 import type { Device } from "@/lib/api";
-import { useDevices, useDeviceAssignments, useCreateDeviceAssignment, useUpdateDeviceAssignment, useSurveyMasters } from "@/hooks/useApiQueries";
+import { useDevices, useDeviceAssignments, useCreateDeviceAssignment, useUpdateDeviceAssignment, useSurveyMasters, useDeleteDeviceAssignment } from "@/hooks/useApiQueries";
 import { apiClient } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
@@ -40,6 +40,7 @@ export default function DeviceAssignmentPanel() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     deviceId: "",
     surveyId: "",
@@ -50,6 +51,7 @@ export default function DeviceAssignmentPanel() {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const createAssignment = useCreateDeviceAssignment();
   const updateAssignment = useUpdateDeviceAssignment();
+  const deleteAssignment = useDeleteDeviceAssignment();
   const { toast } = useToast();
 
   const filteredAssignments = assignments.filter((assignment) => {
@@ -95,7 +97,7 @@ export default function DeviceAssignmentPanel() {
     if (formData.fromDate && formData.toDate && formData.fromDate > formData.toDate) {
       newErrors.toDate = "To date must be after from date";
     }
-    if (formData.deviceId && formData.fromDate && formData.toDate) {
+    if (!editingId && formData.deviceId && formData.fromDate && formData.toDate) {
       const hasConflict = await checkDateConflict(formData.deviceId, formData.fromDate, formData.toDate);
       if (hasConflict) newErrors.deviceId = "Device is already assigned during this time period";
     }
@@ -108,18 +110,33 @@ export default function DeviceAssignmentPanel() {
     if (!isValid) return;
 
     try {
-      await createAssignment.mutateAsync({
-        deviceId: formData.deviceId,
-        surveyId: formData.surveyId,
-        fromDate: formData.fromDate,
-        toDate: formData.toDate,
-        assignedBy: "Admin",
-        notes: formData.notes || undefined,
-      });
-      toast({ title: "Device assigned" });
+      if (editingId) {
+        await updateAssignment.mutateAsync({
+          id: editingId,
+          payload: {
+            deviceId: formData.deviceId,
+            surveyId: formData.surveyId,
+            fromDate: formData.fromDate,
+            toDate: formData.toDate,
+            assignedBy: "1",
+            notes: formData.notes || undefined,
+          },
+        });
+        toast({ title: "Assignment updated" });
+      } else {
+        await createAssignment.mutateAsync({
+          deviceId: formData.deviceId,
+          surveyId: formData.surveyId,
+          fromDate: formData.fromDate,
+          toDate: formData.toDate,
+          assignedBy: "Admin",
+          notes: formData.notes || undefined,
+        });
+        toast({ title: "Device assigned" });
+      }
       resetForm();
     } catch (error) {
-      setErrors({ deviceId: (error as Error).message || "Failed to create assignment" });
+      setErrors({ deviceId: (error as Error).message || (editingId ? "Failed to update assignment" : "Failed to create assignment") });
     }
   };
 
@@ -152,6 +169,7 @@ export default function DeviceAssignmentPanel() {
     });
     setIsDialogOpen(false);
     setErrors({});
+    setEditingId(null);
   };
 
   const getStatusBadge = (assignment: DeviceAssignment) => {
@@ -195,7 +213,7 @@ export default function DeviceAssignmentPanel() {
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px]">
               <DialogHeader>
-                <DialogTitle>Assign Device to Survey</DialogTitle>
+                <DialogTitle>{editingId ? "Edit Device Assignment" : "Assign Device to Survey"}</DialogTitle>
                 <DialogDescription>
                   Select a device and survey, then define the assignment period. 
                   Devices cannot be double-assigned during the same time window.
@@ -444,6 +462,38 @@ export default function DeviceAssignmentPanel() {
                       )}
                     </TableCell>
                     <TableCell className="text-right space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setEditingId(assignment.id);
+                          setFormData({
+                            deviceId: assignment.deviceId,
+                            surveyId: assignment.surveyId,
+                            fromDate: assignment.fromDate.slice(0, 10),
+                            toDate: assignment.toDate.slice(0, 10),
+                            notes: "",
+                          });
+                          setIsDialogOpen(true);
+                        }}
+                        className="gap-1"
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (confirm("Delete this device assignment?")) {
+                            deleteAssignment.mutateAsync(assignment.id).then(() => {
+                              toast({ title: "Assignment deleted" });
+                            });
+                          }
+                        }}
+                        className="gap-1 text-destructive hover:text-destructive"
+                      >
+                        Delete
+                      </Button>
                       {assignment.isActive && (
                         <>
                           <Button

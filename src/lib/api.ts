@@ -1401,12 +1401,21 @@ class ApiClient {
     }
   }
 
-  async updateDeviceAssignment(id: string, payload: { unassignedDate?: string; status?: string; notes?: string; toDate?: string; }): Promise<ApiResponse<DeviceAssignment>> {
+  async updateDeviceAssignment(id: string, payload: { deviceId?: string | number; surveyId?: string | number; fromDate?: string; toDate?: string; assignedBy?: string | number; unassignedDate?: string; status?: string; notes?: string; }): Promise<ApiResponse<DeviceAssignment>> {
+    const deviceIdNum = Number(payload.deviceId);
+    const surveyIdNum = Number(payload.surveyId);
+    const assignedByNum = Number.isFinite(Number(payload.assignedBy))
+      ? Number(payload.assignedBy)
+      : undefined;
     const body: any = {
-      ...(payload.unassignedDate ? { unassignedDate: payload.unassignedDate } : {}),
-      ...(payload.toDate ? { toDate: payload.toDate, to: payload.toDate } : {}),
+      ...(payload.deviceId !== undefined ? { deviceId: Number.isFinite(deviceIdNum) ? deviceIdNum : payload.deviceId } : {}),
+      ...(payload.surveyId !== undefined ? { surveyId: Number.isFinite(surveyIdNum) ? surveyIdNum : payload.surveyId } : {}),
+      ...(payload.fromDate ? { fromDate: payload.fromDate, from: payload.fromDate, assignedDate: payload.fromDate } : {}),
+      ...(payload.toDate ? { toDate: payload.toDate, to: payload.toDate, unassignedDate: payload.toDate, UnAssignedDate: payload.toDate } : {}),
+      ...(payload.unassignedDate ? { unassignedDate: payload.unassignedDate, UnAssignedDate: payload.unassignedDate } : {}),
       ...(payload.status ? { status: payload.status } : {}),
       ...(payload.notes !== undefined ? { notes: payload.notes } : {}),
+      ...(assignedByNum !== undefined ? { assignedBy: assignedByNum } : {}),
     };
     try {
       const raw = await this.request<any>(`/DeviceAssignments/${id}`, { method: "PUT", body: JSON.stringify(body) });

@@ -386,7 +386,7 @@ export function useCreateDeviceAssignment() {
 export function useUpdateDeviceAssignment() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: { unassignedDate?: string; status?: string; notes?: string; toDate?: string; } }) =>
+    mutationFn: ({ id, payload }: { id: string; payload: { deviceId?: string | number; surveyId?: string | number; fromDate?: string; toDate?: string; assignedBy?: string | number; unassignedDate?: string; status?: string; notes?: string; } }) =>
       apiClient.updateDeviceAssignment(id, payload),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.deviceAssignments] });
