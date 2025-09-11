@@ -97,7 +97,7 @@ export default function DeviceAssignmentPanel() {
     if (formData.fromDate && formData.toDate && formData.fromDate > formData.toDate) {
       newErrors.toDate = "To date must be after from date";
     }
-    if (formData.deviceId && formData.fromDate && formData.toDate) {
+    if (!editingId && formData.deviceId && formData.fromDate && formData.toDate) {
       const hasConflict = await checkDateConflict(formData.deviceId, formData.fromDate, formData.toDate);
       if (hasConflict) newErrors.deviceId = "Device is already assigned during this time period";
     }
