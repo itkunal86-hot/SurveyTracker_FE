@@ -1371,6 +1371,7 @@ class ApiClient {
       to: payload.toDate,
       assignedDate: payload.fromDate,
       unassignedDate: payload.toDate,
+      UnAssignedDate: payload.toDate,
       assignedBy: assignedByNum,
       notes: payload.notes,
     };
