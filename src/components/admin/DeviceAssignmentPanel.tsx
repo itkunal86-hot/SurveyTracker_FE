@@ -169,6 +169,7 @@ export default function DeviceAssignmentPanel() {
     });
     setIsDialogOpen(false);
     setErrors({});
+    setEditingId(null);
   };
 
   const getStatusBadge = (assignment: DeviceAssignment) => {
