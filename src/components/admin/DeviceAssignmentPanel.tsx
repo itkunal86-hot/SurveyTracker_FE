@@ -51,6 +51,7 @@ export default function DeviceAssignmentPanel() {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const createAssignment = useCreateDeviceAssignment();
   const updateAssignment = useUpdateDeviceAssignment();
+  const deleteAssignment = useDeleteDeviceAssignment();
   const { toast } = useToast();
 
   const filteredAssignments = assignments.filter((assignment) => {
