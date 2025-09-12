@@ -72,7 +72,7 @@ export const DeviceStatus = () => {
     return devicesResponse.data.map((device) => ({
       ...device,
       location: `Zone ${device.name.split(" ")[0]} - ${device.type}`,
-      serialNumber: `${device.type.substring(0, 2).toUpperCase()}-${device.id}`,
+      serialNumber: device.serialNumber,
       surveyor: device.surveyor
         ? {
             id: device.surveyor,
@@ -132,12 +132,12 @@ export const DeviceStatus = () => {
     const csvData = devices
       .map(
         (device) =>
-          `${device.id},${device.name},${device.type},${device.serialNumber || "N/A"},${device.status},${device.lastSeen || "N/A"},${device.location || "N/A"},${device.batteryLevel || "N/A"}%`,
+          `${device.id},${device.name},${device.type},${device.serialNumber || "N/A"},${device.status},${device.lastSeen || "N/A"},${device.location || "N/A"},${device.batteryLevel || "N/A"}%,${typeof device.accuracy === "number" ? device.accuracy : "N/A"}`,
       )
       .join("\n");
 
     const csvHeader =
-      "Device ID,Name,Type,Serial Number,Status,Last Seen,Location,Battery Level\n";
+      "Device ID,Name,Type,Serial Number,Status,Last Seen,Location,Battery Level,Accuracy\n";
     const csvContent = csvHeader + csvData;
 
     const blob = new Blob([csvContent], { type: "text/csv" });
@@ -486,6 +486,14 @@ export const DeviceStatus = () => {
                 >
                   Battery
                 </SortableTableHead>
+                <SortableTableHead
+                  sortKey="accuracy"
+                  currentSortKey={tableConfig.sortConfig.key}
+                  sortDirection={tableConfig.sortConfig.direction}
+                  onSort={tableConfig.handleSort}
+                >
+                  Accuracy
+                </SortableTableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -571,6 +579,9 @@ export const DeviceStatus = () => {
                     <span className={getBatteryColor(device.batteryLevel || 0)}>
                       {device.batteryLevel || 0}%
                     </span>
+                  </TableCell>
+                  <TableCell>
+                    {typeof device.accuracy === "number" ? device.accuracy.toFixed(2) : "N/A"}
                   </TableCell>
                 </TableRow>
               ))}
