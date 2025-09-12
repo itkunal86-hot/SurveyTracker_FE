@@ -1963,6 +1963,114 @@ class ApiClient {
       return createMockApiResponse(statusOptions);
     }
   }
+  // Device Log endpoint - used for Device Status Grid
+  async getDeviceLogs(params?: { page?: number; limit?: number; status?: string; }): Promise<PaginatedResponse<Device>> {
+    try {
+      const sp = new URLSearchParams();
+      if (params?.page) sp.append("page", String(params.page));
+      if (params?.limit) sp.append("limit", String(params.limit));
+      if (params?.status) sp.append("status", params.status);
+      const q = sp.toString();
+
+      const raw: any = await this.request<any>(`/DeviceLog${q ? `?${q}` : ""}`);
+      const timestamp = raw?.timestamp || new Date().toISOString();
+
+      const rawItems = Array.isArray(raw?.data?.items)
+        ? raw.data.items
+        : Array.isArray(raw?.data?.data)
+          ? raw.data.data
+          : Array.isArray(raw?.data)
+            ? raw.data
+            : Array.isArray(raw)
+              ? raw
+              : [];
+
+      const normalizeStatus = (val: any): Device["status"] => {
+        const s = String(val || "").toUpperCase();
+        if (s === "ONLINE" || s === "CONNECTED") return "ACTIVE";
+        if (s === "OFFLINE" || s === "DISCONNECTED") return "INACTIVE";
+        if (s === "MAINTENANCE" || s === "SERVICE") return "MAINTENANCE";
+        if (s === "ERROR" || s === "FAULT") return "ERROR";
+        const allowed = new Set(["ACTIVE","INACTIVE","MAINTENANCE","ERROR"]);
+        return (allowed.has(s) ? (s as Device["status"]) : "ACTIVE");
+      };
+
+      const mapped: Device[] = rawItems.map((it: any) => {
+        const fallbackId = (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function")
+          ? crypto.randomUUID()
+          : `${Date.now()}`;
+
+        const id = String(
+          it.id ?? it.ID ?? it.deviceId ?? it.DeviceId ?? it.device_id ?? it.instrumentId ?? it.InstrumentId ?? fallbackId
+        );
+        const name = String(
+          it.name ?? it.Name ?? it.deviceName ?? it.DeviceName ?? it.instrument ?? it.Instrument ?? id
+        );
+        const type = String(
+          it.type ?? it.Type ?? it.deviceType ?? it.DeviceType ?? it.model ?? it.Model ?? it.modelName ?? it.ModelName ?? "DEVICE"
+        ).toUpperCase();
+        const status = normalizeStatus(
+          it.status ?? it.Status ?? it.state ?? it.State ?? it.connectionStatus ?? it.ConnectionStatus
+        );
+
+        const lat = Number(it.lat ?? it.latitude ?? it.Latitude ?? it.latDeg ?? it.LatDeg);
+        const lng = Number(it.lng ?? it.longitude ?? it.Longitude ?? it.lonDeg ?? it.LonDeg);
+        const coordinates = (!Number.isNaN(lat) && !Number.isNaN(lng))
+          ? { lat, lng }
+          : (it.coordinates && typeof it.coordinates.lat === "number" && typeof it.coordinates.lng === "number")
+            ? { lat: it.coordinates.lat, lng: it.coordinates.lng }
+            : { lat: 0, lng: 0 };
+
+        const batteryRaw = it.battery ?? it.Battery ?? it.batteryLevel ?? it.BatteryLevel;
+        const batteryLevel = typeof batteryRaw === "number" ? batteryRaw : (typeof batteryRaw === "string" ? Number(batteryRaw.replace(/%/g, "")) : undefined);
+
+        const lastSeen = String(
+          it.lastSeen ?? it.LastSeen ?? it.lastPing ?? it.LastPing ?? it.timestamp ?? it.Timestamp ?? it.logTime ?? it.LogTime ?? ""
+        ) || undefined;
+
+        const accuracyVal = it.accuracy ?? it.Accuracy;
+        const accuracy = typeof accuracyVal === "number" ? accuracyVal : undefined;
+
+        const modelName = it.modelName ?? it.ModelName ?? undefined;
+
+        return {
+          id,
+          name,
+          type,
+          status,
+          coordinates,
+          modelName: modelName != null ? String(modelName) : undefined,
+          surveyor: it.surveyor ?? it.Surveyor ?? it.user ?? it.User ?? undefined,
+          batteryLevel,
+          lastSeen,
+          accuracy,
+        } as Device;
+      });
+
+      const pagination = raw?.data?.pagination || raw?.pagination || {
+        page: params?.page ?? 1,
+        limit: params?.limit ?? mapped.length,
+        total: mapped.length,
+        totalPages: 1,
+      };
+
+      return {
+        success: true,
+        data: mapped,
+        message: raw?.message,
+        timestamp,
+        pagination,
+      };
+    } catch (error) {
+      // Fallback to devices endpoint if DeviceLog is unavailable
+      try {
+        return await this.getDevices(params);
+      } catch (_) {
+        return createMockPaginatedResponse<Device>([], params);
+      }
+    }
+  }
+
 }
 
 // Compatibility helpers for backward compatibility with existing components
