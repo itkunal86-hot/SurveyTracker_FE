@@ -39,7 +39,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { LeafletMap } from "@/components/LeafletMap";
-import { useDevices } from "@/hooks/useApiQueries";
+import { useDeviceLogs } from "@/hooks/useApiQueries";
 import { Device } from "@/lib/api";
 
 interface ExtendedDevice extends Omit<Device, 'surveyor'> {
@@ -63,7 +63,7 @@ export const DeviceStatus = () => {
     isLoading,
     error,
     refetch,
-  } = useDevices({ limit: 100 });
+  } = useDeviceLogs({ limit: 100 });
 
   // Transform API data to match component interface
   const devices: ExtendedDevice[] = useMemo(() => {

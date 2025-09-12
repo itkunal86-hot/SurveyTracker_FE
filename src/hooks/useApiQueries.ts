@@ -15,6 +15,7 @@ import type { DeviceAssignment } from "@/types/admin";
 // Query keys
 export const QUERY_KEYS = {
   devices: "devices",
+  deviceLogs: "deviceLogs",
   device: "device",
   pipelines: "pipelines",
   pipeline: "pipeline",
@@ -52,6 +53,14 @@ export function useDevices(params?: {
     queryKey: [QUERY_KEYS.devices, params],
     queryFn: () => apiClient.getDevices(params),
     staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+export function useDeviceLogs(params?: { page?: number; limit?: number; status?: string; }) {
+  return useQuery({
+    queryKey: [QUERY_KEYS.deviceLogs, params],
+    queryFn: () => apiClient.getDeviceLogs(params),
+    staleTime: 60 * 1000,
   });
 }
 
