@@ -2062,12 +2062,8 @@ class ApiClient {
         pagination,
       };
     } catch (error) {
-      // Fallback to devices endpoint if DeviceLog is unavailable
-      try {
-        return await this.getDevices(params);
-      } catch (_) {
-        return createMockPaginatedResponse<Device>([], params);
-      }
+      // If DeviceLog is unavailable or returns error, return empty result without mock
+      return createMockPaginatedResponse<Device>([], params);
     }
   }
 

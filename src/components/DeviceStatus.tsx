@@ -84,27 +84,9 @@ export const DeviceStatus = () => {
     }));
   }, [devicesResponse]);
 
-  // Mock fallback data for demonstration
-  const fallbackDevices: ExtendedDevice[] = [
-    {
-      id: "TRIMBLE_001",
-      name: "Trimble SPS986 Unit 001",
-      type: "TRIMBLE_SPS986",
-      status: "ACTIVE",
-      coordinates: { lat: 19.076, lng: 72.8777 },
-      surveyor: "Rajesh Kumar",
-      batteryLevel: 89,
-      lastSeen: new Date().toISOString(),
-      accuracy: 0.02,
-      location: "Zone A - Main Pipeline",
-      serialNumber: "TR-2024-001",
-    },
-  ];
-
-  const displayDevices = devices.length > 0 ? devices : fallbackDevices;
 
   const filteredDevices = useMemo(() => {
-    return displayDevices.filter((device) => {
+    return devices.filter((device) => {
       const matchesSearch =
         device.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         device.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -138,8 +120,8 @@ export const DeviceStatus = () => {
   // Table functionality
   const { tableConfig, sortedAndPaginatedData } = useTable(
     filteredDevices,
-    10, // Initial page size
-    "name", // Initial sort key
+    10,
+    "name",
   );
 
   const handleRefresh = () => {
@@ -147,7 +129,7 @@ export const DeviceStatus = () => {
   };
 
   const handleExport = () => {
-    const csvData = displayDevices
+    const csvData = devices
       .map(
         (device) =>
           `${device.id},${device.name},${device.type},${device.serialNumber || "N/A"},${device.status},${device.lastSeen || "N/A"},${device.location || "N/A"},${device.batteryLevel || "N/A"}%`,
