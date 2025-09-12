@@ -103,6 +103,7 @@ export interface Device {
   batteryLevel?: number;
   lastSeen?: string;
   accuracy?: number;
+  serialNumber?: string;
 }
 
 export interface DeviceCreateUpdate {
@@ -2032,6 +2033,8 @@ class ApiClient {
         const accuracy = typeof accuracyVal === "number" ? accuracyVal : undefined;
 
         const modelName = it.modelName ?? it.ModelName ?? undefined;
+        const serialRaw = it.serialNumber ?? it.SerialNumber ?? it.serial_no ?? it.SERIAL_NO ?? it.deviceSerial ?? it.DeviceSerial ?? it.serial ?? it.Serial ?? null;
+        const serialNumber = serialRaw != null ? String(serialRaw) : undefined;
 
         return {
           id,
@@ -2044,6 +2047,7 @@ class ApiClient {
           batteryLevel,
           lastSeen,
           accuracy,
+          serialNumber,
         } as Device;
       });
 
