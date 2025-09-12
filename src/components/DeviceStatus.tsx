@@ -115,7 +115,7 @@ export const DeviceStatus = () => {
         statusFilter === "all" || normalizedStatus === statusFilter;
       return matchesSearch && matchesStatus;
     });
-  }, [displayDevices, searchTerm, statusFilter]);
+  }, [devices, searchTerm, statusFilter]);
 
   // Table functionality
   const { tableConfig, sortedAndPaginatedData } = useTable(
@@ -230,18 +230,18 @@ export const DeviceStatus = () => {
     };
 
     return {
-      total: displayDevices.length,
-      active: displayDevices.filter(
+      total: devices.length,
+      active: devices.filter(
         (d) => normalizeStatus(d.status) === "active",
       ).length,
-      offline: displayDevices.filter(
+      offline: devices.filter(
         (d) => normalizeStatus(d.status) === "offline",
       ).length,
-      maintenance: displayDevices.filter(
+      maintenance: devices.filter(
         (d) => normalizeStatus(d.status) === "maintenance",
       ).length,
     };
-  }, [displayDevices]);
+  }, [devices]);
 
   return (
     <div className="space-y-6 p-6">
@@ -296,7 +296,7 @@ export const DeviceStatus = () => {
         <CardContent>
           <div className="h-[400px] w-full rounded-lg overflow-hidden">
             <LeafletMap
-              devices={displayDevices.map((device) => ({
+              devices={devices.map((device) => ({
                 id: device.id,
                 name: device.name,
                 lat: device.coordinates.lat,
