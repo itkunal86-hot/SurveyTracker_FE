@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { apiClient } from "@/lib/api";
 
 export interface ActiveSurvey {
   id: string;
@@ -72,20 +73,31 @@ export const SurveyProvider: React.FC<SurveyProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading active surveys
     const loadActiveSurveys = async () => {
       setIsLoading(true);
       try {
-        // In a real app, this would be an API call
-        await new Promise(resolve => setTimeout(resolve, 500));
-        setActiveSurveys(mockActiveSurveys);
-        
-        // Set the first survey as default current survey
-        if (mockActiveSurveys.length > 0) {
-          setCurrentSurvey(mockActiveSurveys[0]);
+        const res = await apiClient.getSurveyMasters({ status: "ACTIVE" });
+        const items = Array.isArray(res.data) ? res.data : [];
+        const mapped = items
+          .filter(s => s.status === "ACTIVE")
+          .map((s) => ({
+            id: s.id,
+            name: s.name,
+            categoryName: s.categoryName || "",
+            status: s.status,
+            startDate: s.startDate,
+            endDate: s.endDate,
+          }));
+        setActiveSurveys(mapped);
+        if (mapped.length > 0) {
+          setCurrentSurvey(mapped[0]);
+        } else {
+          setCurrentSurvey(null);
         }
       } catch (error) {
         console.error('Failed to load active surveys:', error);
+        setActiveSurveys([]);
+        setCurrentSurvey(null);
       } finally {
         setIsLoading(false);
       }
