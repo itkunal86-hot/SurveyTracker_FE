@@ -27,6 +27,26 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
+  // Restore auth state from session on initial load
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("currentUser");
+      if (raw) {
+        const user = JSON.parse(raw);
+        const roleFromServer = (user?.role as string) || "SURVEY_MANAGER";
+        let appRole: "admin" | "manager" | "survey" = "survey";
+        if (roleFromServer === "ADMIN") appRole = "admin";
+        else if (roleFromServer === "MANAGER") appRole = "manager";
+        else appRole = "survey";
+        setUserRole(appRole);
+        setIsAuthenticated(true);
+        setActiveTab((appRole === "survey") ? "survey-dashboard" : "dashboard");
+      }
+    } catch {
+      // ignore parse errors and treat as logged out
+    }
+  }, []);
+
   // Handle URL parameters for tab switching
   useEffect(() => {
     const tabParam = searchParams.get("tab");
@@ -45,6 +65,9 @@ const Index = () => {
   };
 
   const handleLogout = () => {
+    try {
+      sessionStorage.removeItem("currentUser");
+    } catch {}
     setIsAuthenticated(false);
     setActiveTab("");
   };
