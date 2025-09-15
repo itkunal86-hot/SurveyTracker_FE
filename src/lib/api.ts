@@ -2067,20 +2067,11 @@ class ApiClient {
     };
 
     try {
-      // Prefer proxy through local server to bypass CORS/self-signed certs
-      const rel = `/api/proxy/device-log${q ? `?${q}` : ""}`;
-      const resp = await fetch(rel, { headers: { Accept: "application/json" } });
-      if (!resp.ok) throw new Error(`Proxy error ${resp.status}`);
-      const raw = await resp.json();
+      // Direct call to external API base as requested
+      const raw: any = await this.request<any>(`/DeviceLog${q ? `?${q}` : ""}`);
       return await fetchAndMap(raw);
-    } catch (_) {
-      try {
-        // Secondary: direct call to external API base (may fail due to CORS/SSL)
-        const raw: any = await this.request<any>(`/DeviceLog${q ? `?${q}` : ""}`);
-        return await fetchAndMap(raw);
-      } catch (error) {
-        return createMockPaginatedResponse<Device>([], params);
-      }
+    } catch (error) {
+      return createMockPaginatedResponse<Device>([], params);
     }
   }
 
