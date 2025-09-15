@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import React from "react";
 import {
   apiClient,
   Device,
@@ -11,6 +12,7 @@ import {
 } from "../lib/api";
 import { extendPipelines, withLegacyProperties } from "../lib/pipelineUtils";
 import type { DeviceAssignment } from "@/types/admin";
+import { useSurveyContext } from "@/contexts/SurveyContext";
 
 // Query keys
 export const QUERY_KEYS = {
@@ -56,10 +58,25 @@ export function useDevices(params?: {
   });
 }
 
-export function useDeviceLogs(params?: { page?: number; limit?: number; status?: string; }) {
+export function useDeviceLogs(params?: { page?: number; limit?: number; status?: string; surveyId?: string; }) {
+  const { currentSurvey } = useSurveyContext();
+  const effectiveParams = React.useMemo(() => {
+    const storedSurveyId = (() => {
+      try {
+        return (typeof localStorage !== "undefined" && localStorage.getItem("activeSurveyId")) || undefined;
+      } catch {
+        return undefined;
+      }
+    })();
+    return {
+      ...params,
+      surveyId: params?.surveyId ?? currentSurvey?.id ?? storedSurveyId,
+    };
+  }, [params?.page, params?.limit, params?.status, params?.surveyId, currentSurvey?.id]);
+
   return useQuery({
-    queryKey: [QUERY_KEYS.deviceLogs, params],
-    queryFn: () => apiClient.getDeviceLogs(params),
+    queryKey: [QUERY_KEYS.deviceLogs, effectiveParams],
+    queryFn: () => apiClient.getDeviceLogs(effectiveParams),
     staleTime: 60 * 1000,
   });
 }

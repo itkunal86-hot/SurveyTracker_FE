@@ -69,8 +69,22 @@ const mockActiveSurveys: ActiveSurvey[] = [
 
 export const SurveyProvider: React.FC<SurveyProviderProps> = ({ children }) => {
   const [activeSurveys, setActiveSurveys] = useState<ActiveSurvey[]>([]);
-  const [currentSurvey, setCurrentSurvey] = useState<ActiveSurvey | null>(null);
+  const [currentSurvey, setCurrentSurveyState] = useState<ActiveSurvey | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Persist and expose setter
+  const setCurrentSurvey = (survey: ActiveSurvey | null) => {
+    setCurrentSurveyState(survey);
+    try {
+      if (survey) {
+        localStorage.setItem("activeSurveyId", survey.id);
+        localStorage.setItem("activeSurvey", JSON.stringify(survey));
+      } else {
+        localStorage.removeItem("activeSurveyId");
+        localStorage.removeItem("activeSurvey");
+      }
+    } catch {}
+  };
 
   useEffect(() => {
     const loadActiveSurveys = async () => {
@@ -89,11 +103,16 @@ export const SurveyProvider: React.FC<SurveyProviderProps> = ({ children }) => {
             endDate: s.endDate,
           }));
         setActiveSurveys(mapped);
-        if (mapped.length > 0) {
-          setCurrentSurvey(mapped[0]);
-        } else {
-          setCurrentSurvey(null);
-        }
+        // Try to restore persisted selection
+        let next: ActiveSurvey | null = null;
+        try {
+          const storedId = localStorage.getItem("activeSurveyId");
+          if (storedId) {
+            next = mapped.find(s => s.id === storedId) || null;
+          }
+        } catch {}
+        if (!next && mapped.length > 0) next = mapped[0];
+        setCurrentSurvey(next);
       } catch (error) {
         console.error('Failed to load active surveys:', error);
         setActiveSurveys([]);
