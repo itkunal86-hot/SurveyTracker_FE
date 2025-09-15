@@ -138,6 +138,7 @@ app.use("/api/User", userRoutes);
 app.use("/api/survey-categories", surveyCategoryRoutes);
 app.use("/api/asset-types", assetTypeRoutes);
 app.use("/api/asset-properties", assetPropertyRoutes);
+app.use("/api/proxy/device-log", deviceLogProxyRoutes);
 
 // 404 handler
 app.use("*", (req, res) => {
