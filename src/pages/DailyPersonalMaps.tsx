@@ -45,6 +45,8 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { apiClient } from "@/lib/api";
+import { useSurveyContext } from "@/contexts/SurveyContext";
 
 interface Device {
   id: string;
@@ -90,6 +92,9 @@ export const DailyPersonalMaps = () => {
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [isLoading, setIsLoading] = useState(false);
   const [surveyData, setSurveyData] = useState<SurveyData | null>(null);
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [isDevicesLoading, setIsDevicesLoading] = useState(false);
+  const { currentSurvey } = useSurveyContext();
 
   // Table functionality for survey snapshots
   const snapshots = useMemo(() => surveyData?.snapshots || [], [surveyData]);
@@ -121,18 +126,32 @@ export const DailyPersonalMaps = () => {
     }
   }, [searchParams]);
 
-  // Mock device data
-  const devices: Device[] = [
-    { id: "T001", name: "Trimble R12i Unit 1", type: "GNSS Receiver" },
-    { id: "T002", name: "Trimble R12i Unit 2", type: "GNSS Receiver" },
-    { id: "T003", name: "Trimble R12i Unit 3", type: "GNSS Receiver" },
-    { id: "T004", name: "Trimble TSC7 Controller", type: "Field Computer" },
-    {
-      id: "T005",
-      name: "Trimble SX12 Scanner",
-      type: "Scanning Total Station",
-    },
-  ];
+  // Load devices for current survey
+  useEffect(() => {
+    const loadDevices = async () => {
+      setIsDevicesLoading(true);
+      try {
+        const surveyId = currentSurvey?.id || undefined;
+        const res = await apiClient.getDeviceLogs({ surveyId });
+        const items: Device[] = (res.data || []).map((d: any) => ({
+          id: String(d.id),
+          name: String(d.name || d.serialNumber || d.modelName || d.id),
+          type: String(d.type || "DEVICE"),
+        }));
+        setDevices(items);
+        if (items.length > 0 && !items.find(x => x.id === selectedDevice)) {
+          setSelectedDevice(items[0].id);
+        }
+      } catch (e) {
+        setDevices([]);
+      } finally {
+        setIsDevicesLoading(false);
+      }
+    };
+    loadDevices();
+  }, [currentSurvey?.id]);
+
+  // Devices are loaded from API based on selected survey
 
   // Mock survey data with detailed snapshots
   const mockSurveyData: SurveyData = {
@@ -390,9 +409,9 @@ export const DailyPersonalMaps = () => {
             {/* Device Selection */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Select Device</label>
-              <Select value={selectedDevice} onValueChange={setSelectedDevice}>
+              <Select value={selectedDevice} onValueChange={setSelectedDevice} disabled={isDevicesLoading}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Choose a device..." />
+                  <SelectValue placeholder={isDevicesLoading ? "Loading devices..." : (devices.length ? "Choose a device..." : "No devices available")} />
                 </SelectTrigger>
                 <SelectContent>
                   {devices.map((device) => (
