@@ -1966,14 +1966,13 @@ class ApiClient {
   }
   // Device Log endpoint - used for Device Status Grid
   async getDeviceLogs(params?: { page?: number; limit?: number; status?: string; }): Promise<PaginatedResponse<Device>> {
-    try {
-      const sp = new URLSearchParams();
-      if (params?.page) sp.append("page", String(params.page));
-      if (params?.limit) sp.append("limit", String(params.limit));
-      if (params?.status) sp.append("status", params.status);
-      const q = sp.toString();
+    const sp = new URLSearchParams();
+    if (params?.page) sp.append("page", String(params.page));
+    if (params?.limit) sp.append("limit", String(params.limit));
+    if (params?.status) sp.append("status", params.status);
+    const q = sp.toString();
 
-      const raw: any = await this.request<any>(`/DeviceLog${q ? `?${q}` : ""}`);
+    const fetchAndMap = async (raw: any) => {
       const timestamp = raw?.timestamp || new Date().toISOString();
 
       const rawItems = Array.isArray(raw?.data?.items)
@@ -2065,9 +2064,23 @@ class ApiClient {
         timestamp,
         pagination,
       };
-    } catch (error) {
-      // If DeviceLog is unavailable or returns error, return empty result without mock
-      return createMockPaginatedResponse<Device>([], params);
+    };
+
+    try {
+      // Primary: direct call to external API base (may fail due to CORS/SSL)
+      const raw: any = await this.request<any>(`/DeviceLog${q ? `?${q}` : ""}`);
+      return await fetchAndMap(raw);
+    } catch (_) {
+      try {
+        // Fallback: proxy through local server to bypass CORS/self-signed certs
+        const rel = `/api/proxy/device-log${q ? `?${q}` : ""}`;
+        const resp = await fetch(rel, { headers: { Accept: "application/json" } });
+        if (!resp.ok) throw new Error(`Proxy error ${resp.status}`);
+        const raw = await resp.json();
+        return await fetchAndMap(raw);
+      } catch (error) {
+        return createMockPaginatedResponse<Device>([], params);
+      }
     }
   }
 
