@@ -18,7 +18,7 @@ import {
   Shield,
   Radio,
 } from "lucide-react";
-import { useDevices, usePipelines, useValves } from "@/hooks/useApiQueries";
+import { useDeviceLogs, usePipelines, useValves } from "@/hooks/useApiQueries";
 import {
   mockInfrastructureDevices,
   mockInfrastructurePipelines,
@@ -83,7 +83,7 @@ export const MapDashboard = () => {
     isLoading: loadingDevices,
     error: devicesError,
     refetch: refetchDevices,
-  } = useDevices({ limit: 100 });
+  } = useDeviceLogs({ limit: 100 });
   const {
     data: pipelinesResponse,
     isLoading: loadingPipelines,
