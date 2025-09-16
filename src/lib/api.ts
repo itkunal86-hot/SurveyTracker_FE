@@ -1536,6 +1536,7 @@ class ApiClient {
     const q = sp.toString();
 
     const tryPaths = [
+      `/api/SurveyMaster${q ? `?${q}` : ""}`,
       `/SurveyMaster${q ? `?${q}` : ""}`,
       `/survey-masters${q ? `?${q}` : ""}`,
       `/surveys-admin${q ? `?${q}` : ""}`,
