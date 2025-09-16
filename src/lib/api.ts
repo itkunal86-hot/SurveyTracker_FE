@@ -2234,7 +2234,16 @@ class ApiClient {
       return await fetchAndMap(raw);
     } catch (primaryError) {
       try {
-        const rawProxy: any = await this.request<any>(`/proxy/device-log${q ? `?${q}` : ""}`);
+        const localBase = (typeof window !== "undefined" && window.location?.origin)
+          ? `${window.location.origin}/api`
+          : "/api";
+        const resp = await fetch(`${localBase}/proxy/device-log${q ? `?${q}` : ""}`, {
+          method: "GET",
+          headers: { Accept: "application/json" },
+        });
+        const text = await resp.text();
+        let rawProxy: any;
+        try { rawProxy = JSON.parse(text); } catch { rawProxy = text; }
         return await fetchAndMap(rawProxy);
       } catch (error) {
         return createMockPaginatedResponse<Device>([], params);
