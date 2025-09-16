@@ -1639,6 +1639,7 @@ class ApiClient {
 
   async getSurveyMaster(id: string): Promise<ApiResponse<AdminSurvey>> {
     const tryPaths = [
+      `/api/SurveyMaster/${id}`,
       `/SurveyMaster/${id}`,
       `/survey-masters/${id}`,
       `/surveys-admin/${id}`,
