@@ -1679,7 +1679,7 @@ class ApiClient {
       SmEndDate: payload.endDate,
       SmStatus: payload.status,
     };
-    const tryPaths = [`/SurveyMaster`, `/survey-masters`, `/surveys-admin`];
+    const tryPaths = [`/api/SurveyMaster`, `/SurveyMaster`, `/survey-masters`, `/surveys-admin`];
 
     for (const path of tryPaths) {
       try {
