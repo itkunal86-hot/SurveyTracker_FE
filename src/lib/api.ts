@@ -1716,7 +1716,7 @@ class ApiClient {
       ...(payload.status !== undefined ? { SmStatus: payload.status } : {}),
     };
 
-    const tryPaths = [`/SurveyMaster/${id}`, `/survey-masters/${id}`, `/surveys-admin/${id}`];
+    const tryPaths = [`/api/SurveyMaster/${id}`, `/SurveyMaster/${id}`, `/survey-masters/${id}`, `/surveys-admin/${id}`];
     for (const path of tryPaths) {
       try {
         const raw = await this.request<any>(path, { method: "PUT", body: JSON.stringify(body) });
