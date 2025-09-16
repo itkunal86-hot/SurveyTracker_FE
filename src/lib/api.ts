@@ -14,8 +14,7 @@ import {
   createMockApiResponse,
 } from "./mockData";
 
-const API_BASE_URL =
-    (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.trim()) + "/api" || "https://altgeo-api.hirenq.com/api";
+const API_BASE_URL = import.meta.env.VITE_API_URL + "/api" || "https://altgeo-api.hirenq.com/api";
 const REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS) || 15000;
 
 export interface ApiResponse<T> {
