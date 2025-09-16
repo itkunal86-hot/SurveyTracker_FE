@@ -1965,15 +1965,25 @@ class ApiClient {
     }
   }
   // Device Log endpoint - used for Device Status Grid
-  async getDeviceLogs(params?: { page?: number; limit?: number; status?: string; }): Promise<PaginatedResponse<Device>> {
-    try {
-      const sp = new URLSearchParams();
-      if (params?.page) sp.append("page", String(params.page));
-      if (params?.limit) sp.append("limit", String(params.limit));
-      if (params?.status) sp.append("status", params.status);
-      const q = sp.toString();
+  async getDeviceLogs(params?: { page?: number; limit?: number; status?: string; surveyId?: string; }): Promise<PaginatedResponse<Device>> {
+    const sp = new URLSearchParams();
+    if (params?.page) sp.append("page", String(params.page));
+    if (params?.limit) sp.append("limit", String(params.limit));
+    if (params?.status) sp.append("status", params.status);
+    // Pass surveyId if available (from params or persisted selection)
+    const storedSurveyId = (() => {
+      try {
+        return (typeof localStorage !== "undefined" && localStorage.getItem("activeSurveyId")) || undefined;
+      } catch {
+        return undefined;
+      }
+    })();
+    const effectiveSurveyId = params?.surveyId || storedSurveyId;
+    if (effectiveSurveyId) sp.append("surveyId", String(effectiveSurveyId));
 
-      const raw: any = await this.request<any>(`/DeviceLog${q ? `?${q}` : ""}`);
+    const q = sp.toString();
+
+    const fetchAndMap = async (raw: any) => {
       const timestamp = raw?.timestamp || new Date().toISOString();
 
       const rawItems = Array.isArray(raw?.data?.items)
@@ -2065,9 +2075,19 @@ class ApiClient {
         timestamp,
         pagination,
       };
-    } catch (error) {
-      // If DeviceLog is unavailable or returns error, return empty result without mock
-      return createMockPaginatedResponse<Device>([], params);
+    };
+
+    // Try direct endpoint first; if unavailable, fallback to proxy route in our dev server
+    try {
+      const raw: any = await this.request<any>(`/DeviceLog${q ? `?${q}` : ""}`);
+      return await fetchAndMap(raw);
+    } catch (primaryError) {
+      try {
+        const rawProxy: any = await this.request<any>(`/proxy/device-log${q ? `?${q}` : ""}`);
+        return await fetchAndMap(rawProxy);
+      } catch (error) {
+        return createMockPaginatedResponse<Device>([], params);
+      }
     }
   }
 
