@@ -1744,7 +1744,7 @@ class ApiClient {
   }
 
   async deleteSurveyMaster(id: string): Promise<ApiResponse<void>> {
-    const tryPaths = [`/SurveyMaster/${id}`, `/survey-masters/${id}`, `/surveys-admin/${id}`];
+    const tryPaths = [`/api/SurveyMaster/${id}`, `/SurveyMaster/${id}`, `/survey-masters/${id}`, `/surveys-admin/${id}`];
     for (const path of tryPaths) {
       try {
         return await this.request<ApiResponse<void>>(path, { method: "DELETE" });
