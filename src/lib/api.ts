@@ -14,8 +14,9 @@ import {
   createMockApiResponse,
 } from "./mockData";
 
-const API_BASE_URL =
-  (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.trim()) || "/api";
+const RAW_API_URL = (import.meta.env.VITE_API_URL ?? "").toString().trim();
+const CLEANED_API_URL = RAW_API_URL.replace(/^['"]|['"]$/g, "");
+const API_BASE_URL = CLEANED_API_URL || "/api";
 const REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS) || 15000;
 
 export interface ApiResponse<T> {
