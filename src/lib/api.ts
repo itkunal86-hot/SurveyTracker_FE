@@ -406,7 +406,9 @@ const DEMO_USERS: UserData[] = [
 
 class ApiClient {
   private baseURL: string;
+  private fallbackBaseURL: string = "/api";
   private useMockData: boolean = false;
+  private hasLoggedNetworkError: boolean = false;
 
   constructor(baseURL: string = API_BASE_URL) {
     this.baseURL = baseURL?.endsWith('/') ? baseURL.slice(0, -1) : baseURL;
@@ -422,40 +424,61 @@ class ApiClient {
       throw new Error("Using mock data");
     }
 
-    const url = `${this.baseURL}${endpoint}`;
-
     const config: RequestInit = {
       headers: {
         "Content-Type": "application/json",
-        ...options.headers,
+        ...(options.headers || {}),
       },
       ...options,
     };
 
-    try {
-      // Add timeout to requests using AbortController (configurable)
+    const tryFetch = async (base: string, path: string) => {
+      const url = `${base}${path}`;
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-
-      const configWithTimeout = {
-        ...config,
-        signal: controller.signal
-      };
-
-      const response = await fetch(url, configWithTimeout);
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message || `HTTP error! status: ${response.status}`,
-        );
+      try {
+        const response = await fetch(url, { ...config, signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+      } catch (err: any) {
+        clearTimeout(timeoutId);
+        throw Object.assign(err instanceof Error ? err : new Error(String(err)), { url });
       }
+    };
 
-      return await response.json();
-    } catch (error) {
-      console.error(`API request failed: ${url}`, error);
-      throw error;
+    const primaryBase = this.baseURL?.endsWith("/") ? this.baseURL.slice(0, -1) : this.baseURL;
+    const path = endpoint;
+    const isNetworkError = (e: any) =>
+      e?.name === "AbortError" ||
+      e instanceof TypeError ||
+      /Failed to fetch|NetworkError|TypeError/i.test(String(e?.message || e));
+
+    try {
+      return await tryFetch(primaryBase, path);
+    } catch (e: any) {
+      if (!this.hasLoggedNetworkError) {
+        console.warn(`[API] request failed for ${e?.url || `${primaryBase}${path}`}: ${e?.message || e}`);
+        this.hasLoggedNetworkError = true;
+      }
+      if (primaryBase !== this.fallbackBaseURL && isNetworkError(e)) {
+        const normalizedPath = path.replace(/^\/api(\/|$)/, "/");
+        try {
+          const data = await tryFetch(this.fallbackBaseURL, `/api${normalizedPath}`);
+          this.baseURL = this.fallbackBaseURL;
+          return data;
+        } catch (e2: any) {
+          if (!this.hasLoggedNetworkError) {
+            console.warn(`[API] fallback request failed for ${e2?.url || `${this.fallbackBaseURL}/api${normalizedPath}`}: ${e2?.message || e2}`);
+            this.hasLoggedNetworkError = true;
+          }
+        }
+      }
+      this.useMockData = true;
+      throw e;
     }
   }
 
