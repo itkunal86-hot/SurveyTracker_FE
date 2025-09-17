@@ -67,7 +67,7 @@ export const DeviceStatus = () => {
 
   // Transform API data to match component interface
   const devices: ExtendedDevice[] = useMemo(() => {
-    if (!devicesResponse?.data) return [];
+    if (!Array.isArray(devicesResponse?.data)) return [];
 
     return devicesResponse.data.map((device) => ({
       ...device,
