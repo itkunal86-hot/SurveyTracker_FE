@@ -15,7 +15,7 @@ import {
 } from "./mockData";
 
 
-const RAW_API_URL = (import.meta.env.VITE_API_URL ?? "").toString().trim();
+const RAW_API_URL = (import.meta.env.VITE_API_URL ?? "").toString().trim() || "https://localhost:7215/api";
 const CLEANED_API_URL = RAW_API_URL.replace(/^['"]|['"]$/g, "");
 const API_BASE_URL = CLEANED_API_URL || "/api";
 

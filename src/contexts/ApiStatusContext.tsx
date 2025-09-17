@@ -38,12 +38,12 @@ export const ApiStatusProvider: React.FC<ApiStatusProviderProps> = ({ children }
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3000);
 
-      const rawApi = ((import.meta as any)?.env?.VITE_API_URL ?? '').toString().trim();
+      const rawApi = ((import.meta as any)?.env?.VITE_API_URL ?? '').toString().trim()|| 'https://localhost:7215/api';
       const cleanedApi = rawApi.replace(/^['"]|['"]$/g, '');
       const apiBase = cleanedApi || '/api';
       const base = apiBase.endsWith('/') ? apiBase.slice(0, -1) : apiBase;
 
-      const response = await fetch(`${base}/health`, {
+      const response = await fetch(`${base}/user/health`, {
         method: 'GET',
         signal: controller.signal,
         headers: {
