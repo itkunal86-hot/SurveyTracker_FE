@@ -467,7 +467,7 @@ class ApiClient {
       if (primaryBase !== this.fallbackBaseURL && isNetworkError(e)) {
         const normalizedPath = path.replace(/^\/api(\/|$)/, "/");
         try {
-          const data = await tryFetch(this.fallbackBaseURL, `/api${normalizedPath}`);
+          const data = await tryFetch(this.fallbackBaseURL, normalizedPath);
           this.baseURL = this.fallbackBaseURL;
           return data;
         } catch (e2: any) {
