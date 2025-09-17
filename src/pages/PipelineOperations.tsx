@@ -13,16 +13,18 @@ import {
 } from "@/components/ui/table";
 import { SortableTableHead } from "@/components/ui/sortable-table-head";
 import { Pagination } from "@/components/ui/pagination";
+import { Link } from "react-router-dom";
 import { useTable } from "@/hooks/use-table";
-import { 
-  RefreshCw, 
-  MapPin, 
-  AlertTriangle, 
-  Settings, 
+import {
+  RefreshCw,
+  MapPin,
+  AlertTriangle,
+  Settings,
   Plus,
   Activity,
   Gauge,
-  Layers
+  Layers,
+  ArrowLeft
 } from "lucide-react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -397,10 +399,18 @@ export const PipelineOperations = () => {
           <Activity className="h-6 w-6 text-primary" />
           <h1 className="text-2xl font-bold">Pipeline Operations Dashboard</h1>
         </div>
-        <Button onClick={handleRefreshAll} disabled={isLoading} variant="outline">
-          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
-          {isLoading ? "Loading..." : "Refresh All"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="ghost">
+            <Link to="/">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Dashboard
+            </Link>
+          </Button>
+          <Button onClick={handleRefreshAll} disabled={isLoading} variant="outline">
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
+            {isLoading ? "Loading..." : "Refresh All"}
+          </Button>
+        </div>
       </div>
 
       {/* Statistics Cards */}
