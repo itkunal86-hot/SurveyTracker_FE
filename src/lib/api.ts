@@ -464,7 +464,8 @@ class ApiClient {
         console.warn(`[API] request failed for ${e?.url || `${primaryBase}${path}`}: ${e?.message || e}`);
         this.hasLoggedNetworkError = true;
       }
-      if (primaryBase !== this.fallbackBaseURL && isNetworkError(e)) {
+      const absolute = /^https?:\/\//i.test(primaryBase);
+      if (!absolute && primaryBase !== this.fallbackBaseURL && isNetworkError(e)) {
         const normalizedPath = path.replace(/^\/api(\/|$)/, "/");
         try {
           const data = await tryFetch(this.fallbackBaseURL, normalizedPath);
@@ -477,7 +478,6 @@ class ApiClient {
           }
         }
       }
-      this.useMockData = true;
       throw e;
     }
   }
