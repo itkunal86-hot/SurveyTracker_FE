@@ -36,9 +36,14 @@ export const ApiStatusProvider: React.FC<ApiStatusProviderProps> = ({ children }
     try {
       setServerStatus('checking');
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000); // Reduced timeout
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
 
-      const response = await fetch('/api/health', {
+      const rawApi = ((import.meta as any)?.env?.VITE_API_URL ?? '').toString().trim();
+      const cleanedApi = rawApi.replace(/^['"]|['"]$/g, '');
+      const apiBase = cleanedApi || '/api';
+      const base = apiBase.endsWith('/') ? apiBase.slice(0, -1) : apiBase;
+
+      const response = await fetch(`${base}/health`, {
         method: 'GET',
         signal: controller.signal,
         headers: {
