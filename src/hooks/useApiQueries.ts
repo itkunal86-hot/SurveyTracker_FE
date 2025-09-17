@@ -133,9 +133,10 @@ export function usePipelines(params?: {
     queryKey: [QUERY_KEYS.pipelines, params],
     queryFn: async () => {
       const response = await apiClient.getPipelines(params);
+      const items = Array.isArray(response?.data) ? response.data : [];
       return {
         ...response,
-        data: extendPipelines(response.data)
+        data: extendPipelines(items)
       };
     },
     staleTime: 5 * 60 * 1000,
