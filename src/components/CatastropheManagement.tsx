@@ -58,7 +58,7 @@ const CatastropheManagement = () => {
 
   // Transform API data to component format
   const catastrophes = useMemo(() => {
-    if (!catastrophesResponse?.data) return [];
+    if (!Array.isArray(catastrophesResponse?.data)) return [];
 
     return catastrophesResponse.data.map(
       (cat: APICatastrophe): Catastrophe => ({
@@ -137,7 +137,7 @@ const CatastropheManagement = () => {
 
   // Transform API data for map
   const mapDevices = useMemo(() => {
-    if (!devicesResponse?.data) return [];
+    if (!Array.isArray(devicesResponse?.data)) return [];
     return devicesResponse.data.map((device) => ({
       id: device.id,
       name: device.name,
@@ -152,7 +152,7 @@ const CatastropheManagement = () => {
   }, [devicesResponse]);
 
   const mapPipelines = useMemo(() => {
-    if (!pipelinesResponse?.data) return [];
+    if (!Array.isArray(pipelinesResponse?.data)) return [];
     return pipelinesResponse.data.map((pipeline) => ({
       id: pipeline.id,
       diameter: pipeline.diameter,
@@ -169,7 +169,7 @@ const CatastropheManagement = () => {
   }, [pipelinesResponse]);
 
   const mapValves = useMemo(() => {
-    if (!valvesResponse?.data) return [];
+    if (!Array.isArray(valvesResponse?.data)) return [];
     return valvesResponse.data.map((valve) => ({
       id: valve.id,
       type:
