@@ -1560,15 +1560,11 @@ class ApiClient {
     if (params?.status) sp.append("status", params.status);
     const q = sp.toString();
 
-    const tryPaths = [
-      `/api/SurveyMaster${q ? `?${q}` : ""}`,
-      `/SurveyMaster${q ? `?${q}` : ""}`,
-      `/survey-masters${q ? `?${q}` : ""}`,
-      `/surveys-admin${q ? `?${q}` : ""}`,
-    ];
+    const path = `/SurveyMaster${q ? `?${q}` : ""}`;
+     
 
-    for (const path of tryPaths) {
-      try {
+    //for (const path of tryPaths) {
+      //try {
         const raw: any = await this.request<any>(path);
         const timestamp = raw?.timestamp || new Date().toISOString();
 
@@ -1598,10 +1594,11 @@ class ApiClient {
           timestamp,
           pagination,
         };
-      } catch (_) {
-        // try next path
-      }
-    }
+      //} 
+      // catch (_) {
+      //   // try next path
+      // }
+    //}
 
     const now = new Date();
     let mock: AdminSurvey[] = [
