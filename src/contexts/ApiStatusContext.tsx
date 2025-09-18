@@ -88,3 +88,4 @@ export const useApiStatus = () => {
     throw new Error('useApiStatus must be used within an ApiStatusProvider');
   }
   return context;
+};
