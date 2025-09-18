@@ -424,13 +424,18 @@ class ApiClient {
       throw new Error("Using mock data");
     }
 
+
     const config: RequestInit = {
       headers: {
         "Content-Type": "application/json",
         ...(options.headers || {}),
       },
+
       ...options,
+      method,
+      headers,
     };
+
 
     const tryFetch = async (base: string, path: string) => {
       const url = `${base}${path}`;
@@ -479,7 +484,11 @@ class ApiClient {
         }
       }
       throw e;
+
     }
+
+    console.error(`API request failed for endpoint: ${endpoint} after trying ${candidates.join(", ")}`, lastError);
+    throw lastError ?? new Error("API request failed");
   }
 
   // Mock stores for assets when API is unavailable
