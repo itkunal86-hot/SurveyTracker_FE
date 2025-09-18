@@ -12,7 +12,6 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Lock, Loader2, CheckCircle, Eye, EyeOff } from "lucide-react";
 import { apiClient } from "@/lib/api";
-import { useToast } from "@/hooks/use-toast";
 
 interface ChangePasswordFormProps {
   userEmail?: string;
@@ -35,7 +34,6 @@ export const ChangePasswordForm = ({
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,19 +70,15 @@ export const ChangePasswordForm = ({
       });
 
       if (response.status_code === 200) {
-        setSuccess("Password changed successfully. You will be logged out.");
-        toast({ title: "Password changed", description: "Please log in again." });
+        setSuccess("Password changed successfully!");
         // Clear form
         setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");
-
+        
         setTimeout(() => {
-          try { sessionStorage.removeItem("currentUser"); } catch {}
           onSuccess?.();
-          // Ensure UI returns to login screen even if parent doesn't handle logout
-          try { window.location.reload(); } catch {}
-        }, 1200);
+        }, 2000);
       } else {
         setError(response.message || "Password change failed");
       }

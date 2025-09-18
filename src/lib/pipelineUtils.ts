@@ -137,14 +137,12 @@ export function withLegacyProperties(pipeline: PipelineSegment): PipelineSegment
 }
 
 // Utility function to convert array of pipelines to legacy format
-export function toLegacyPipelines(pipelines?: PipelineSegment[] | null): LegacyPipelineSegment[] {
-  if (!Array.isArray(pipelines)) return [];
+export function toLegacyPipelines(pipelines: PipelineSegment[]): LegacyPipelineSegment[] {
   return pipelines.map(p => PipelineAdapter.from(p).toLegacy());
 }
 
 // Utility function to get legacy-compatible pipeline list with extended properties
-export function extendPipelines(pipelines?: PipelineSegment[] | null): (PipelineSegment & LegacyPipelineSegment)[] {
-  if (!Array.isArray(pipelines)) return [];
+export function extendPipelines(pipelines: PipelineSegment[]): (PipelineSegment & LegacyPipelineSegment)[] {
   return pipelines.map(withLegacyProperties);
 }
 

@@ -26,11 +26,11 @@ export const useValveOperations = () => {
 
   // Transform API data to component format
   const operations: ValveOperation[] = useMemo(() => {
-    if (!Array.isArray(operationsResponse?.data)) return [];
+    if (!operationsResponse?.data) return [];
 
     return operationsResponse.data.map((op) => ({
       id: op.id,
-      catastropheId: "CATASTROPHE_001",
+      catastropheId: "CATASTROPHE_001", // Map based on your business logic
       valveId: op.valveId,
       actionType: op.operation === "OPEN" ? "open" : "close",
       actionTimestamp: new Date(op.timestamp),
@@ -40,7 +40,7 @@ export const useValveOperations = () => {
   }, [operationsResponse]);
 
   const valves: Valve[] = useMemo(() => {
-    if (!Array.isArray(valvesResponse?.data)) return [];
+    if (!valvesResponse?.data) return [];
 
     return valvesResponse.data.map((valve) => ({
       id: valve.id,
@@ -58,7 +58,7 @@ export const useValveOperations = () => {
   }, [valvesResponse]);
 
   const catastrophes: Catastrophe[] = useMemo(() => {
-    if (!Array.isArray(catastrophesResponse?.data)) return [];
+    if (!catastrophesResponse?.data) return [];
 
     return catastrophesResponse.data.map((cat) => ({
       id: cat.id,

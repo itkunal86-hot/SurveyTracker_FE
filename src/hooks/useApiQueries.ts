@@ -53,11 +53,7 @@ export function useDevices(params?: {
 }) {
   return useQuery({
     queryKey: [QUERY_KEYS.devices, params],
-    queryFn: async () => {
-      const response = await apiClient.getDevices(params);
-      const items = Array.isArray(response?.data) ? response.data : [];
-      return { ...response, data: items };
-    },
+    queryFn: () => apiClient.getDevices(params),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }
@@ -137,10 +133,9 @@ export function usePipelines(params?: {
     queryKey: [QUERY_KEYS.pipelines, params],
     queryFn: async () => {
       const response = await apiClient.getPipelines(params);
-      const items = Array.isArray(response?.data) ? response.data : [];
       return {
         ...response,
-        data: extendPipelines(items)
+        data: extendPipelines(response.data)
       };
     },
     staleTime: 5 * 60 * 1000,
@@ -208,11 +203,7 @@ export function useValves(params?: {
 }) {
   return useQuery({
     queryKey: [QUERY_KEYS.valves, params],
-    queryFn: async () => {
-      const response = await apiClient.getValves(params);
-      const items = Array.isArray(response?.data) ? response.data : [];
-      return { ...response, data: items };
-    },
+    queryFn: () => apiClient.getValves(params),
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -267,11 +258,7 @@ export function useCatastrophes(params?: {
 }) {
   return useQuery({
     queryKey: [QUERY_KEYS.catastrophes, params],
-    queryFn: async () => {
-      const response = await apiClient.getCatastrophes(params);
-      const items = Array.isArray(response?.data) ? response.data : [];
-      return { ...response, data: items };
-    },
+    queryFn: () => apiClient.getCatastrophes(params),
     staleTime: 2 * 60 * 1000, // 2 minutes for more real-time updates
   });
 }
@@ -472,11 +459,7 @@ export function useValveOperations(params?: {
 }) {
   return useQuery({
     queryKey: [QUERY_KEYS.valveOperations, params],
-    queryFn: async () => {
-      const response = await apiClient.getValveOperations(params);
-      const items = Array.isArray(response?.data) ? response.data : [];
-      return { ...response, data: items };
-    },
+    queryFn: () => apiClient.getValveOperations(params),
   });
 }
 

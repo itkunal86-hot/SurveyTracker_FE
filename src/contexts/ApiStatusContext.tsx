@@ -15,6 +15,13 @@ interface ApiStatusProviderProps {
 }
 
 const DISABLE_API_HEALTH = (import.meta as any)?.env?.VITE_DISABLE_API_HEALTH === '1' || (import.meta as any)?.env?.VITE_DISABLE_API_HEALTH === 'true';
+const RAW_API_URL = (import.meta as any)?.env?.VITE_API_URL ? String((import.meta as any).env.VITE_API_URL).trim() : "";
+const CLEANED_API_URL = RAW_API_URL.replace(/^['"]|['"]$/g, "");
+const API_ROOT = CLEANED_API_URL
+  ? (CLEANED_API_URL.replace(/\/$/, "").endsWith("/api")
+      ? CLEANED_API_URL.replace(/\/$/, "")
+      : `${CLEANED_API_URL.replace(/\/$/, "")}/api`)
+  : "/api";
 
 export const ApiStatusProvider: React.FC<ApiStatusProviderProps> = ({ children }) => {
   const [isUsingMockData, setIsUsingMockData] = useState(false);
@@ -36,24 +43,34 @@ export const ApiStatusProvider: React.FC<ApiStatusProviderProps> = ({ children }
     try {
       setServerStatus('checking');
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      const timeoutId = setTimeout(() => controller.abort(), 3000); // Reduced timeout
 
-      const rawApi = ((import.meta as any)?.env?.VITE_API_URL ?? '').toString().trim()|| 'https://localhost:7215/api';
-      const cleanedApi = rawApi.replace(/^['"]|['"]$/g, '');
-      const apiBase = cleanedApi || '/api';
-      const base = apiBase.endsWith('/') ? apiBase.slice(0, -1) : apiBase;
+      const base = API_ROOT.replace(/\/$/, "");
+      const candidates = Array.from(new Set([
+        `${base}/health`,
+        `${base}/api/health`,
+        `/api/health`,
+      ]));
 
-      const response = await fetch(`${base}/user/health`, {
-        method: 'GET',
-        signal: controller.signal,
-        headers: {
-          'Cache-Control': 'no-cache'
+      let response: Response | null = null;
+      for (const url of candidates) {
+        try {
+          const res = await fetch(url, {
+            method: 'GET',
+            signal: controller.signal,
+          });
+          if (res.ok) {
+            response = res;
+            break;
+          }
+        } catch (_) {
+          // try next
         }
-      });
+      }
 
       clearTimeout(timeoutId);
 
-      if (response.ok) {
+      if (response && response.ok) {
         setServerStatus('online');
         setIsUsingMockData(false);
       } else {

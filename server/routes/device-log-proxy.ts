@@ -9,7 +9,7 @@ deviceLogProxyRoutes.get("/", async (req, res) => {
     const upstreamRoot =
       process.env.UPSTREAM_API_URL ||
       process.env.API_BASE_URL ||
-      "https://altgeo-api.hirenq.com";
+      "https://altgeo.hirenq.com";
     const base = `${upstreamRoot.replace(/\/$/, "")}/api/DeviceLog`;
     const search = new URLSearchParams(req.query as Record<string, string>).toString();
     const url = `${base}${search ? `?${search}` : ""}`;
