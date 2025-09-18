@@ -1547,6 +1547,7 @@ class ApiClient {
     ];
 
     for (const path of tryPaths) {
+      debugger;
       try {
         const raw: any = await this.request<any>(path);
         const timestamp = raw?.timestamp || new Date().toISOString();
