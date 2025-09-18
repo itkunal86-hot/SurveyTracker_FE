@@ -422,41 +422,60 @@ class ApiClient {
       throw new Error("Using mock data");
     }
 
-    const url = `${this.baseURL}${endpoint}`;
+    const base = (this.baseURL || "").replace(/\/$/, "");
+    const ep = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+
+    // Build candidate URLs to tolerate deployments where '/api' is required at the root
+    const candidates: string[] = [
+      `${base}${ep}`,
+    ];
+    if (!base.endsWith("/api") && !ep.startsWith("/api/")) {
+      candidates.push(`${base}/api${ep}`);
+    }
+
+    const method = (options.method || 'GET').toUpperCase();
+    const hasBody = !!(options as any).body || ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
+    const baseHeaders = (options.headers as Record<string, string>) || {};
+    const headers: Record<string, string> = { ...baseHeaders };
+    if (hasBody && !('Content-Type' in headers)) {
+      headers['Content-Type'] = 'application/json';
+    }
 
     const config: RequestInit = {
-      headers: {
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
       ...options,
+      method,
+      headers,
     };
 
-    try {
-      // Add timeout to requests using AbortController (configurable)
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    let lastError: any = null;
+    for (const url of candidates) {
+      try {
+        // Add timeout to requests using AbortController (configurable)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
-      const configWithTimeout = {
-        ...config,
-        signal: controller.signal
-      };
+        const configWithTimeout = {
+          ...config,
+          signal: controller.signal,
+        } as RequestInit;
 
-      const response = await fetch(url, configWithTimeout);
-      clearTimeout(timeoutId);
+        const response = await fetch(url, configWithTimeout);
+        clearTimeout(timeoutId);
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message || `HTTP error! status: ${response.status}`,
-        );
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        }
+
+        return await response.json();
+      } catch (error) {
+        lastError = error;
+        // try next candidate
       }
-
-      return await response.json();
-    } catch (error) {
-      console.error(`API request failed: ${url}`, error);
-      throw error;
     }
+
+    console.error(`API request failed for endpoint: ${endpoint} after trying ${candidates.join(", ")}`, lastError);
+    throw lastError ?? new Error("API request failed");
   }
 
   // Mock stores for assets when API is unavailable
