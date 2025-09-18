@@ -331,7 +331,7 @@ export const Sidebar = ({
             <div className="p-6">
               <ChangePasswordForm
                 userEmail={currentUserEmail}
-                onSuccess={() => setIsChangePasswordOpen(false)}
+                onSuccess={() => { setIsChangePasswordOpen(false); onLogout(); }}
                 onCancel={() => setIsChangePasswordOpen(false)}
               />
             </div>

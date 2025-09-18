@@ -8,6 +8,15 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    proxy: {
+      "/api": {
+
+        target: "https://altgeo-api.hirenq.com",
+
+        changeOrigin: true,
+        secure: true,
+      },
+    },
   },
   plugins: [
     react(),
