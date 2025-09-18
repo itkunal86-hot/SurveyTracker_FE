@@ -15,7 +15,7 @@ import {
 } from "./mockData";
 
 
-const RAW_API_URL = (import.meta.env.VITE_API_URL ?? "").toString().trim();
+const RAW_API_URL = (import.meta.env.VITE_API_URL ?? "").toString().trim() || "https://localhost:7215/api";
 const CLEANED_API_URL = RAW_API_URL.replace(/^['"]|['"]$/g, "");
 const API_BASE_URL = CLEANED_API_URL || "/api";
 
@@ -406,7 +406,9 @@ const DEMO_USERS: UserData[] = [
 
 class ApiClient {
   private baseURL: string;
+  private fallbackBaseURL: string = "/api";
   private useMockData: boolean = false;
+  private hasLoggedNetworkError: boolean = false;
 
   constructor(baseURL: string = API_BASE_URL) {
     this.baseURL = baseURL?.endsWith('/') ? baseURL.slice(0, -1) : baseURL;
@@ -422,56 +424,67 @@ class ApiClient {
       throw new Error("Using mock data");
     }
 
-    const base = (this.baseURL || "").replace(/\/$/, "");
-    const ep = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
-
-    // Build candidate URLs to tolerate deployments where '/api' is required at the root
-    const candidates: string[] = [
-      `${base}${ep}`,
-    ];
-    if (!base.endsWith("/api") && !ep.startsWith("/api/")) {
-      candidates.push(`${base}/api${ep}`);
-    }
-
-    const method = (options.method || 'GET').toUpperCase();
-    const hasBody = !!(options as any).body || ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
-    const baseHeaders = (options.headers as Record<string, string>) || {};
-    const headers: Record<string, string> = { ...baseHeaders };
-    if (hasBody && !('Content-Type' in headers)) {
-      headers['Content-Type'] = 'application/json';
-    }
 
     const config: RequestInit = {
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {}),
+      },
+
       ...options,
       method,
       headers,
     };
 
-    let lastError: any = null;
-    for (const url of candidates) {
+
+    const tryFetch = async (base: string, path: string) => {
+      const url = `${base}${path}`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
       try {
-        // Add timeout to requests using AbortController (configurable)
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-
-        const configWithTimeout = {
-          ...config,
-          signal: controller.signal,
-        } as RequestInit;
-
-        const response = await fetch(url, configWithTimeout);
+        const response = await fetch(url, { ...config, signal: controller.signal });
         clearTimeout(timeoutId);
-
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
         }
-
         return await response.json();
-      } catch (error) {
-        lastError = error;
-        // try next candidate
+      } catch (err: any) {
+        clearTimeout(timeoutId);
+        throw Object.assign(err instanceof Error ? err : new Error(String(err)), { url });
       }
+    };
+
+    const primaryBase = this.baseURL?.endsWith("/") ? this.baseURL.slice(0, -1) : this.baseURL;
+    const path = endpoint;
+    const isNetworkError = (e: any) =>
+      e?.name === "AbortError" ||
+      e instanceof TypeError ||
+      /Failed to fetch|NetworkError|TypeError/i.test(String(e?.message || e));
+
+    try {
+      return await tryFetch(primaryBase, path);
+    } catch (e: any) {
+      if (!this.hasLoggedNetworkError) {
+        console.warn(`[API] request failed for ${e?.url || `${primaryBase}${path}`}: ${e?.message || e}`);
+        this.hasLoggedNetworkError = true;
+      }
+      const absolute = /^https?:\/\//i.test(primaryBase);
+      if (!absolute && primaryBase !== this.fallbackBaseURL && isNetworkError(e)) {
+        const normalizedPath = path.replace(/^\/api(\/|$)/, "/");
+        try {
+          const data = await tryFetch(this.fallbackBaseURL, normalizedPath);
+          this.baseURL = this.fallbackBaseURL;
+          return data;
+        } catch (e2: any) {
+          if (!this.hasLoggedNetworkError) {
+            console.warn(`[API] fallback request failed for ${e2?.url || `${this.fallbackBaseURL}/api${normalizedPath}`}: ${e2?.message || e2}`);
+            this.hasLoggedNetworkError = true;
+          }
+        }
+      }
+      throw e;
+
     }
 
     console.error(`API request failed for endpoint: ${endpoint} after trying ${candidates.join(", ")}`, lastError);
@@ -1556,15 +1569,11 @@ class ApiClient {
     if (params?.status) sp.append("status", params.status);
     const q = sp.toString();
 
-    const tryPaths = [
-      `/api/SurveyMaster${q ? `?${q}` : ""}`,
-      `/SurveyMaster${q ? `?${q}` : ""}`,
-      `/survey-masters${q ? `?${q}` : ""}`,
-      `/surveys-admin${q ? `?${q}` : ""}`,
-    ];
+    const path = `/SurveyMaster${q ? `?${q}` : ""}`;
+     
 
-    for (const path of tryPaths) {
-      try {
+    //for (const path of tryPaths) {
+      //try {
         const raw: any = await this.request<any>(path);
         const timestamp = raw?.timestamp || new Date().toISOString();
 
@@ -1594,10 +1603,11 @@ class ApiClient {
           timestamp,
           pagination,
         };
-      } catch (_) {
-        // try next path
-      }
-    }
+      //} 
+      // catch (_) {
+      //   // try next path
+      // }
+    //}
 
     const now = new Date();
     let mock: AdminSurvey[] = [
