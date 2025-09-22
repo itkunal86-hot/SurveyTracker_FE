@@ -32,6 +32,7 @@ const App = () => (
               <Route path="/daily-personal-maps" element={<DailyPersonalMaps />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/pipeline-operations" element={<PipelineOperations />} />
+              <Route path="/assets/:menu" element={<AssetMenus />} />
               <Route path="/admin" element={<Admin />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
