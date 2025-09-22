@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import PipelineOperations from "./PipelineOperations";
+import { ValvePointsEditor } from "@/components/ValvePointsEditor";
 import apiClient from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -79,6 +79,6 @@ export default function AssetMenus() {
   }
 
   return (
-    <PipelineOperations titleOverride={heading} defaultTab={defaultTab} />
+    <ValvePointsEditor />
   );
 }
