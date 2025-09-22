@@ -77,7 +77,7 @@ const Index = () => {
     if (userRole === "survey") {
       switch (activeTab) {
         case "devices":
-          return <InstrumentList />;
+          return <DeviceStatus />;
         case "daily-maps":
           return <DailyPersonalMaps />;
         case "survey-dashboard":
