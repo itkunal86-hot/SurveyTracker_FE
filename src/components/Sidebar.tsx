@@ -23,9 +23,10 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useSurveyContext } from "@/contexts/SurveyContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ChangePasswordForm } from "@/components/ChangePasswordForm";
+import apiClient from "@/lib/api";
 
 interface SidebarProps {
   activeTab: string;
@@ -67,19 +68,7 @@ const adminManagerMenuItems: MenuItem[] = [
     icon: Calendar,
     roles: ["admin", "survey"],
   },
-  {
-    id: "pipeline-editor",
-    label: "Pipeline Network",
-    icon: Pipe,
-    roles: ["admin", "manager"],
-  },
-  { id: "valve-editor", label: "Valve Points", icon: Gauge, roles: ["admin", "manager"] },
-  {
-    id: "catastrophe",
-    label: "Catastrophe Management",
-    icon: AlertTriangle,
-    roles: ["admin", "manager"],
-  },
+  // Dynamic asset menus (Pipeline/Valve/Catastrophe) will be appended at render-time
   {
     id: "valve-operations",
     label: "Valve Operations",
@@ -163,16 +152,24 @@ export const Sidebar = ({
       item.roles.includes(userRole) &&
       item.id !== "instrument-list" &&
       item.id !== "pipeline-operations" &&
-      item.id !== "valve-operations"
+      item.id !== "valve-operations" &&
+      item.id !== "pipeline-editor" &&
+      item.id !== "valve-editor" &&
+      item.id !== "catastrophe"
   );
 
   const handleTabChange = (tabId: string) => {
     onTabChange(tabId);
     if (tabId === "pipeline-operations") {
       navigate("/pipeline-operations");
-    } else {
-      navigate("/", { replace: true });
+      return;
     }
+    if (tabId.startsWith("assets:")) {
+      const key = tabId.split(":")[1];
+      navigate(`/assets/${key}`);
+      return;
+    }
+    navigate("/", { replace: true });
   };
 
   const currentUserEmail = (() => {
@@ -185,6 +182,46 @@ export const Sidebar = ({
       return "";
     }
   })();
+
+  // Build dynamic asset menus from AssetTypes API
+  const [assetMenus, setAssetMenus] = useState<Array<{ id: string; label: string; icon: any; order: number; path: string }>>([]);
+
+  const normalizeHeading = (name: string) => {
+    const n = name.trim().toLowerCase();
+    if (n === "pipeline" || n === "pipe") return "Pipeline Network";
+    if (n === "valve") return "Valve Points";
+    if (n.includes("catastrophe")) return "Catastrophe Management";
+    return name;
+  };
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await apiClient.getAssetTypes({ limit: 50 });
+        const items = Array.isArray(res?.data) ? res.data : [];
+
+        const findBy = (pred: (a: any) => boolean) => items.find(pred);
+        const pipe = findBy((a) => (a.name || "").toLowerCase() === "pipe" || (a.menuName || "").toLowerCase() === "pipeline");
+        const valve = findBy((a) => (a.name || "").toLowerCase() === "valve" || (a.menuName || "").toLowerCase() === "valve");
+        const catastrophe = findBy((a) => (a.name || "").toLowerCase() === "catastrophe" || (a.menuName || "").toLowerCase().includes("catastrophe"));
+
+        const dyn: Array<{ id: string; label: string; icon: any; order: number; path: string }> = [];
+        if (pipe) dyn.push({ id: "assets:pipeline", label: normalizeHeading(pipe.menuName || pipe.name), icon: Pipe, order: pipe.menuOrder ?? 1, path: "/assets/pipeline" });
+        if (valve) dyn.push({ id: "assets:valve", label: normalizeHeading(valve.menuName || valve.name), icon: Gauge, order: valve.menuOrder ?? 2, path: "/assets/valve" });
+        if (catastrophe) dyn.push({ id: "assets:catastrophe", label: normalizeHeading(catastrophe.menuName || catastrophe.name), icon: AlertTriangle, order: catastrophe.menuOrder ?? 3, path: "/assets/catastrophe" });
+
+        if (mounted) {
+          setAssetMenus(dyn.sort((a, b) => a.order - b.order));
+        }
+      } catch {
+        if (mounted) setAssetMenus([]);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  const combinedItems: Array<any> = [...filteredItems, ...assetMenus];
 
   return (
     <div
@@ -284,9 +321,16 @@ export const Sidebar = ({
       </div>
 
       <nav className="flex-1 overflow-y-auto p-2 space-y-1 min-h-0">
-        {filteredItems.map((item) => {
+        {combinedItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
+          const onClick = () => {
+            if ((item as any).path) {
+              handleTabChange(item.id);
+            } else {
+              handleTabChange(item.id);
+            }
+          };
 
           return (
             <Button
@@ -297,7 +341,7 @@ export const Sidebar = ({
                 isCollapsed && "px-2",
                 isActive && "bg-primary/10 text-primary border border-primary/20",
               )}
-              onClick={() => handleTabChange(item.id)}
+              onClick={onClick}
             >
               <Icon className={cn("h-4 w-4", !isCollapsed && "mr-3")} />
               {!isCollapsed && <span className="text-sm font-medium">{item.label}</span>}
