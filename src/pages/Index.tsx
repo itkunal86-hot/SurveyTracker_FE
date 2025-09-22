@@ -76,10 +76,10 @@ const Index = () => {
     // Survey manager screens
     if (userRole === "survey") {
       switch (activeTab) {
-           case "devices":
-        return <DeviceStatus />;
-      case "daily-maps":
-        return <DailyPersonalMaps />;
+        case "devices":
+          return <InstrumentList />;
+        case "daily-maps":
+          return <DailyPersonalMaps />;
         case "survey-dashboard":
           return <SurveyDashboard />;
         case "instrument-list":
