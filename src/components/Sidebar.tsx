@@ -158,7 +158,13 @@ export const Sidebar = ({
   };
 
   const menuItems = userRole === "survey" ? surveyMenuItems : adminManagerMenuItems;
-  const filteredItems = menuItems.filter((item) => item.roles.includes(userRole) && item.id !== "instrument-list");
+  const filteredItems = menuItems.filter(
+    (item) =>
+      item.roles.includes(userRole) &&
+      item.id !== "instrument-list" &&
+      item.id !== "pipeline-operations" &&
+      item.id !== "valve-operations"
+  );
 
   const handleTabChange = (tabId: string) => {
     onTabChange(tabId);

@@ -12,6 +12,7 @@ import { DailyPersonalMaps } from "./pages/DailyPersonalMaps";
 import { Analytics } from "./pages/Analytics";
 import Admin from "./pages/Admin";
 import PipelineOperations from "./pages/PipelineOperations";
+import AssetMenus from "./pages/AssetMenus";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const App = () => (
               <Route path="/daily-personal-maps" element={<DailyPersonalMaps />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/pipeline-operations" element={<PipelineOperations />} />
+              <Route path="/assets/:menu" element={<AssetMenus />} />
               <Route path="/admin" element={<Admin />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
