@@ -97,7 +97,7 @@ const adminManagerMenuItems: MenuItem[] = [
 const surveyMenuItems: MenuItem[] = [
   {
     id: "devices",
-    label: "Device Status",
+    label: "Instrument List",
     icon: Monitor,
     roles: ["survey"],
   },
