@@ -79,6 +79,6 @@ export default function AssetMenus() {
   }
 
   return (
-    <PipelineOperations titleOverride={heading} defaultTab={defaultTab} />
+    <ValvePointsEditor />
   );
 }
