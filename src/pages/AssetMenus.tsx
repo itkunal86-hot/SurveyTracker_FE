@@ -79,17 +79,6 @@ export default function AssetMenus() {
   }
 
   return (
-    <div className="p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{heading}</h1>
-        <Button asChild variant="ghost">
-          <Link to="/">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
-          </Link>
-        </Button>
-      </div>
-      <PipelineOperations titleOverride={heading} defaultTab={defaultTab} />
-    </div>
+    <PipelineOperations titleOverride={heading} defaultTab={defaultTab} />
   );
 }
