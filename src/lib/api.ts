@@ -17,11 +17,20 @@ import {
 
 const RAW_API_URL = (import.meta.env.VITE_API_URL ?? "").toString().trim();
 const CLEANED_API_URL = RAW_API_URL.replace(/^['"]|['"]$/g, "");
-const API_BASE_URL = CLEANED_API_URL
-  ? (CLEANED_API_URL.replace(/\/$/, "").endsWith("/api")
-      ? CLEANED_API_URL.replace(/\/$/, "")
-      : `${CLEANED_API_URL.replace(/\/$/, "")}/api`)
-  : "/api";
+
+function normalizeApiBase(url: string): string {
+  const input = (url || "").trim();
+  if (!input) return "/api";
+  const noTrailing = input.replace(/\/+$/g, "");
+  const apiIdx = noTrailing.indexOf("/api");
+  if (apiIdx >= 0) {
+    // Keep everything through the first '/api'
+    return noTrailing.substring(0, apiIdx + 4);
+  }
+  return `${noTrailing}/api`;
+}
+
+const API_BASE_URL = normalizeApiBase(CLEANED_API_URL);
 
 const REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS) || 15000;
 
