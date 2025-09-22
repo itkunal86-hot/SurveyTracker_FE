@@ -12,6 +12,7 @@ import { DailyPersonalMaps } from "./pages/DailyPersonalMaps";
 import { Analytics } from "./pages/Analytics";
 import Admin from "./pages/Admin";
 import PipelineOperations from "./pages/PipelineOperations";
+import AssetMenus from "./pages/AssetMenus";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
