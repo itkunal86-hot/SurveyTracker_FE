@@ -60,13 +60,31 @@ const adminManagerMenuItems: MenuItem[] = [
     id: "devices",
     label: "Device Status",
     icon: Monitor,
-    roles: ["admin", "survey"],
+    roles: ["admin", "manager"],
   },
   {
     id: "daily-maps",
     label: "Daily Personal Maps",
     icon: Calendar,
-    roles: ["admin", "survey"],
+    roles: ["admin", "manager"],
+  },
+  {
+    id: "instrument-list",
+    label: "Instrument List",
+    icon: Users,
+    roles: ["admin", "manager"],
+  },
+  {
+    id: "heatmap-view",
+    label: "Heatmap View",
+    icon: Map,
+    roles: ["admin", "manager"],
+  },
+  {
+    id: "alerts-notifications",
+    label: "Alerts & Notifications",
+    icon: AlertTriangle,
+    roles: ["admin", "manager"],
   },
   // Dynamic asset menus (Pipeline/Valve/Catastrophe) will be appended at render-time
   {
@@ -150,7 +168,6 @@ export const Sidebar = ({
   const filteredItems = menuItems.filter(
     (item) =>
       item.roles.includes(userRole) &&
-      item.id !== "instrument-list" &&
       item.id !== "pipeline-operations" &&
       item.id !== "valve-operations" &&
       item.id !== "pipeline-editor" &&

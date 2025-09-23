@@ -105,6 +105,12 @@ const Index = () => {
         return <DeviceStatus />;
       case "daily-maps":
         return <DailyPersonalMaps />;
+      case "instrument-list":
+        return <InstrumentList />;
+      case "heatmap-view":
+        return <HeatmapView />;
+      case "alerts-notifications":
+        return <AlertsNotifications />;
       case "pipeline-editor":
         return <PipelineNetworkEditor />;
       case "valve-editor":
