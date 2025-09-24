@@ -66,6 +66,43 @@ export const PipelineNetworkEditor = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
 
+  type DynamicRow = Record<string, any>;
+  const [propRows, setPropRows] = useState<DynamicRow[]>([]);
+  const [propColumns, setPropColumns] = useState<string[]>([]);
+  const [propLoading, setPropLoading] = useState<boolean>(false);
+  const [propError, setPropError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    async function load() {
+      setPropLoading(true);
+      setPropError(null);
+      try {
+        const url = `https://localhost:7215/api/AssetProperties/ByType/valve`;
+        const res = await fetch(url, { signal: controller.signal });
+        if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+        const json = await res.json();
+        const arr: DynamicRow[] = Array.isArray(json?.data)
+          ? json.data
+          : Array.isArray(json)
+            ? json
+            : [];
+        const normalized = arr.map((item) => ({ ...item }));
+        setPropRows(normalized);
+        const cols = normalized.length > 0 ? Object.keys(normalized[0]) : [];
+        setPropColumns(cols);
+      } catch (e: any) {
+        setPropError(e?.message || "Failed to load data");
+        setPropRows([]);
+        setPropColumns([]);
+      } finally {
+        setPropLoading(false);
+      }
+    }
+    load();
+    return () => controller.abort();
+  }, []);
+
   // Fetch pipeline segments from API
   const fetchSegments = async () => {
     try {
@@ -274,7 +311,8 @@ export const PipelineNetworkEditor = () => {
   };
 
   // Use the table hook for sorting and pagination
-  const { tableConfig, sortedAndPaginatedData } = useTable(segments, 5, "id");
+  const defaultSortKey = (propColumns.includes("id") ? "id" : propColumns[0]) as keyof DynamicRow | undefined;
+  const { tableConfig, sortedAndPaginatedData } = useTable<DynamicRow>(propRows, 5, defaultSortKey as any);
 
   const getStatusBadge = (status: string) => {
     const statusMap = {
@@ -309,106 +347,55 @@ export const PipelineNetworkEditor = () => {
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
                 <MapPin className="h-5 w-5" />
-                Pipeline Segments ({segments.length})
+                Valve Points ({propRows.length})
               </CardTitle>
             </div>
           </CardHeader>
           <CardContent className="p-0">
             <div className="p-6 pb-0">
-              {loading ? (
+              {propError && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>{propError}</AlertDescription>
+                </Alert>
+              )}
+              {propLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin" />
-                  <span className="ml-2">Loading pipeline segments...</span>
+                  <span className="ml-2">Loading asset properties...</span>
                 </div>
               ) : (
                 <Table>
                   <TableHeader>
-                     <TableRow>
-                       <SortableTableHead
-                         sortKey="name"
-                         currentSortKey={tableConfig.sortConfig.key as string}
-                         sortDirection={tableConfig.sortConfig.direction}
-                         onSort={tableConfig.handleSort}
-                       >
-                         Name
-                       </SortableTableHead>
-                       <SortableTableHead
-                         sortKey="diameter"
-                         currentSortKey={tableConfig.sortConfig.key as string}
-                         sortDirection={tableConfig.sortConfig.direction}
-                         onSort={tableConfig.handleSort}
-                       >
-                         Diameter
-                       </SortableTableHead>
-                       <SortableTableHead
-                         sortKey="material"
-                         currentSortKey={tableConfig.sortConfig.key as string}
-                         sortDirection={tableConfig.sortConfig.direction}
-                         onSort={tableConfig.handleSort}
-                       >
-                         Material
-                       </SortableTableHead>
-                       <SortableTableHead
-                         sortKey="length"
-                         currentSortKey={tableConfig.sortConfig.key as string}
-                         sortDirection={tableConfig.sortConfig.direction}
-                         onSort={tableConfig.handleSort}
-                       >
-                         Length
-                       </SortableTableHead>
-                       <SortableTableHead
-                         sortKey="installationYear"
-                         currentSortKey={tableConfig.sortConfig.key as string}
-                         sortDirection={tableConfig.sortConfig.direction}
-                         onSort={tableConfig.handleSort}
-                       >
-                         Installation Year
-                       </SortableTableHead>
-                       <SortableTableHead
-                         sortKey="operatingPressure"
-                         currentSortKey={tableConfig.sortConfig.key as string}
-                         sortDirection={tableConfig.sortConfig.direction}
-                         onSort={tableConfig.handleSort}
-                       >
-                         Operating Pressure
-                       </SortableTableHead>
-                       <SortableTableHead
-                         sortKey="consumerCategory"
-                         currentSortKey={tableConfig.sortConfig.key as string}
-                         sortDirection={tableConfig.sortConfig.direction}
-                         onSort={tableConfig.handleSort}
-                       >
-                         Consumer Category
-                       </SortableTableHead>
-                       <SortableTableHead
-                         sortKey="status"
-                         currentSortKey={tableConfig.sortConfig.key as string}
-                         sortDirection={tableConfig.sortConfig.direction}
-                         onSort={tableConfig.handleSort}
-                       >
-                         Status
-                       </SortableTableHead>
-                     </TableRow>
+                    <TableRow>
+                      {propColumns.length === 0 ? (
+                        <TableHead>No data</TableHead>
+                      ) : (
+                        propColumns.map((col) => (
+                          <SortableTableHead
+                            key={col}
+                            sortKey={col}
+                            currentSortKey={tableConfig.sortConfig.key as unknown as string}
+                            sortDirection={tableConfig.sortConfig.direction}
+                            onSort={(k) => tableConfig.handleSort(k as keyof DynamicRow)}
+                          >
+                            {col}
+                          </SortableTableHead>
+                        ))
+                      )}
+                    </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {sortedAndPaginatedData.map((segment) => (
-                       <TableRow key={segment.id}>
-                         <TableCell className="font-medium">
-                           {segment.name}
-                         </TableCell>
-                         <TableCell>
-                           {segment.specifications?.diameter?.value || 'N/A'} {segment.specifications?.diameter?.unit || ''}
-                         </TableCell>
-                         <TableCell>{segment.specifications?.material || 'N/A'}</TableCell>
-                         <TableCell>
-                           {segment.specifications?.length?.value || 'N/A'} {segment.specifications?.length?.unit || ''}
-                         </TableCell>
-                         <TableCell>{segment.installation?.installationYear || 'N/A'}</TableCell>
-                         <TableCell>
-                           {segment.operatingPressure?.nominal || 'N/A'} {segment.operatingPressure?.unit || ''}
-                         </TableCell>
-                         <TableCell>{segment.consumerCategory?.type || 'N/A'}</TableCell>
-                         <TableCell>{getStatusBadge(segment.status)}</TableCell>
+                    {sortedAndPaginatedData.map((row, idx) => (
+                      <TableRow key={String((row as any).id ?? idx)}>
+                        {propColumns.map((col) => {
+                          const value = (row as any)[col];
+                          return (
+                            <TableCell key={col}>
+                              {value === null || value === undefined || value === "" ? "-" : String(value)}
+                            </TableCell>
+                          );
+                        })}
                       </TableRow>
                     ))}
                   </TableBody>
@@ -417,7 +404,7 @@ export const PipelineNetworkEditor = () => {
             </div>
 
             {/* Pagination */}
-            {!loading && (
+            {!propLoading && (
               <Pagination
                 config={tableConfig.paginationConfig}
                 onPageChange={tableConfig.setCurrentPage}
