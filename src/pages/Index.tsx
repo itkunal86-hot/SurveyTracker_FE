@@ -13,8 +13,6 @@ import CatastropheManagement from "@/components/CatastropheManagement";
 import ValveOperationLog from "@/components/ValveOperationLog";
 import { ReportsDashboard } from "@/components/ReportsDashboard";
 import { SurveyDashboard } from "@/components/survey/Dashboard";
-import { InstrumentList } from "@/components/survey/InstrumentList";
-import { InstrumentDetail } from "@/components/survey/InstrumentDetail";
 import { HeatmapView } from "@/components/survey/HeatmapView";
 import { AlertsNotifications } from "@/components/survey/AlertsNotifications";
 import { SurveyReports } from "@/components/survey/SurveyReports";
@@ -82,10 +80,6 @@ const Index = () => {
           return <DailyPersonalMaps />;
         case "survey-dashboard":
           return <SurveyDashboard />;
-        case "instrument-list":
-          return <InstrumentList />;
-        case "instrument-detail":
-          return <InstrumentDetail onBack={() => setActiveTab("instrument-list")} />;
         case "heatmap-view":
           return <HeatmapView />;
         case "alerts-notifications":
@@ -105,8 +99,6 @@ const Index = () => {
         return <DeviceStatus />;
       case "daily-maps":
         return <DailyPersonalMaps />;
-      case "instrument-list":
-        return <InstrumentList />;
       case "heatmap-view":
         return <HeatmapView />;
       case "alerts-notifications":
