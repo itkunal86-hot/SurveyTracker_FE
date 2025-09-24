@@ -11,13 +11,7 @@ interface AssetTypeItem {
   menuName: string | null;
 }
 
-const normalizeHeading = (name: string) => {
-  const n = name.trim().toLowerCase();
-  if (n === "pipeline") return "Pipeline Network";
-  if (n === "valve") return "Valve Points";
-  if (n === "catastrophe" || n === "catastrophe management") return "Catastrophe Management";
-  return name;
-};
+const normalizeHeading = (name: string) => name;
 
 export default function AssetMenus() {
   const { menu } = useParams<{ menu: string }>();
