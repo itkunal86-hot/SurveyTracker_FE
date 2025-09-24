@@ -69,12 +69,6 @@ const adminManagerMenuItems: MenuItem[] = [
     roles: ["admin", "manager"],
   },
   {
-    id: "instrument-list",
-    label: "Instrument List",
-    icon: Users,
-    roles: ["admin", "manager"],
-  },
-  {
     id: "heatmap-view",
     label: "Heatmap View",
     icon: Map,
@@ -118,12 +112,6 @@ const surveyMenuItems: MenuItem[] = [
     id: "survey-dashboard",
     label: "Dashboard",
     icon: Monitor,
-    roles: ["survey"],
-  },
-  {
-    id: "instrument-list",
-    label: "Instrument List",
-    icon: Users,
     roles: ["survey"],
   },
   {
@@ -203,13 +191,7 @@ export const Sidebar = ({
   // Build dynamic asset menus from AssetTypes API
   const [assetMenus, setAssetMenus] = useState<Array<{ id: string; label: string; icon: any; order: number; path: string }>>([]);
 
-  const normalizeHeading = (name: string) => {
-    const n = name.trim().toLowerCase();
-    if (n === "pipeline" || n === "pipe") return "Pipeline Network";
-    if (n === "valve") return "Valve Points";
-    if (n.includes("catastrophe")) return "Catastrophe Management";
-    return name;
-  };
+  const normalizeHeading = (name: string) => name;
 
   useEffect(() => {
     let mounted = true;
@@ -361,7 +343,13 @@ export const Sidebar = ({
               onClick={onClick}
             >
               <Icon className={cn("h-4 w-4", !isCollapsed && "mr-3")} />
-              {!isCollapsed && <span className="text-sm font-medium">{item.label}</span>}
+              {!isCollapsed && (
+                <span className="text-sm font-medium">
+                  {item.id === "devices"
+                    ? (userRole === "admin" ? "Device Status" : "Instrument List")
+                    : item.label}
+                </span>
+              )}
             </Button>
           );
         })}
