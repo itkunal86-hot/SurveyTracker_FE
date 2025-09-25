@@ -51,12 +51,12 @@ export default function DeviceMaster() {
           apiClient.getStatusOptions("device"),
         ]);
         const types = Array.isArray(typesRes?.data) ? typesRes.data.map((t: any) => String(t.value ?? t.name ?? t).toUpperCase()) : [];
-        const statuses = Array.isArray(statusRes?.data) ? statusRes.data.map((s: any) => String(s.value ?? s.name ?? s).toUpperCase()) : ["ACTIVE","INACTIVE","MAINTENANCE","ERROR"];
-        setDeviceTypes(types.length ? types : ["TRIMBLE_SPS986","MONITORING_STATION","SURVEY_EQUIPMENT"]);
-        setStatusOptions(statuses.length ? statuses : ["ACTIVE","INACTIVE","MAINTENANCE","ERROR"]);
+        const statuses = Array.isArray(statusRes?.data) ? statusRes.data.map((s: any) => String(s.value ?? s.name ?? s).toUpperCase()) : ["ACTIVE", "INACTIVE", "MAINTENANCE", "ERROR"];
+        setDeviceTypes(types.length ? types : ["TRIMBLE_SPS986", "MONITORING_STATION", "SURVEY_EQUIPMENT"]);
+        setStatusOptions(statuses.length ? statuses : ["ACTIVE", "INACTIVE", "MAINTENANCE", "ERROR"]);
       } catch {
-        setDeviceTypes(["TRIMBLE_SPS986","MONITORING_STATION","SURVEY_EQUIPMENT"]);
-        setStatusOptions(["ACTIVE","INACTIVE","MAINTENANCE","ERROR"]);
+        setDeviceTypes(["TRIMBLE_SPS986", "MONITORING_STATION", "SURVEY_EQUIPMENT"]);
+        setStatusOptions(["ACTIVE", "INACTIVE", "MAINTENANCE", "ERROR"]);
       }
     };
     loadConfig();
@@ -86,8 +86,29 @@ export default function DeviceMaster() {
     return Object.keys(e).length === 0;
   };
 
+  // const onSubmit = async () => {
+  //   if (!validate()) return;
+  //   const payload = {
+  //     name: form.name.trim(),
+  //     type: form.type,
+  //     status: form.status,
+  //     modelName: form.modelName || undefined,
+  //   };
+
+  //   if (editing) {
+  //     await apiClient.updateDevice(editing.id, payload);
+  //   } else {
+  //     await apiClient.createDevice(payload);
+  //   }
+  //   await loadDevices();
+  //   toast({ title: editing ? "Device updated" : "Device created" });
+  //   resetForm();
+  // };
+
+
   const onSubmit = async () => {
     if (!validate()) return;
+
     const payload = {
       name: form.name.trim(),
       type: form.type,
@@ -95,14 +116,27 @@ export default function DeviceMaster() {
       modelName: form.modelName || undefined,
     };
 
+    let response;
+
     if (editing) {
-      await apiClient.updateDevice(editing.id, payload);
+      response = await apiClient.updateDevice(editing.id, payload);
     } else {
-      await apiClient.createDevice(payload);
+      response = await apiClient.createDevice(payload);
     }
-    await loadDevices();
-    toast({ title: editing ? "Device updated" : "Device created" });
-    resetForm();
+
+    if (response.success) {
+      await loadDevices();
+      toast({
+        title: response.message || (editing ? "Device updated successfully" : "Device created successfully"),
+        //status: "success", // ✅ green success style if using Chakra/other lib
+      });
+      resetForm();
+    } else {
+      toast({
+        title: response.message || (editing ? "Failed to update device" : "Failed to create device"),
+        //status: "error", // ✅ red error style
+      });
+    }
   };
 
   const onEdit = (item: Device) => {
@@ -185,9 +219,9 @@ export default function DeviceMaster() {
                   </div>
 
                   <div className="space-y-2">
-                  <Label htmlFor="modelName">Model Name</Label>
-                  <Input id="modelName" value={form.modelName} onChange={(e) => setForm({ ...form, modelName: e.target.value })} />
-                </div>
+                    <Label htmlFor="modelName">Model Name</Label>
+                    <Input id="modelName" value={form.modelName} onChange={(e) => setForm({ ...form, modelName: e.target.value })} />
+                  </div>
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={resetForm}>Cancel</Button>

@@ -78,7 +78,7 @@ export const PipelineNetworkEditor = () => {
       setPropLoading(true);
       setPropError(null);
       try {
-        const url = `https://localhost:7215/api/AssetProperties/ByType/valve`;
+        const url = `https://localhost:7215/api/AssetProperties/ByType/pipe`;
         const res = await fetch(url, { signal: controller.signal });
         if (!res.ok) throw new Error(`Request failed: ${res.status}`);
         const json = await res.json();

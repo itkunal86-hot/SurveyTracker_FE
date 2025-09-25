@@ -133,13 +133,13 @@ export interface PipelineSegment {
   id: string;
   name: string;
   status: "OPERATIONAL" | "MAINTENANCE" | "DAMAGED" | "INACTIVE";
-  
+
   // Comprehensive spatial feature attributes
   specifications: PipeSpecifications;
   operatingPressure: OperatingPressure;
   installation: InstallationDetails;
   consumerCategory?: ConsumerCategory;
-  
+
   // Geolocation with detailed points
   coordinates: GeolocationPoint[]; // Start, end, and intermediate points
   elevationProfile?: {
@@ -150,7 +150,7 @@ export interface PipelineSegment {
     }>;
     gradient?: number; // Overall gradient percentage
   };
-  
+
   // Maintenance and inspection data
   lastInspection?: string;
   nextInspection?: string;
@@ -161,18 +161,18 @@ export interface PipelineSegment {
     cost?: number;
     contractor?: string;
   }>;
-  
+
   // Performance metrics
   flowRate?: {
     current: number;
     maximum: number;
     unit: "LPS" | "GPM" | "M3H";
   };
-  
+
   // Associated assets
   connectedValves?: string[]; // Array of valve IDs
   connectedDevices?: string[]; // Array of device IDs
-  
+
   // Documentation
   drawings?: Array<{
     type: "AS_BUILT" | "DESIGN" | "INSPECTION" | "REPAIR";
@@ -180,7 +180,7 @@ export interface PipelineSegment {
     url: string;
     uploadDate: string;
   }>;
-  
+
   // Compliance and certifications
   standards?: string[]; // e.g., ["API 5L", "ASME B31.8", "ISO 9001"]
   certifications?: Array<{
@@ -208,12 +208,12 @@ export interface Valve {
 export interface Catastrophe {
   id: string;
   type:
-    | "LEAK"
-    | "BURST"
-    | "BLOCKAGE"
-    | "CORROSION"
-    | "SUBSIDENCE"
-    | "THIRD_PARTY_DAMAGE";
+  | "LEAK"
+  | "BURST"
+  | "BLOCKAGE"
+  | "CORROSION"
+  | "SUBSIDENCE"
+  | "THIRD_PARTY_DAMAGE";
   severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
   status: "REPORTED" | "INVESTIGATING" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";
   coordinates: Coordinates;
@@ -480,36 +480,36 @@ class ApiClient {
   ];
   private mockAssetProperties: AssetProperty[] = [
     { id: "AP_001", name: "Diameter", dataType: 1, isRequired: true, order: 1, options: null, valueUnit: "mm", assetTypeId: "AT_001", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-    { id: "AP_002", name: "Valve Type", dataType: 2, isRequired: true, order: 2, options: JSON.stringify(["Gate","Ball","Butterfly"]), valueUnit: null, assetTypeId: "AT_001", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+    { id: "AP_002", name: "Valve Type", dataType: 2, isRequired: true, order: 2, options: JSON.stringify(["Gate", "Ball", "Butterfly"]), valueUnit: null, assetTypeId: "AT_001", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
   ];
 
   private filterMockData<T>(data: T[], params?: any): T[] {
     let filtered = [...data];
-    
+
     if (params?.status) {
       filtered = filtered.filter((item: any) => item.status === params.status);
     }
-    
+
     if (params?.type) {
       filtered = filtered.filter((item: any) => item.type === params.type);
     }
-    
+
     if (params?.material) {
       filtered = filtered.filter((item: any) => item.material === params.material);
     }
-    
+
     if (params?.severity) {
       filtered = filtered.filter((item: any) => item.severity === params.severity);
     }
-    
+
     if (params?.deviceId) {
       filtered = filtered.filter((item: any) => item.deviceId === params.deviceId);
     }
-    
+
     if (params?.surveyor) {
       filtered = filtered.filter((item: any) => item.surveyor === params.surveyor);
     }
-    
+
     return filtered;
   }
 
@@ -889,52 +889,147 @@ class ApiClient {
     }
   }
 
+  // async createDevice(
+  //   device: DeviceCreateUpdate,
+  // ): Promise<ApiResponse<Device>> {
+  //  const sessionData = sessionStorage.getItem("currentUser"); // 👈 replace with your actual key name
+  //   if (sessionData) {
+  //     const parsed = JSON.parse(sessionData);
+  //    // console.log("udId:", parsed.userData.udId); // 👉 1
+
+  //   // Build body with only allowed fields
+  //   const body: any = {
+  //     name: device.name,
+  //     type: device.type,
+  //     status: device.status,
+  //     performedBy: parsed.userData.udId ,
+  //     ...(device.modelName !== undefined ? { modelName: device.modelName } : {}),
+  //   };
+
+  //   try {
+  //     return await this.request<ApiResponse<Device>>("/Device", {
+  //       method: "POST",
+  //       body: JSON.stringify(body),
+  //     });
+  //   } catch (primaryError) {
+  //     return await this.request<ApiResponse<Device>>("/devices", {
+  //       method: "POST",
+  //       body: JSON.stringify(body),
+  //     });
+  //   }
+  // }
+  // }
+
   async createDevice(
     device: DeviceCreateUpdate,
   ): Promise<ApiResponse<Device>> {
-    // Build body with only allowed fields
-    const body: any = {
-      name: device.name,
-      type: device.type,
-      status: device.status,
-      ...(device.modelName !== undefined ? { modelName: device.modelName } : {}),
-    };
+    const sessionData = sessionStorage.getItem("currentUser"); // 👈 replace with your actual key name
+    let body: any = {};
+
+    if (sessionData) {
+      const parsed = JSON.parse(sessionData);
+
+      // Build body with only allowed fields
+      body = {
+        name: device.name,
+        type: device.type,
+        status: device.status,
+        performedBy: parsed.userData.udId,
+        ...(device.modelName !== undefined ? { modelName: device.modelName } : {}),
+      };
+    }
 
     try {
-      return await this.request<ApiResponse<Device>>("/Device", {
+      const response = await this.request<any>("/Device", {
         method: "POST",
         body: JSON.stringify(body),
       });
-    } catch (primaryError) {
-      return await this.request<ApiResponse<Device>>("/devices", {
-        method: "POST",
-        body: JSON.stringify(body),
-      });
+
+      return {
+        success: (response?.status_code ?? 200) >= 200 && (response?.status_code ?? 200) < 300,
+        message: response.message ?? "Device created successfully",
+        data: response.data ?? null,
+        timestamp: response.timestamp ?? new Date().toISOString(),
+      };
+    } catch (primaryrror) {
+
+      return {
+        success: false,
+        message: "Failed to create device",
+        data: null,
+        timestamp: new Date().toISOString(),
+      };
+
     }
   }
+
+
+  // async updateDevice(
+  //   id: string,
+  //   device: Partial<DeviceCreateUpdate>,
+  // ): Promise<ApiResponse<Device>> {
+  //   // Build body with only allowed fields
+  //   const body: any = {
+  //     ...(device.name !== undefined ? { name: device.name } : {}),
+  //     ...(device.type !== undefined ? { type: device.type } : {}),
+  //     ...(device.status !== undefined ? { status: device.status } : {}),
+  //     ...(device.modelName !== undefined ? { modelName: device.modelName } : {}),
+  //   };
+
+  //   try {
+  //     return await this.request<ApiResponse<Device>>(`/Device/${id}`, {
+  //       method: "PUT",
+  //       body: JSON.stringify(body),
+  //     });
+  //   } catch (primaryError) {
+  //     return await this.request<ApiResponse<Device>>(`/devices/${id}`, {
+  //       method: "PUT",
+  //       body: JSON.stringify(body),
+  //     });
+  //   }
+  // }
 
   async updateDevice(
     id: string,
     device: Partial<DeviceCreateUpdate>,
   ): Promise<ApiResponse<Device>> {
+    // Get performedBy from session
+    const sessionData = sessionStorage.getItem("currentUser");
+    let performedBy: number | null = null;
+
+    if (sessionData) {
+      const parsed = JSON.parse(sessionData);
+      performedBy = parsed?.userData?.udId ?? null;
+    }
+
     // Build body with only allowed fields
     const body: any = {
       ...(device.name !== undefined ? { name: device.name } : {}),
       ...(device.type !== undefined ? { type: device.type } : {}),
       ...(device.status !== undefined ? { status: device.status } : {}),
       ...(device.modelName !== undefined ? { modelName: device.modelName } : {}),
+      ...(performedBy !== null ? { performedBy } : {}),
     };
 
     try {
-      return await this.request<ApiResponse<Device>>(`/Device/${id}`, {
+      const response = await this.request<any>(`/Device/${id}`, {
         method: "PUT",
         body: JSON.stringify(body),
       });
-    } catch (primaryError) {
-      return await this.request<ApiResponse<Device>>(`/devices/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(body),
-      });
+
+      return {
+        success: (response?.status_code ?? 200) >= 200 && (response?.status_code ?? 200) < 300,
+        message: response.message ?? "Device updated successfully",
+        data: response.data ?? null,
+        timestamp: response.timestamp ?? new Date().toISOString(),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: "Failed to update device",
+        data: null,
+        timestamp: new Date().toISOString(),
+      };
     }
   }
 
@@ -1313,7 +1408,7 @@ class ApiClient {
       surveyId,
       surveyName: surveyName ?? undefined,
       fromDate: from ? String(from) : new Date().toISOString(),
-      toDate: to ? String(to) : new Date(Date.now() + 7*24*60*60*1000).toISOString(),
+      toDate: to ? String(to) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
       isActive,
       createdAt: String(createdAt),
     } as DeviceAssignment;
@@ -1510,7 +1605,7 @@ class ApiClient {
     const statusRaw = (raw.status ?? raw.Status ?? raw.smStatus ?? raw.SM_STATUS ?? "ACTIVE").toString();
     const status = statusRaw.toUpperCase() === "CLOSED" ? "CLOSED" : "ACTIVE";
 
-    const createdBy = String(raw.createdBy ?? raw.CreatedBy ??  raw.createdByName ?? "");
+    const createdBy = String(raw.createdBy ?? raw.CreatedBy ?? raw.createdByName ?? "");
     const createdAt = String(raw.createdAt ?? raw.CreatedAt ?? raw.timestamp ?? new Date().toISOString());
     const updatedAt = String(raw.updatedAt ?? raw.UpdatedAt ?? createdAt);
 
@@ -1791,7 +1886,7 @@ class ApiClient {
           id: "OP-001",
           valveId: "VALVE_001",
           operation: "CLOSE",
-          status: "COMPLETED", 
+          status: "COMPLETED",
           timestamp: new Date(2024, 0, 15, 14, 30, 0).toISOString(),
           operator: "John Smith",
           reason: "Emergency closure due to gas leak",
@@ -1799,7 +1894,7 @@ class ApiClient {
         },
         {
           id: "OP-002",
-          valveId: "VALVE_002", 
+          valveId: "VALVE_002",
           operation: "CLOSE",
           status: "COMPLETED",
           timestamp: new Date(2024, 0, 10, 9, 15, 0).toISOString(),
@@ -1808,7 +1903,7 @@ class ApiClient {
           notes: "Isolation for pressure drop investigation",
         },
       ];
-      
+
       let filteredOperations = mockOperations;
       if (params?.valveId) {
         filteredOperations = filteredOperations.filter(op => op.valveId === params.valveId);
@@ -1856,7 +1951,7 @@ class ApiClient {
     operation: Partial<ValveOperation>,
   ): Promise<ApiResponse<ValveOperation>> {
     return this.request<ApiResponse<ValveOperation>>(`/valve-operations/${id}`, {
-      method: "PUT", 
+      method: "PUT",
       body: JSON.stringify(operation),
     });
   }
@@ -2166,7 +2261,7 @@ class ApiClient {
         if (s === "OFFLINE" || s === "DISCONNECTED") return "INACTIVE";
         if (s === "MAINTENANCE" || s === "SERVICE") return "MAINTENANCE";
         if (s === "ERROR" || s === "FAULT") return "ERROR";
-        const allowed = new Set(["ACTIVE","INACTIVE","MAINTENANCE","ERROR"]);
+        const allowed = new Set(["ACTIVE", "INACTIVE", "MAINTENANCE", "ERROR"]);
         return (allowed.has(s) ? (s as Device["status"]) : "ACTIVE");
       };
 
@@ -2302,8 +2397,8 @@ export function toLegacyPipelineSegment(pipeline: PipelineSegment): LegacyPipeli
 export function fromLegacyPipelineSegment(legacy: Partial<LegacyPipelineSegment>): Partial<PipelineSegment> {
   const coordinates: GeolocationPoint[] = legacy.coordinates?.map((coord, index) => ({
     ...coord,
-    pointType: index === 0 ? "START" : 
-               index === (legacy.coordinates?.length || 1) - 1 ? "END" : "NODE"
+    pointType: index === 0 ? "START" :
+      index === (legacy.coordinates?.length || 1) - 1 ? "END" : "NODE"
   })) || [];
 
   return {
