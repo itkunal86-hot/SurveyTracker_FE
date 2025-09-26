@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -20,7 +20,7 @@ import {
   useCreateCatastrophe,
   useUpdateCatastrophe,
 } from "@/hooks/useApiQueries";
-import { Catastrophe as APICatastrophe } from "@/lib/api";
+import apiClient, { Catastrophe as APICatastrophe } from "@/lib/api";
 import { toast } from "sonner";
 
 export interface Catastrophe {
@@ -79,6 +79,29 @@ const CatastropheManagement = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingCatastrophe, setEditingCatastrophe] =
     useState<Catastrophe | null>(null);
+  const [showAddButton, setShowAddButton] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await apiClient.getAssetTypes({ limit: 50 });
+        const items = Array.isArray(res?.data) ? res.data : [];
+        const catastropheType = items.find((a) => {
+          const name = (a.name || "").toLowerCase();
+          const menu = (a.menuName || "").toLowerCase();
+          return name === "catastrophe" || menu.includes("catastrophe");
+        });
+        if (mounted && catastropheType && !catastropheType.isSurveyElement) {
+          // Only enforce show when API explicitly marks it as non-survey element
+          setShowAddButton(true);
+        }
+      } catch {
+        // Ignore errors; keep previous behavior (button visible)
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   const handleAddNew = () => {
     setEditingCatastrophe(null);
@@ -223,10 +246,12 @@ const CatastropheManagement = () => {
             />
             {isLoading ? "Loading..." : "Refresh"}
           </Button>
-          <Button onClick={handleAddNew} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Catastrophe
-          </Button>
+          {showAddButton && (
+            <Button onClick={handleAddNew} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Catastrophe
+            </Button>
+          )}
         </div>
       </div>
 
