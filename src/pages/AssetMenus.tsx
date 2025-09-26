@@ -11,6 +11,7 @@ interface AssetTypeItem {
   id: string;
   name: string;
   menuName: string | null;
+  isSurveyElement: boolean;
 }
 
 const normalizeHeading = (name: string) => name;
@@ -55,7 +56,7 @@ export default function AssetMenus() {
         if (!mounted) return;
         const items = Array.isArray(res?.data) ? res.data : [];
         setAssetTypes(
-          items.map((it: any) => ({ id: String(it.id), name: String(it.name), menuName: it.menuName ?? null }))
+          items.map((it: any) => ({ id: String(it.id), name: String(it.name), menuName: it.menuName ?? null, isSurveyElement: Boolean(it.isSurveyElement) }))
         );
       } catch {
         setAssetTypes([]);
@@ -68,23 +69,23 @@ export default function AssetMenus() {
     };
   }, []);
 
-  const { heading, defaultTab } = useMemo(() => {
+  const { heading, isCatastropheSurveyElement } = useMemo(() => {
     const key = (menu || "pipeline").toLowerCase();
     const findBy = (pred: (a: AssetTypeItem) => boolean) => assetTypes.find(pred);
 
     if (key === "pipeline") {
       const item = findBy((a) => a.name.toLowerCase() === "pipe" || (a.menuName || "").toLowerCase() === "pipeline");
-      return { heading: normalizeHeading(item?.menuName || item?.name || "Pipeline"), defaultTab: "pipelines" as const };
+      return { heading: normalizeHeading(item?.menuName || item?.name || "Pipeline"), isCatastropheSurveyElement: null as any };
     }
     if (key === "valve") {
       const item = findBy((a) => a.name.toLowerCase() === "valve" || (a.menuName || "").toLowerCase() === "valve");
-      return { heading: normalizeHeading(item?.menuName || item?.name || "Valve"), defaultTab: "valves" as const };
+      return { heading: normalizeHeading(item?.menuName || item?.name || "Valve"), isCatastropheSurveyElement: null as any };
     }
     if (key === "catastrophe") {
       const item = findBy((a) => a.name.toLowerCase() === "catastrophe" || (a.menuName || "").toLowerCase().includes("catastrophe"));
-      return { heading: normalizeHeading(item?.menuName || item?.name || "Catastrophe Management"), defaultTab: "catastrophes" as const };
+      return { heading: normalizeHeading(item?.menuName || item?.name || "Catastrophe Management"), isCatastropheSurveyElement: item ? item.isSurveyElement : true };
     }
-    return { heading: normalizeHeading("Pipeline"), defaultTab: "pipelines" as const };
+    return { heading: normalizeHeading("Pipeline"), isCatastropheSurveyElement: null as any };
   }, [menu, assetTypes]);
 
   if (loading) {
@@ -127,7 +128,7 @@ export default function AssetMenus() {
           </div>
           {key === "pipeline" && <PipelineNetworkEditor />}
           {key === "valve" && <ValvePointsEditor />}
-          {key === "catastrophe" && <CatastrophePointsEditor />}
+          {key === "catastrophe" && (isCatastropheSurveyElement ? <CatastrophePointsEditor /> : <CatastropheManagement />)}
         </div>
       </main>
     </div>
