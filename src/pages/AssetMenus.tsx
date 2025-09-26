@@ -6,7 +6,6 @@ import CatastropheManagement from "@/components/CatastropheManagement";
 import apiClient from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
 import { Sidebar } from "@/components/Sidebar";
 
 interface AssetTypeItem {
