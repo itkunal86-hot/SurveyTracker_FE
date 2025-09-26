@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ValvePointsEditor } from "@/components/ValvePointsEditor";
 import { PipelineNetworkEditor } from "@/components/PipelineNetworkEditor";
 import CatastropheManagement from "@/components/CatastropheManagement";
+import { CatastrophePointsEditor } from "@/components/CatastrophePointsEditor";
 import apiClient from "@/lib/api";
 import { Sidebar } from "@/components/Sidebar";
 
@@ -126,7 +127,7 @@ export default function AssetMenus() {
           </div>
           {key === "pipeline" && <PipelineNetworkEditor />}
           {key === "valve" && <ValvePointsEditor />}
-          {key === "catastrophe" && <CatastropheManagement />}
+          {key === "catastrophe" && <CatastrophePointsEditor />}
         </div>
       </main>
     </div>
