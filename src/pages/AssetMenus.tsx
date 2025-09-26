@@ -56,7 +56,7 @@ export default function AssetMenus() {
         if (!mounted) return;
         const items = Array.isArray(res?.data) ? res.data : [];
         setAssetTypes(
-          items.map((it: any) => ({ id: String(it.id), name: String(it.name), menuName: it.menuName ?? null }))
+          items.map((it: any) => ({ id: String(it.id), name: String(it.name), menuName: it.menuName ?? null, isSurveyElement: Boolean(it.isSurveyElement) }))
         );
       } catch {
         setAssetTypes([]);
