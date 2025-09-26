@@ -69,23 +69,23 @@ export default function AssetMenus() {
     };
   }, []);
 
-  const { heading, defaultTab } = useMemo(() => {
+  const { heading, isCatastropheSurveyElement } = useMemo(() => {
     const key = (menu || "pipeline").toLowerCase();
     const findBy = (pred: (a: AssetTypeItem) => boolean) => assetTypes.find(pred);
 
     if (key === "pipeline") {
       const item = findBy((a) => a.name.toLowerCase() === "pipe" || (a.menuName || "").toLowerCase() === "pipeline");
-      return { heading: normalizeHeading(item?.menuName || item?.name || "Pipeline"), defaultTab: "pipelines" as const };
+      return { heading: normalizeHeading(item?.menuName || item?.name || "Pipeline"), isCatastropheSurveyElement: null as any };
     }
     if (key === "valve") {
       const item = findBy((a) => a.name.toLowerCase() === "valve" || (a.menuName || "").toLowerCase() === "valve");
-      return { heading: normalizeHeading(item?.menuName || item?.name || "Valve"), defaultTab: "valves" as const };
+      return { heading: normalizeHeading(item?.menuName || item?.name || "Valve"), isCatastropheSurveyElement: null as any };
     }
     if (key === "catastrophe") {
       const item = findBy((a) => a.name.toLowerCase() === "catastrophe" || (a.menuName || "").toLowerCase().includes("catastrophe"));
-      return { heading: normalizeHeading(item?.menuName || item?.name || "Catastrophe Management"), defaultTab: "catastrophes" as const };
+      return { heading: normalizeHeading(item?.menuName || item?.name || "Catastrophe Management"), isCatastropheSurveyElement: item ? item.isSurveyElement : true };
     }
-    return { heading: normalizeHeading("Pipeline"), defaultTab: "pipelines" as const };
+    return { heading: normalizeHeading("Pipeline"), isCatastropheSurveyElement: null as any };
   }, [menu, assetTypes]);
 
   if (loading) {
