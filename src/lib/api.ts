@@ -1776,77 +1776,175 @@ class ApiClient {
     return createMockApiResponse(item);
   }
 
-  async createSurveyMaster(payload: Partial<AdminSurvey>): Promise<ApiResponse<AdminSurvey>> {
-    const body: any = {
-      SmName: payload.name,
-      ScId: payload.categoryId,
-      SmStartDate: payload.startDate,
-      SmEndDate: payload.endDate,
-      SmStatus: payload.status,
-    };
-    const tryPaths = [`/SurveyMaster`];
+  // async createSurveyMaster(payload: Partial<AdminSurvey>): Promise<ApiResponse<AdminSurvey>> {
+  //   const body: any = {
+  //     SmName: payload.name,
+  //     ScId: payload.categoryId,
+  //     SmStartDate: payload.startDate,
+  //     SmEndDate: payload.endDate,
+  //     SmStatus: payload.status,
+  //   };
+  //   const tryPaths = [`/SurveyMaster`];
 
-    for (const path of tryPaths) {
-      try {
-        const raw = await this.request<any>(path, { method: "POST", body: JSON.stringify(body) });
-        const item = this.mapSurveyMaster(raw?.data ?? raw);
-        return { success: true, data: item, timestamp: new Date().toISOString(), message: raw?.message };
-      } catch (_) {
-        // try next
-      }
+  //   for (const path of tryPaths) {
+  //     try {
+  //       const raw = await this.request<any>(path, { method: "POST", body: JSON.stringify(body) });
+  //       const item = this.mapSurveyMaster(raw?.data ?? raw);
+  //       return { success: true, data: item, timestamp: new Date().toISOString(), message: raw?.message };
+  //     } catch (_) {
+  //       // try next
+  //     }
+  //   }
+
+  //   const now = new Date().toISOString();
+  //   const item: AdminSurvey = {
+  //     id: `SUR_${Date.now()}`,
+  //     name: String(payload.name || "New Survey"),
+  //     categoryId: String(payload.categoryId || ""),
+  //     categoryName: undefined,
+  //     startDate: String(payload.startDate || now.slice(0, 10)),
+  //     endDate: String(payload.endDate || now.slice(0, 10)),
+  //     status: (payload.status as any) || "ACTIVE",
+  //     createdBy: "System",
+  //     createdAt: now,
+  //     updatedAt: now,
+  //   } as AdminSurvey;
+  //   return createMockApiResponse(item);
+  // }
+
+  //************************ */
+
+  async createSurveyMaster(survey: Partial<AdminSurvey>): Promise<ApiResponse<AdminSurvey>> 
+  {
+    const sessionData = sessionStorage.getItem("currentUser"); // 👈 update if your key is different
+    let body: any = {};
+
+    if (sessionData) {
+    const parsed = JSON.parse(sessionData);
+
+    // Build body with only allowed fields
+    body = {
+      SmName: survey.name,
+      ScId: survey.categoryId,
+      SmStartDate: survey.startDate,
+      SmEndDate: survey.endDate,
+      SmStatus: survey.status,
+      performedBy: parsed.userData.udId, // 👈 add performedBy
+    };
     }
 
-    const now = new Date().toISOString();
-    const item: AdminSurvey = {
-      id: `SUR_${Date.now()}`,
-      name: String(payload.name || "New Survey"),
-      categoryId: String(payload.categoryId || ""),
-      categoryName: undefined,
-      startDate: String(payload.startDate || now.slice(0, 10)),
-      endDate: String(payload.endDate || now.slice(0, 10)),
-      status: (payload.status as any) || "ACTIVE",
-      createdBy: "System",
-      createdAt: now,
-      updatedAt: now,
-    } as AdminSurvey;
-    return createMockApiResponse(item);
+    try {
+    const response = await this.request<any>("/SurveyMaster", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+
+    return {
+      success:
+        (response?.status_code ?? 200) >= 200 &&
+        (response?.status_code ?? 200) < 300,
+      message: response.message ?? "Survey created successfully",
+      data: this.mapSurveyMaster(response?.data ?? response),
+      timestamp: response.timestamp ?? new Date().toISOString(),
+    };
+    } catch (error) {
+    return {
+      success: false,
+      message: "Failed to create survey",
+      data: null,
+      timestamp: new Date().toISOString(),
+    };
+    }
   }
 
-  async updateSurveyMaster(id: string, payload: Partial<AdminSurvey>): Promise<ApiResponse<AdminSurvey>> {
-    const body: any = {
-      ...(payload.name !== undefined ? { SmName: payload.name } : {}),
-      ...(payload.categoryId !== undefined ? { ScId: payload.categoryId } : {}),
-      ...(payload.startDate !== undefined ? { SmStartDate: payload.startDate } : {}),
-      ...(payload.endDate !== undefined ? { SmEndDate: payload.endDate } : {}),
-      ...(payload.status !== undefined ? { SmStatus: payload.status } : {}),
-    };
+  //************************ */
 
-    const tryPaths = [`/SurveyMaster/${id}`];
-    for (const path of tryPaths) {
-      try {
-        const raw = await this.request<any>(path, { method: "PUT", body: JSON.stringify(body) });
-        const item = this.mapSurveyMaster(raw?.data ?? raw);
-        return { success: true, data: item, timestamp: new Date().toISOString(), message: raw?.message };
-      } catch (_) {
-        // try next
-      }
+  // async updateSurveyMaster(id: string, payload: Partial<AdminSurvey>): Promise<ApiResponse<AdminSurvey>> {
+  //   const body: any = {
+  //     ...(payload.name !== undefined ? { SmName: payload.name } : {}),
+  //     ...(payload.categoryId !== undefined ? { ScId: payload.categoryId } : {}),
+  //     ...(payload.startDate !== undefined ? { SmStartDate: payload.startDate } : {}),
+  //     ...(payload.endDate !== undefined ? { SmEndDate: payload.endDate } : {}),
+  //     ...(payload.status !== undefined ? { SmStatus: payload.status } : {}),
+  //   };
+
+  //   const tryPaths = [`/SurveyMaster/${id}`];
+  //   for (const path of tryPaths) {
+  //     try {
+  //       const raw = await this.request<any>(path, { method: "PUT", body: JSON.stringify(body) });
+  //       const item = this.mapSurveyMaster(raw?.data ?? raw);
+  //       return { success: true, data: item, timestamp: new Date().toISOString(), message: raw?.message };
+  //     } catch (_) {
+  //       // try next
+  //     }
+  //   }
+
+  //   const now = new Date().toISOString();
+  //   const item: AdminSurvey = {
+  //     id,
+  //     name: String(payload.name || `Survey ${id}`),
+  //     categoryId: String(payload.categoryId || ""),
+  //     categoryName: undefined,
+  //     startDate: String(payload.startDate || now.slice(0, 10)),
+  //     endDate: String(payload.endDate || now.slice(0, 10)),
+  //     status: (payload.status as any) || "ACTIVE",
+  //     createdBy: "System",
+  //     createdAt: now,
+  //     updatedAt: now,
+  //   } as AdminSurvey;
+  //   return createMockApiResponse(item);
+  // }
+
+  //***************************** */
+  async updateSurveyMaster(
+  id: string,
+  payload: Partial<AdminSurvey>
+  ): Promise<ApiResponse<AdminSurvey>> {
+    // Get performedBy from session
+    const sessionData = sessionStorage.getItem("currentUser");
+    let performedBy: number | null = null;
+
+    if (sessionData) {
+    const parsed = JSON.parse(sessionData);
+    performedBy = parsed?.userData?.udId ?? null;
     }
 
-    const now = new Date().toISOString();
-    const item: AdminSurvey = {
-      id,
-      name: String(payload.name || `Survey ${id}`),
-      categoryId: String(payload.categoryId || ""),
-      categoryName: undefined,
-      startDate: String(payload.startDate || now.slice(0, 10)),
-      endDate: String(payload.endDate || now.slice(0, 10)),
-      status: (payload.status as any) || "ACTIVE",
-      createdBy: "System",
-      createdAt: now,
-      updatedAt: now,
-    } as AdminSurvey;
-    return createMockApiResponse(item);
+    // Build body with only allowed fields
+    const body: any = {
+    ...(payload.name !== undefined ? { SmName: payload.name } : {}),
+    ...(payload.categoryId !== undefined ? { ScId: payload.categoryId } : {}),
+    ...(payload.startDate !== undefined ? { SmStartDate: payload.startDate } : {}),
+    ...(payload.endDate !== undefined ? { SmEndDate: payload.endDate } : {}),
+    ...(payload.status !== undefined ? { SmStatus: payload.status } : {}),
+    ...(performedBy !== null ? { performedBy } : {}),
+    };
+
+    try {
+    const response = await this.request<any>(`/SurveyMaster/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    });
+
+    return {
+      success:
+        (response?.status_code ?? 200) >= 200 &&
+        (response?.status_code ?? 200) < 300,
+      message: response.message ?? "Survey updated successfully",
+      data: this.mapSurveyMaster(response?.data ?? response),
+      timestamp: response.timestamp ?? new Date().toISOString(),
+    };
+    } catch (error) {
+    return {
+      success: false,
+      message: "Failed to update survey",
+      data: null,
+      timestamp: new Date().toISOString(),
+    };
+    }
   }
+
+
+  //***************************** */
 
   async deleteSurveyMaster(id: string): Promise<ApiResponse<void>> {
     const tryPaths = [`/SurveyMaster/${id}`];
