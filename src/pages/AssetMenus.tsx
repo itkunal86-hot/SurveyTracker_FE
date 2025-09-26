@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ValvePointsEditor } from "@/components/ValvePointsEditor";
 import { PipelineNetworkEditor } from "@/components/PipelineNetworkEditor";
 import CatastropheManagement from "@/components/CatastropheManagement";
+import { CatastrophePointsEditor } from "@/components/CatastrophePointsEditor";
 import apiClient from "@/lib/api";
 import { Sidebar } from "@/components/Sidebar";
 
