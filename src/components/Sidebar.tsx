@@ -160,7 +160,8 @@ export const Sidebar = ({
       item.id !== "valve-operations" &&
       item.id !== "pipeline-editor" &&
       item.id !== "valve-editor" &&
-      item.id !== "catastrophe"
+      item.id !== "catastrophe" &&
+      item.id !== "heatmap-view"
   );
 
   const handleTabChange = (tabId: string) => {
