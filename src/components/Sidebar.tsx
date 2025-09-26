@@ -161,6 +161,7 @@ export const Sidebar = ({
       item.id !== "pipeline-editor" &&
       item.id !== "valve-editor" &&
       item.id !== "catastrophe" &&
+      item.id !== "daily-maps" &&
       item.id !== "heatmap-view"
   );
 

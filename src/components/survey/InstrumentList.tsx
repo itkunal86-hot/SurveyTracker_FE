@@ -6,11 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Download, Eye, Battery, Wifi, WifiOff } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export const InstrumentList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [locationFilter, setLocationFilter] = useState("all");
+  const navigate = useNavigate();
 
   // Mock data - replace with actual API calls
   const instruments = [
@@ -197,9 +199,14 @@ export const InstrumentList = () => {
                     <TableCell>{getHealthBadge(instrument.healthStatus)}</TableCell>
                     <TableCell>{instrument.totalUsage}</TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="sm">
-                        <Eye className="w-4 h-4" />
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="sm">
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button size="sm" onClick={() => navigate(`/daily-personal-maps?device=${encodeURIComponent(instrument.id)}`)}>
+                          Instrument
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
