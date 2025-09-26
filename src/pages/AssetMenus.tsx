@@ -11,6 +11,7 @@ interface AssetTypeItem {
   id: string;
   name: string;
   menuName: string | null;
+  isSurveyElement: boolean;
 }
 
 const normalizeHeading = (name: string) => name;
