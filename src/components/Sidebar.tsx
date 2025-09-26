@@ -229,7 +229,14 @@ export const Sidebar = ({
     return () => { mounted = false; };
   }, []);
 
-  const combinedItems: Array<any> = [...filteredItems, ...assetMenus];
+  const filteredAssetMenus = assetMenus.filter((m) => {
+    if (userRole === "survey") {
+      return m.id !== "assets:pipeline" && m.id !== "assets:valve" && m.id !== "assets:catastrophe";
+    }
+    return true;
+  });
+
+  const combinedItems: Array<any> = [...filteredItems, ...filteredAssetMenus];
 
   return (
     <div
