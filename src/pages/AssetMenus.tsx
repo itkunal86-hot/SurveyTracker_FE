@@ -1,12 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { ValvePointsEditor } from "@/components/ValvePointsEditor";
 import { PipelineNetworkEditor } from "@/components/PipelineNetworkEditor";
 import CatastropheManagement from "@/components/CatastropheManagement";
 import apiClient from "@/lib/api";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
 import { Sidebar } from "@/components/Sidebar";
 
 interface AssetTypeItem {
