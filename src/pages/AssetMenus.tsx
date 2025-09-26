@@ -127,7 +127,7 @@ export default function AssetMenus() {
           </div>
           {key === "pipeline" && <PipelineNetworkEditor />}
           {key === "valve" && <ValvePointsEditor />}
-          {key === "catastrophe" && <CatastropheManagement />}
+          {key === "catastrophe" && <CatastrophePointsEditor />}
         </div>
       </main>
     </div>
