@@ -92,17 +92,12 @@ const CatastropheManagement = () => {
           const menu = (a.menuName || "").toLowerCase();
           return name === "catastrophe" || menu.includes("catastrophe");
         });
-        if (mounted) {
-          if (catastropheType) {
-            setShowAddButton(!catastropheType.isSurveyElement);
-          } else {
-            // If not found, keep the button visible as earlier
-            setShowAddButton(true);
-          }
+        if (mounted && catastropheType && !catastropheType.isSurveyElement) {
+          // Only enforce show when API explicitly marks it as non-survey element
+          setShowAddButton(true);
         }
       } catch {
-        // On API error, preserve previous behavior (show the button)
-        if (mounted) setShowAddButton(true);
+        // Ignore errors; keep previous behavior (button visible)
       }
     })();
     return () => { mounted = false; };
