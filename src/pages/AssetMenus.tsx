@@ -103,9 +103,6 @@ export default function AssetMenus() {
           <div className="p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="h-6 w-64 bg-muted animate-pulse rounded" />
-              <Button asChild variant="ghost" disabled>
-                <span className="flex items-center"><ArrowLeft className="h-4 w-4 mr-2" />Back</span>
-              </Button>
             </div>
             <div className="h-[600px] bg-muted animate-pulse rounded" />
           </div>
@@ -129,9 +126,6 @@ export default function AssetMenus() {
         <div className="p-6 space-y-4">
           <div className="flex items-center justify-between">
             <h1 className="text-3xl font-bold">{heading}</h1>
-            <Button asChild variant="ghost" onClick={() => window.history.back()}>
-              <span className="flex items-center"><ArrowLeft className="h-4 w-4 mr-2" />Back</span>
-            </Button>
           </div>
           {key === "pipeline" && <PipelineNetworkEditor />}
           {key === "valve" && <ValvePointsEditor />}
