@@ -138,12 +138,19 @@ export const DailyPersonalMaps = () => {
           name: String(d.name || d.serialNumber || d.modelName || d.id),
           type: String(d.type || "DEVICE"),
         }));
-        setDevices(items);
-        if (items.length > 0 && !items.find(x => x.id === selectedDevice)) {
-          setSelectedDevice(items[0].id);
+        const selected = selectedDevice || searchParams.get("device") || "";
+        let merged = items;
+        if (selected && !items.find(x => x.id === selected)) {
+          merged = [{ id: selected, name: selected, type: "DEVICE" }, ...items];
+        }
+        setDevices(merged);
+        if (!selected && merged.length > 0) {
+          setSelectedDevice(merged[0].id);
         }
       } catch (e) {
-        setDevices([]);
+        const selected = selectedDevice || searchParams.get("device") || "";
+        const fallback: Device[] = selected ? [{ id: selected, name: selected, type: "DEVICE" }] : [];
+        setDevices(fallback);
       } finally {
         setIsDevicesLoading(false);
       }
@@ -371,7 +378,7 @@ export const DailyPersonalMaps = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">
-            Daily Personal Maps
+            Instrument Details
           </h1>
           <p className="text-muted-foreground">
             View detailed survey activity trails for any Trimble device
