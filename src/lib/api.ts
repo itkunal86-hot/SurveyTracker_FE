@@ -2223,23 +2223,74 @@ class ApiClient {
     }
   }
 
-  async updateUser(id: string, userData: UserUpdateRequest): Promise<UserRegistrationResponse> {
-    try {
-      return await this.request<UserRegistrationResponse>(`/User/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(userData),
-      });
-    } catch (error) {
-      console.error("User update failed, using mock response:", error);
+  // async updateUser(id: string, userData: UserUpdateRequest): Promise<UserRegistrationResponse> {
+  //   try {
+  //     return await this.request<UserRegistrationResponse>(`/User/${id}`, {
+  //       method: "PUT",
+  //       body: JSON.stringify(userData),
+  //     });
+  //   } catch (error) {
+  //     console.error("User update failed, using mock response:", error);
 
-      return {
-        status_code: 200,
-        status_message: "success",
-        message: "User updated successfully (mock)",
-        data: id,
-      };
-    }
+  //     return {
+  //       status_code: 200,
+  //       status_message: "success",
+  //       message: "User updated successfully (mock)",
+  //       data: id,
+  //     };
+  //   }
+  // }
+
+  //***************************************/
+  async updateUser(
+  id: string,
+  user: UserUpdateRequest
+  ): Promise<ApiResponse<UserRegistrationResponse>> {
+  // Get performedBy from session
+  const sessionData = sessionStorage.getItem("currentUser");
+  let performedBy: number | null = null;
+
+  if (sessionData) {
+    const parsed = JSON.parse(sessionData);
+    performedBy = parsed?.userData?.udId ?? null;
   }
+
+  // Build body with only allowed fields
+  const body: any = {
+    ...(user.email !== undefined ? { email: user.email } : {}),
+    ...(user.firstName !== undefined ? { firstName: user.firstName } : {}),
+    ...(user.lastName !== undefined ? { lastName: user.lastName } : {}),
+    ...(user.role !== undefined ? { role: user.role } : {}),
+    ...(user.company !== undefined ? { company: user.company } : {}),
+    ...(user.isActive !== undefined ? { isActive: user.isActive } : {}),
+    ...(performedBy !== null ? { performedBy } : {}),
+  };
+
+  try {
+    const response = await this.request<any>(`/User/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    });
+
+    return {
+      success: (response?.status_code ?? 200) >= 200 && (response?.status_code ?? 200) < 300,
+      message: response.message ?? "User updated successfully",
+      data: response.data ?? null,
+      timestamp: response.timestamp ?? new Date().toISOString(),
+    };
+  } catch (error) {
+    console.error("User update failed:", error);
+
+    return {
+      success: false,
+      message: "Failed to update user",
+      data: null,
+      timestamp: new Date().toISOString(),
+    };
+  }
+  }
+
+  //***************************************/
 
   async deleteUser(id: string): Promise<UserRegistrationResponse> {
     try {
