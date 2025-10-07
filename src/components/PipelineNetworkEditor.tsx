@@ -483,12 +483,12 @@ export const PipelineNetworkEditor = () => {
           <CardContent>
             <div className="h-96">
               <LeafletMap
-                devices={demoDevices}
-                pipelines={demoPipelinesWithStatus}
-                valves={demoValves}
-                showDevices={true}
-                showPipelines={true}
-                showValves={true}
+                devices={mapDevices}
+                pipelines={mapPipelines}
+                valves={[]}
+                showDevices={showDevicesOnMap}
+                showPipelines={mapPipelines.length > 0}
+                showValves={false}
               />
             </div>
           </CardContent>
