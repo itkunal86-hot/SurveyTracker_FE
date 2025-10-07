@@ -126,41 +126,95 @@ export const PipelineNetworkEditor = () => {
     fetchSegments();
   }, []);
 
-  // Demo data for map visualization
-  const demoDevices = [
-    {
-      id: "MON-001",
-      name: "Central Station Monitor",
-      lat: 40.7589,
-      lng: -73.9851,
-      status: "active" as const,
-      lastPing: "15 sec ago",
-    },
-    {
-      id: "MON-002",
-      name: "East Side Distribution Monitor",
-      lat: 40.7614,
-      lng: -73.9776,
-      status: "active" as const,
-      lastPing: "23 sec ago",
-    },
-  ];
+  const mapDevices = useMemo(() => {
+    const points = new Map<
+      string,
+      {
+        id: string;
+        name: string;
+        lat: number;
+        lng: number;
+        status: "active" | "offline" | "maintenance" | "error";
+        lastPing: string;
+      }
+    >();
 
-  const demoPipelinesWithStatus = segments.map((segment) => ({
-    id: segment.id,
-    diameter: segment.specifications?.diameter?.value || 0,
-    depth: segment.installation?.depth?.value || 0,
-    status: segment.status.toLowerCase() as "normal" | "warning" | "critical",
-  }));
+    segments.forEach((segment) => {
+      const status: "active" | "offline" | "maintenance" | "error" =
+        segment.status === "OPERATIONAL"
+          ? "active"
+          : segment.status === "MAINTENANCE"
+            ? "maintenance"
+            : segment.status === "DAMAGED"
+              ? "error"
+              : "offline";
 
-  const demoValves = [
-    {
-      id: "VLV-001",
-      type: "control" as const,
-      status: "open" as const,
-      segmentId: segments[0]?.id || "PS-001",
-    },
-  ];
+      (segment.coordinates ?? []).forEach((point, index) => {
+        if (!Number.isFinite(point.lat) || !Number.isFinite(point.lng)) return;
+
+        const key = `${point.lat.toFixed(6)}:${point.lng.toFixed(6)}`;
+        if (points.has(key)) return;
+
+        const pointLabel =
+          point.pointType && typeof point.pointType === "string"
+            ? point.pointType
+                .toLowerCase()
+                .replace(/_/g, " ")
+                .replace(/\b\w/g, (char) => char.toUpperCase())
+            : `Point ${index + 1}`;
+
+        points.set(key, {
+          id: `${segment.id}-${point.pointType ?? index}`,
+          name: segment.name
+            ? `${segment.name} ${pointLabel}`
+            : `Segment ${segment.id} ${pointLabel}`,
+          lat: point.lat,
+          lng: point.lng,
+          status,
+          lastPing: "N/A",
+        });
+      });
+    });
+
+    return Array.from(points.values());
+  }, [segments]);
+
+  const mapPipelines = useMemo(() => {
+    return segments.map((segment) => {
+      const coordinates = (segment.coordinates ?? [])
+        .map((point) => ({
+          lat: point.lat,
+          lng: point.lng,
+          elevation: point.elevation,
+        }))
+        .filter((point) => Number.isFinite(point.lat) && Number.isFinite(point.lng));
+
+      return {
+        id: segment.id,
+        name: segment.name,
+        type: segment.specifications?.material,
+        diameter: segment.specifications?.diameter?.value || 0,
+        depth: segment.installation?.depth?.value || 0,
+        status:
+          segment.status === "OPERATIONAL"
+            ? ("normal" as const)
+            : segment.status === "MAINTENANCE"
+              ? ("maintenance" as const)
+              : segment.status === "DAMAGED"
+                ? ("critical" as const)
+                : ("warning" as const),
+        material: segment.specifications?.material,
+        coordinates: coordinates.length > 0 ? coordinates : undefined,
+      };
+    });
+  }, [segments]);
+
+  const hasPipelineGeometry = useMemo(
+    () => mapPipelines.some((pipeline) => (pipeline.coordinates?.length ?? 0) >= 2),
+    [mapPipelines],
+  );
+
+  const showDevicesOnMap = mapDevices.length > 0;
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
