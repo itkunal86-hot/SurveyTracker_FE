@@ -214,7 +214,63 @@ export const PipelineNetworkEditor = () => {
     [mapPipelines],
   );
 
+  const mapValves = useMemo(
+    () => {
+      const valves: Array<{
+        id: string;
+        name?: string;
+        type: "control" | "emergency" | "isolation" | "station";
+        status: "open" | "closed" | "maintenance" | "fault";
+        segmentId: string;
+        coordinates?: { lat: number; lng: number; elevation?: number };
+        criticality?: string;
+      }> = [];
+
+      segments.forEach((segment) => {
+        (segment.coordinates ?? []).forEach((point, index) => {
+          if (
+            typeof point.pointType === "string" &&
+            point.pointType.toUpperCase() === "VALVE" &&
+            Number.isFinite(point.lat) &&
+            Number.isFinite(point.lng)
+          ) {
+            const status: "open" | "closed" | "maintenance" | "fault" =
+              segment.status === "OPERATIONAL"
+                ? "open"
+                : segment.status === "MAINTENANCE"
+                  ? "maintenance"
+                  : segment.status === "DAMAGED"
+                    ? "fault"
+                    : "closed";
+
+            valves.push({
+              id: `${segment.id}-valve-${index}`,
+              name: point.description
+                ? point.description
+                : segment.name
+                  ? `${segment.name} Valve`
+                  : `Segment ${segment.id} Valve`,
+              type: "control",
+              status,
+              segmentId: segment.id,
+              coordinates: {
+                lat: point.lat,
+                lng: point.lng,
+                elevation: point.elevation,
+              },
+            });
+          }
+        });
+      });
+
+      return valves;
+    },
+    [segments],
+  );
+
   const showDevicesOnMap = mapDevices.length > 0;
+  const showPipelinesOnMap = hasPipelineGeometry || mapPipelines.length > 0;
+  const showValvesOnMap = mapValves.length > 0;
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
