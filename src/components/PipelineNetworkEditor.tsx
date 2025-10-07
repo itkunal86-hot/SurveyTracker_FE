@@ -541,10 +541,10 @@ export const PipelineNetworkEditor = () => {
               <LeafletMap
                 devices={mapDevices}
                 pipelines={mapPipelines}
-                valves={[]}
+                valves={mapValves}
                 showDevices={showDevicesOnMap}
-                showPipelines={mapPipelines.length > 0}
-                showValves={false}
+                showPipelines={showPipelinesOnMap}
+                showValves={showValvesOnMap}
               />
             </div>
           </CardContent>
