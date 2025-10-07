@@ -1,22 +1,17 @@
 import express from "express";
 import https from "https";
 
-export const deviceLogProxyRoutes = express.Router();
+export const deviceAlertsProxyRoutes = express.Router();
 
-const API_BASE_URL =
-    (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.trim()) || "https://localhost:7215/api";
-const REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS) || 15000;
-
-// GET /api/proxy/device-log -> forwards to https://localhost:7215/api/DeviceLog
-deviceLogProxyRoutes.get("/", async (req, res) => {
+// GET /api/proxy/device-alerts -> forwards to <UPSTREAM_API_URL>/api/Device/alerts
+deviceAlertsProxyRoutes.get("/", async (req, res) => {
   try {
-
     const upstreamRoot =
       process.env.UPSTREAM_API_URL ||
       process.env.API_BASE_URL ||
-      "https://altgeo-api.hirenq.com";
-    const base = `${upstreamRoot.replace(/\/$/, "")}/api/DeviceLog`;
+      "https://localhost:7215";
 
+    const base = `${upstreamRoot.replace(/\/$/, "")}/api/Device/alerts`;
     const search = new URLSearchParams(req.query as Record<string, string>).toString();
     const url = `${base}${search ? `?${search}` : ""}`;
 
@@ -25,7 +20,7 @@ deviceLogProxyRoutes.get("/", async (req, res) => {
     const upstream = await fetch(url, {
       method: "GET",
       headers: { Accept: "application/json" },
-      // @ts-expect-error - Node fetch supports agent
+      // @ts-expect-error agent is supported in node fetch
       agent,
     } as any);
 
@@ -36,7 +31,6 @@ deviceLogProxyRoutes.get("/", async (req, res) => {
     res.status(status);
     res.setHeader("content-type", contentType);
 
-    // Try to forward JSON, otherwise send raw
     try {
       const json = JSON.parse(text);
       res.json(json);
@@ -47,7 +41,7 @@ deviceLogProxyRoutes.get("/", async (req, res) => {
     res.status(502).json({
       status_code: 502,
       status_message: "Bad Gateway",
-      message: err?.message || "Failed to proxy DeviceLog",
+      message: err?.message || "Failed to proxy Device Alerts",
       timestamp: new Date().toISOString(),
     });
   }
