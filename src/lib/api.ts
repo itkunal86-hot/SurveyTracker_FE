@@ -129,6 +129,21 @@ export interface DeviceCreateUpdate {
   modelName?: string;
 }
 
+export interface DeviceAlert {
+  id: string;
+  type: string;
+  instrument: string;
+  deviceType: string;
+  message: string;
+  severity: "critical" | "warning" | "info" | string;
+  zone?: string;
+  surveyor?: string;
+  timestamp: string;
+  batteryLevel?: number;
+  healthStatus?: "Critical" | "Warning" | "Fair" | "Good" | string;
+  resolved?: boolean;
+}
+
 export interface PipelineSegment {
   id: string;
   name: string;
@@ -759,6 +774,94 @@ class ApiClient {
     } catch (error) {
       this.mockAssetProperties = this.mockAssetProperties.filter(p => p.id !== id);
       return createMockApiResponse(undefined as unknown as void);
+    }
+  }
+
+  // Alerts endpoints
+  private mapDeviceAlert(it: any): DeviceAlert {
+    const fallbackId = (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function")
+      ? crypto.randomUUID()
+      : `${Date.now()}`;
+
+    const id = String(it.id ?? it.ID ?? it.alertId ?? it.AlertId ?? fallbackId);
+    const type = String(it.type ?? it.Type ?? it.alertType ?? it.AlertType ?? "");
+    const instrument = String(it.instrument ?? it.Instrument ?? it.instrumentId ?? it.InstrumentId ?? it.deviceName ?? it.DeviceName ?? "");
+    const deviceType = String(it.deviceType ?? it.DeviceType ?? it.type ?? it.Type ?? "");
+    const message = String(it.message ?? it.Message ?? it.description ?? it.Description ?? "");
+
+    const sevRaw = String(it.severity ?? it.Severity ?? it.level ?? it.Level ?? "").toLowerCase();
+    const severity: DeviceAlert["severity"] = ["critical", "warning", "info"].includes(sevRaw) ? (sevRaw as any) : (sevRaw || "info");
+
+    const zone = it.zone ?? it.Zone ?? it.area ?? it.Area ?? undefined;
+    const surveyor = it.surveyor ?? it.Surveyor ?? it.user ?? it.User ?? undefined;
+
+    const ts = it.timestamp ?? it.Timestamp ?? it.time ?? it.Time ?? it.createdAt ?? it.CreatedAt ?? new Date().toISOString();
+    const timestamp = String(ts);
+
+    const batteryRaw = it.batteryLevel ?? it.BatteryLevel ?? it.battery ?? it.Battery;
+    const batteryLevel = typeof batteryRaw === "number" ? batteryRaw : (typeof batteryRaw === "string" ? Number(batteryRaw.replace(/%/g, "")) : undefined);
+
+    const hsRaw = it.healthStatus ?? it.HealthStatus ?? it.health ?? it.Health;
+    const healthStatus = hsRaw != null ? String(hsRaw) : undefined;
+
+    const resolvedVal = it.resolved ?? it.Resolved ?? it.isResolved ?? it.IsResolved;
+    const resolved = typeof resolvedVal === "boolean" ? resolvedVal : (String(resolvedVal ?? "").toLowerCase() === "true");
+
+    return { id, type, instrument, deviceType, message, severity, zone, surveyor, timestamp, batteryLevel, healthStatus, resolved };
+  }
+
+  async getDeviceAlerts(params?: { page?: number; limit?: number }): Promise<PaginatedResponse<DeviceAlert>> {
+    const sp = new URLSearchParams();
+    if (params?.page) sp.append("page", String(params.page));
+    if (params?.limit) sp.append("limit", String(params.limit));
+    const q = sp.toString();
+
+    const fetchAndMap = async (raw: any) => {
+      const timestamp = raw?.timestamp || new Date().toISOString();
+      const rawItems = Array.isArray(raw?.data?.items)
+        ? raw.data.items
+        : Array.isArray(raw?.data?.data)
+          ? raw.data.data
+          : Array.isArray(raw?.data)
+            ? raw.data
+            : Array.isArray(raw)
+              ? raw
+              : [];
+      const mapped: DeviceAlert[] = rawItems.map((it: any) => this.mapDeviceAlert(it));
+      const pagination = raw?.data?.pagination || raw?.pagination || {
+        page: params?.page ?? 1,
+        limit: params?.limit ?? mapped.length,
+        total: mapped.length,
+        totalPages: 1,
+      };
+      return { success: true, data: mapped, message: raw?.message, timestamp, pagination } as PaginatedResponse<DeviceAlert>;
+    };
+
+    try {
+      const raw: any = await this.request<any>(`/Device/alerts${q ? `?${q}` : ""}`);
+      return await fetchAndMap(raw);
+    } catch (primaryError) {
+      try {
+        const localBase = (typeof window !== "undefined" && window.location?.origin)
+          ? `${window.location.origin}/api`
+          : "/api";
+        const resp = await fetch(`${localBase}/proxy/device-alerts${q ? `?${q}` : ""}`, {
+          method: "GET",
+          headers: { Accept: "application/json" },
+        });
+        const text = await resp.text();
+        let rawProxy: any;
+        try { rawProxy = JSON.parse(text); } catch { rawProxy = text; }
+        return await fetchAndMap(rawProxy);
+      } catch (error) {
+        return {
+          success: true,
+          data: [],
+          message: "",
+          timestamp: new Date().toISOString(),
+          pagination: { page: params?.page ?? 1, limit: params?.limit ?? 0, total: 0, totalPages: 0 },
+        } as PaginatedResponse<DeviceAlert>;
+      }
     }
   }
 
