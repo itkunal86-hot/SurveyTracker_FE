@@ -52,9 +52,87 @@ export const AlertsNotifications = () => {
     console.log(`Marking alert ${alertId} as resolved`);
   };
 
-  const handleExportAlerts = () => {
-    console.log("Exporting alerts to CSV");
-  };
+  // const handleExportAlerts = () => {
+  //   console.log("Exporting alerts to CSV");
+  // };
+
+//   const handleExportAlerts = async () => {
+//   try {
+//     // ✅ Use your proxy route to avoid CORS issues
+//     const response = await fetch("/api/proxy/device-alerts/export", {
+//       method: "GET",
+//     });
+
+//     if (!response.ok) {
+//       throw new Error(`Failed to export alerts: ${response.statusText}`);
+//     }
+
+//     // ✅ Get the response as a Blob (for CSV or Excel)
+//     const blob = await response.blob();
+
+//     // ✅ Create a downloadable URL
+//     const url = window.URL.createObjectURL(blob);
+
+//     // ✅ Create an <a> element to trigger download
+//     const a = document.createElement("a");
+//     a.href = url;
+
+//     // Try to infer filename from headers or fallback
+//     const contentDisposition = response.headers.get("content-disposition");
+//     let filename = "device-alerts-export.csv";
+//     if (contentDisposition && contentDisposition.includes("filename=")) {
+//       filename = contentDisposition.split("filename=")[1].replace(/['"]/g, "");
+//     }
+
+//     a.download = filename;
+//     document.body.appendChild(a);
+//     a.click();
+
+//     // ✅ Cleanup
+//     a.remove();
+//     window.URL.revokeObjectURL(url);
+//   } catch (error) {
+//     console.error("Error exporting alerts:", error);
+//     alert("Failed to export alerts. Please try again later.");
+//   }
+// };
+
+const handleExportAlerts = async () => {
+  try {
+    console.log("Exporting alerts to CSV...");
+
+    // Use your .NET API directly
+    const apiUrl = "https://localhost:7215/api/Device/alerts/export";
+
+    const response = await fetch(apiUrl, {
+      method: "GET",
+      headers: {
+        Accept: "text/csv",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to export alerts: ${response.statusText}`);
+    }
+
+    // Convert response to blob and trigger download
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `device_alerts_${new Date().toISOString()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+
+    console.log("Alerts exported successfully.");
+  } catch (error: any) {
+    console.error("Error exporting alerts:", error);
+    alert(`Failed to export alerts: ${error.message}`);
+  }
+};
+
 
   return (
     <div className="p-6 space-y-6">
