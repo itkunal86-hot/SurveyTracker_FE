@@ -19,7 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 export default function DeviceAssignmentPanel() {
   const { data: assignmentsResp } = useDeviceAssignments({ limit: 1000 });
   const { data: devicesResp } = useDevices({ limit: 1000 });
-  const { data: surveyMastersResp } = useSurveyMasters({ limit: 1000 });
+  const { data: surveyMastersResp } = useSurveyMasters({ limit: 1000, status: "ACTIVE" });
 
   const assignments: DeviceAssignment[] = Array.isArray(assignmentsResp?.data)
     ? (assignmentsResp!.data as DeviceAssignment[])
