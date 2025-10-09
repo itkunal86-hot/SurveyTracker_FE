@@ -17,13 +17,6 @@ import { TablePagination } from "@/components/ui/table-pagination";
 import { Pagination } from "@/components/ui/pagination";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -83,6 +76,12 @@ export const DailyPersonalMaps = () => {
 
   // Table functionality for survey snapshots
   const snapshots = useMemo<SnapshotRow[]>(() => surveyData?.snapshots || [], [surveyData]);
+  const selectedDeviceInfo = useMemo(() => {
+    if (!selectedDevice) return undefined;
+    return devices.find((device) => device.id === selectedDevice);
+  }, [devices, selectedDevice]);
+  const selectedDeviceLabel = selectedDeviceInfo?.name || selectedDevice || "";
+  const selectedDeviceType = selectedDeviceInfo?.type;
 
   // Compute dynamic columns from snapshot keys
   const snapshotKeys = useMemo(() => {
@@ -107,7 +106,11 @@ export const DailyPersonalMaps = () => {
     ];
     const ordered = preferredOrder.filter((k) => keys.has(k));
     const remaining = Array.from(keys).filter((k) => !ordered.includes(k)).sort();
-    return [...ordered, ...remaining];
+    const combined = [...ordered, ...remaining];
+    if (combined.includes("id")) {
+      return ["id", ...combined.filter((key) => key !== "id")];
+    }
+    return combined;
   }, [snapshots]);
 
   const initialSortKey = useMemo(() => {
@@ -404,24 +407,21 @@ export const DailyPersonalMaps = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Device Selection */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Select Device</label>
-              <Select value={selectedDevice} onValueChange={setSelectedDevice} disabled={isDevicesLoading}>
-                <SelectTrigger>
-                  <SelectValue placeholder={isDevicesLoading ? "Loading devices..." : (devices.length ? "Choose a device..." : "No devices available")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {devices.map((device) => (
-                    <SelectItem key={device.id} value={device.id}>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{device.name}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {device.type}
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <label className="text-sm font-medium">Device Name</label>
+              <div className="rounded-md border border-input bg-background px-3 py-2">
+                {isDevicesLoading ? (
+                  <span className="text-sm text-muted-foreground">Loading devices...</span>
+                ) : selectedDeviceLabel ? (
+                  <div className="space-y-1">
+                    <span className="text-sm font-medium text-foreground">{selectedDeviceLabel}</span>
+                    {selectedDeviceType && (
+                      <span className="text-xs text-muted-foreground">{selectedDeviceType}</span>
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-sm text-muted-foreground">No device information available</span>
+                )}
+              </div>
             </div>
 
             {/* Date Selection */}
@@ -474,7 +474,11 @@ export const DailyPersonalMaps = () => {
           {!canLoadData && (
             <div className="mt-4 p-4 bg-muted rounded-lg">
               <p className="text-sm text-muted-foreground">
-                Please select both a device and date to load survey trail data.
+                {isDevicesLoading
+                  ? "Loading device information..."
+                  : selectedDevice
+                    ? "Please pick a date to load survey trail data."
+                    : "No device information available for this survey."}
               </p>
             </div>
           )}
@@ -491,7 +495,7 @@ export const DailyPersonalMaps = () => {
                 Survey Trail Map
                 {selectedDevice && selectedDate && (
                   <Badge variant="secondary" className="ml-2">
-                    {selectedDevice} - {format(selectedDate, "MMM dd, yyyy")}
+                    {(selectedDeviceLabel || selectedDevice)} - {format(selectedDate, "MMM dd, yyyy")}
                   </Badge>
                 )}
               </CardTitle>
