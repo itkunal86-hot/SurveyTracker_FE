@@ -583,32 +583,25 @@ export const DailyPersonalMaps = () => {
             </CardContent>
           </Card>
 
-          {hasData && (
-            <>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Gauge className="w-5 h-5 mr-2" />
-                    Pipe Diameters Found
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {surveyData.pipeDiameters.map((diameter, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between"
-                      >
-                        <span className="text-sm text-muted-foreground">
-                          Diameter {index + 1}
-                        </span>
-                        <Badge variant="outline">{diameter}mm</Badge>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </>
+          {hasData && surveyData.pipeDiameters && surveyData.pipeDiameters.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Gauge className="w-5 h-5 mr-2" />
+                  Pipe Diameters Found
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {surveyData.pipeDiameters.map((diameter, index) => (
+                    <div key={index} className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Diameter {index + 1}</span>
+                      <Badge variant="outline">{diameter}mm</Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           )}
         </div>
       </div>
