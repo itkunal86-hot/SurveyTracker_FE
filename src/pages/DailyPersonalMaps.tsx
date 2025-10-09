@@ -141,6 +141,13 @@ export const DailyPersonalMaps = () => {
     }
   }, [searchParams]);
 
+  // Ensure a sensible default sort when data loads
+  useEffect(() => {
+    if (snapshots.length && !tableConfig.sortConfig.key && initialSortKey) {
+      tableConfig.setSortConfig({ key: initialSortKey as any, direction: "asc" });
+    }
+  }, [snapshots, initialSortKey]);
+
   // Load devices for current survey
   useEffect(() => {
     const loadDevices = async () => {
