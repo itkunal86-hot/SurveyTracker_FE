@@ -327,7 +327,7 @@ export const DailyPersonalMaps = () => {
     },
   ];
 
-  const getActivityIcon = (activity: SurveySnapshot["activity"]) => {
+  const getActivityIcon = (activity: string) => {
     switch (activity) {
       case "enter_pipeline":
         return <Layers className="w-4 h-4 text-primary" />;
@@ -344,7 +344,7 @@ export const DailyPersonalMaps = () => {
     }
   };
 
-  const getActivityLabel = (activity: SurveySnapshot["activity"]) => {
+  const getActivityLabel = (activity: string) => {
     switch (activity) {
       case "enter_pipeline":
         return "Pipeline Entry";
