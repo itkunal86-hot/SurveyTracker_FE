@@ -76,18 +76,48 @@ export const DailyPersonalMaps = () => {
   const [selectedDevice, setSelectedDevice] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [isLoading, setIsLoading] = useState(false);
-  const [surveyData, setSurveyData] = useState<SurveyData | null>(null);
+  const [surveyData, setSurveyData] = useState<SurveyDataDynamic | null>(null);
   const [devices, setDevices] = useState<Device[]>([]);
   const [isDevicesLoading, setIsDevicesLoading] = useState(false);
   const { currentSurvey } = useSurveyContext();
 
   // Table functionality for survey snapshots
-  const snapshots = useMemo(() => surveyData?.snapshots || [], [surveyData]);
+  const snapshots = useMemo<SnapshotRow[]>(() => surveyData?.snapshots || [], [surveyData]);
 
-  const { tableConfig, sortedAndPaginatedData } = useTable(
+  // Compute dynamic columns from snapshot keys
+  const snapshotKeys = useMemo(() => {
+    const keys = new Set<string>();
+    for (const s of snapshots) {
+      Object.keys(s || {}).forEach((k) => keys.add(k));
+    }
+    const preferredOrder = [
+      "timestamp",
+      "time",
+      "date",
+      "entryDate",
+      "entryTime",
+      "activity",
+      "pipelineName",
+      "pipelineId",
+      "valveName",
+      "valveId",
+      "coordinates",
+      "lat",
+      "lng",
+    ];
+    const ordered = preferredOrder.filter((k) => keys.has(k));
+    const remaining = Array.from(keys).filter((k) => !ordered.includes(k)).sort();
+    return [...ordered, ...remaining];
+  }, [snapshots]);
+
+  const initialSortKey = useMemo(() => {
+    return (snapshotKeys.find((k) => /timestamp|time|date/i.test(k)) || snapshotKeys[0]) as keyof SnapshotRow | undefined;
+  }, [snapshotKeys]);
+
+  const { tableConfig, sortedAndPaginatedData, allSortedData } = useTable<SnapshotRow>(
     snapshots,
-    10, // Initial page size
-    "timestamp", // Initial sort key
+    10,
+    (initialSortKey as any) ?? undefined,
   );
 
   // Read URL parameters and set initial values
