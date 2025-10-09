@@ -622,71 +622,26 @@ export const DailyPersonalMaps = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <SortableTableHead
-                    sortKey="timestamp"
-                    currentSortKey={tableConfig.sortConfig.key}
-                    sortDirection={tableConfig.sortConfig.direction}
-                    onSort={tableConfig.handleSort}
-                  >
-                    Time
-                  </SortableTableHead>
-                  <SortableTableHead
-                    sortKey="activity"
-                    currentSortKey={tableConfig.sortConfig.key}
-                    sortDirection={tableConfig.sortConfig.direction}
-                    onSort={tableConfig.handleSort}
-                  >
-                    Activity
-                  </SortableTableHead>
-                  <SortableTableHead
-                    sortKey="pipelineName"
-                    currentSortKey={tableConfig.sortConfig.key}
-                    sortDirection={tableConfig.sortConfig.direction}
-                    onSort={tableConfig.handleSort}
-                  >
-                    Pipeline
-                  </SortableTableHead>
-                  <SortableTableHead
-                    sortKey="valveName"
-                    currentSortKey={tableConfig.sortConfig.key}
-                    sortDirection={tableConfig.sortConfig.direction}
-                    onSort={tableConfig.handleSort}
-                  >
-                    Valve
-                  </SortableTableHead>
-                  <SortableTableHead
-                    sortKey="pipeDepth"
-                    currentSortKey={tableConfig.sortConfig.key}
-                    sortDirection={tableConfig.sortConfig.direction}
-                    onSort={tableConfig.handleSort}
-                  >
-                    Depth (m)
-                  </SortableTableHead>
-                  <SortableTableHead
-                    sortKey="pipeDiameter"
-                    currentSortKey={tableConfig.sortConfig.key}
-                    sortDirection={tableConfig.sortConfig.direction}
-                    onSort={tableConfig.handleSort}
-                  >
-                    Diameter (mm)
-                  </SortableTableHead>
-                  <SortableTableHead
-                    sortKey="perimeter"
-                    currentSortKey={tableConfig.sortConfig.key}
-                    sortDirection={tableConfig.sortConfig.direction}
-                    onSort={tableConfig.handleSort}
-                  >
-                    Perimeter (m)
-                  </SortableTableHead>
-                  <SortableTableHead
-                    sortKey="coordinates"
-                    currentSortKey={tableConfig.sortConfig.key}
-                    sortDirection={tableConfig.sortConfig.direction}
-                    onSort={tableConfig.handleSort}
-                    sortable={false}
-                  >
-                    Coordinates
-                  </SortableTableHead>
+                  {snapshotKeys.map((key) => {
+                    const firstVal = snapshots[0]?.[key];
+                    const isComplex = firstVal && (typeof firstVal === "object");
+                    const label = key
+                      .replace(/([A-Z])/g, " $1")
+                      .replace(/_/g, " ")
+                      .replace(/^\w/, (c) => c.toUpperCase());
+                    return (
+                      <SortableTableHead
+                        key={key}
+                        sortKey={key}
+                        currentSortKey={tableConfig.sortConfig.key as any}
+                        sortDirection={tableConfig.sortConfig.direction}
+                        onSort={(k) => tableConfig.handleSort(k as any)}
+                        sortable={!isComplex}
+                      >
+                        {label}
+                      </SortableTableHead>
+                    );
+                  })}
                 </TableRow>
               </TableHeader>
               <TableBody>
