@@ -182,96 +182,63 @@ export const DailyPersonalMaps = () => {
 
   // Devices are loaded from API based on selected survey
 
-  // Mock survey data with detailed snapshots
-  const mockSurveyData: SurveyData = {
-    totalDataPoints: 47,
-    startTime: "08:15 AM",
-    endTime: "04:30 PM",
-    pipeDiameters: [150, 200, 300, 400],
-    averageDepth: 2.4,
-    locationsCovered: [
-      "Zone A - Main Pipeline",
-      "Zone B - Distribution",
-      "Zone C - Terminal",
-    ],
-    pipelineEntries: 8,
-    valveOperations: 5,
-    totalPerimeterSurveyed: 1250.5,
-    snapshots: [
-      {
-        id: "SS001",
-        timestamp: "08:15:23",
-        coordinates: [40.7589, -73.9851],
-        pipelineId: "PL-001",
-        pipelineName: "Main Distribution Line A",
-        pipeDepth: 2.1,
-        pipeDiameter: 200,
-        perimeter: 125.5,
-        activity: "enter_pipeline",
-      },
-      {
-        id: "SS002",
-        timestamp: "08:32:15",
-        coordinates: [40.7592, -73.9848],
-        pipelineId: "PL-001",
-        pipelineName: "Main Distribution Line A",
-        valveId: "VLV-001",
-        valveName: "Control Valve Alpha",
-        pipeDepth: 2.3,
-        pipeDiameter: 200,
-        perimeter: 85.2,
-        activity: "valve_operation",
-      },
-      {
-        id: "SS003",
-        timestamp: "09:15:45",
-        coordinates: [40.7605, -73.9934],
-        pipelineId: "PL-002",
-        pipelineName: "Secondary Distribution Line B",
-        pipeDepth: 1.8,
-        pipeDiameter: 150,
-        perimeter: 95.8,
-        activity: "depth_measurement",
-      },
-      {
-        id: "SS004",
-        timestamp: "10:22:18",
-        coordinates: [40.7614, -73.9776],
-        pipelineId: "PL-003",
-        pipelineName: "Terminal Connection Line C",
-        pipeDepth: 2.8,
-        pipeDiameter: 300,
-        perimeter: 165.3,
-        activity: "perimeter_survey",
-      },
-      {
-        id: "SS005",
-        timestamp: "11:45:32",
-        coordinates: [40.7581, -73.9712],
-        pipelineId: "PL-002",
-        pipelineName: "Secondary Distribution Line B",
-        valveId: "VLV-002",
-        valveName: "Emergency Shutoff Beta",
-        pipeDepth: 2.0,
-        pipeDiameter: 150,
-        perimeter: 110.7,
-        activity: "valve_operation",
-      },
-    ],
-  };
-
-  const handleLoadSurveyData = (deviceId?: string, date?: Date) => {
+  const handleLoadSurveyData = async (deviceId?: string, date?: Date) => {
     const targetDevice = deviceId || selectedDevice;
     const targetDate = date || selectedDate;
 
     if (!targetDevice || !targetDate) return;
 
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setSurveyData(mockSurveyData);
+    try {
+      const resp = await apiClient.getAssetPropertyEntriesByDevice({ deviceId: targetDevice, entryDate: targetDate });
+      const snapshots = Array.isArray(resp.snapshots) ? resp.snapshots : [];
+
+      // Derive simple summary fields if possible
+      const keys = new Set<string>();
+      snapshots.forEach((s) => Object.keys(s || {}).forEach((k) => keys.add(k)));
+      const timeKey = ["timestamp", "time", "date", "entryDate", "entryTime"].find((k) => keys.has(k));
+
+      let startTime: string | undefined;
+      let endTime: string | undefined;
+      if (timeKey) {
+        const times = snapshots
+          .map((s) => s?.[timeKey!])
+          .filter((v) => v != null)
+          .map((v) => new Date(v))
+          .filter((d) => !Number.isNaN(d.getTime()))
+          .sort((a, b) => a.getTime() - b.getTime());
+        if (times.length) {
+          startTime = format(times[0], "p");
+          endTime = format(times[times.length - 1], "p");
+        }
+      }
+
+      const diameterKey = ["pipeDiameter", "diameter"].find((k) => keys.has(k));
+      const pipeDiameters = diameterKey
+        ? Array.from(new Set(snapshots.map((s) => s?.[diameterKey]).filter((v) => typeof v === "number")))
+        : [];
+
+      const depthKey = ["pipeDepth", "depth"].find((k) => keys.has(k));
+      const avgDepthVals = depthKey
+        ? snapshots.map((s) => s?.[depthKey]).filter((v) => typeof v === "number")
+        : [];
+      const averageDepth = avgDepthVals.length
+        ? Number((avgDepthVals.reduce((a: number, b: number) => a + b, 0) / avgDepthVals.length).toFixed(2))
+        : undefined;
+
+      setSurveyData({
+        snapshots,
+        totalDataPoints: snapshots.length,
+        startTime,
+        endTime,
+        pipeDiameters,
+        averageDepth,
+      });
+    } catch (e) {
+      setSurveyData({ snapshots: [] });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const handleExportPDF = () => {
