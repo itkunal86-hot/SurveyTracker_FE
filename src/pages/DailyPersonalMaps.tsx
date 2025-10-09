@@ -54,36 +54,21 @@ interface Device {
   type: string;
 }
 
-interface SurveySnapshot {
-  id: string;
-  timestamp: string;
-  coordinates: [number, number];
-  pipelineId: string;
-  pipelineName: string;
-  valveId?: string;
-  valveName?: string;
-  pipeDepth: number;
-  pipeDiameter: number;
-  perimeter: number;
-  activity:
-    | "enter_pipeline"
-    | "exit_pipeline"
-    | "valve_operation"
-    | "depth_measurement"
-    | "perimeter_survey";
-}
+// Dynamic snapshot row from API
+type SnapshotRow = Record<string, any>;
 
-interface SurveyData {
-  totalDataPoints: number;
-  startTime: string;
-  endTime: string;
-  pipeDiameters: number[];
-  averageDepth: number;
-  locationsCovered: string[];
-  snapshots: SurveySnapshot[];
-  pipelineEntries: number;
-  valveOperations: number;
-  totalPerimeterSurveyed: number;
+// Flexible survey data structure
+interface SurveyDataDynamic {
+  snapshots: SnapshotRow[];
+  totalDataPoints?: number;
+  startTime?: string;
+  endTime?: string;
+  pipeDiameters?: number[];
+  averageDepth?: number;
+  locationsCovered?: string[];
+  pipelineEntries?: number;
+  valveOperations?: number;
+  totalPerimeterSurveyed?: number;
 }
 
 export const DailyPersonalMaps = () => {
