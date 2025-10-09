@@ -1,10 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Activity, Battery, MapPin, Users, Wifi, WifiOff, Smartphone, HardDrive } from "lucide-react";
+import { Activity, Battery, MapPin, Users, Wifi, Smartphone, HardDrive } from "lucide-react";
 import { LocationHeatmapAnalytics } from "@/components/analytics/LocationHeatmapAnalytics";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import { useState } from "react";
+import { useDeviceAlerts } from "@/hooks/useApiQueries";
 
 export const SurveyDashboard = () => {
   const [selectedLocation, setSelectedLocation] = useState("all");
@@ -39,62 +40,9 @@ export const SurveyDashboard = () => {
     { day: 'Sun', surveys: 23, instruments: 65, efficiency: 71 },
   ];
 
-  const alerts = [
-    {
-      id: 1,
-      instrument: "INS-001",
-      deviceType: "DA2",
-      issue: "DA2 Battery < 15%",
-      level: "critical",
-      batteryLevel: 14,
-      healthStatus: "Poor"
-    },
-    {
-      id: 2,
-      instrument: "INS-001",
-      deviceType: "Android",
-      issue: "Android Controller Battery < 25%",
-      level: "warning",
-      batteryLevel: 23,
-      healthStatus: "Fair"
-    },
-    {
-      id: 3,
-      instrument: "INS-045",
-      deviceType: "DA2",
-      issue: "DA2 Health Critical",
-      level: "critical",
-      batteryLevel: 45,
-      healthStatus: "Critical"
-    },
-    {
-      id: 4,
-      instrument: "INS-045",
-      deviceType: "Android",
-      issue: "Android Controller Overheating",
-      level: "warning",
-      batteryLevel: 78,
-      healthStatus: "Warning"
-    },
-    {
-      id: 5,
-      instrument: "INS-078",
-      deviceType: "DA2",
-      issue: "DA2 Battery < 10%",
-      level: "critical",
-      batteryLevel: 8,
-      healthStatus: "Critical"
-    },
-    {
-      id: 6,
-      instrument: "INS-078",
-      deviceType: "Android",
-      issue: "Android Controller Memory Low",
-      level: "warning",
-      batteryLevel: 56,
-      healthStatus: "Fair"
-    },
-  ];
+  // Alerts from API
+  const { data: alertsResp, isLoading: alertsLoading } = useDeviceAlerts({ limit: 100 });
+  const alerts = Array.isArray(alertsResp?.data) ? alertsResp!.data : [];
 
   return (
     <div className="p-6 space-y-6">
@@ -192,48 +140,52 @@ export const SurveyDashboard = () => {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               Alerts
-              <Badge variant="destructive">{alerts.length}</Badge>
+              <Badge variant="destructive">{alertsLoading ? "..." : alerts.length}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {alerts.map((alert) => (
-                <div key={alert.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    {alert.deviceType === 'DA2' ? (
-                      <HardDrive className="w-4 h-4 text-blue-500" />
-                    ) : (
-                      <Smartphone className="w-4 h-4 text-green-500" />
-                    )}
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2">
-                        <p className="font-medium">{alert.instrument}</p>
-                        <Badge variant="outline" className="text-xs">
-                          {alert.deviceType}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">{alert.issue}</p>
-                      <div className="flex items-center space-x-4 mt-1">
-                        <div className="flex items-center space-x-1">
-                          <Battery className="w-3 h-3" />
-                          <span className={`text-xs ${alert.batteryLevel < 20 ? 'text-red-500' : alert.batteryLevel < 50 ? 'text-yellow-500' : 'text-green-500'}`}>
-                            {alert.batteryLevel}%
-                          </span>
+              {alertsLoading ? (
+                <div className="text-sm text-muted-foreground">Loading alerts...</div>
+              ) : (
+                alerts.map((alert: any) => (
+                  <div key={alert.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      {alert.deviceType === 'DA2' ? (
+                        <HardDrive className="w-4 h-4 text-blue-500" />
+                      ) : (
+                        <Smartphone className="w-4 h-4 text-green-500" />
+                      )}
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2">
+                          <p className="font-medium">{alert.instrument}</p>
+                          <Badge variant="outline" className="text-xs">
+                            {alert.deviceType}
+                          </Badge>
                         </div>
-                        <div className="flex items-center space-x-1">
-                          <Activity className="w-3 h-3" />
-                          <span className={`text-xs ${alert.healthStatus === 'Critical' ? 'text-red-500' : alert.healthStatus === 'Warning' || alert.healthStatus === 'Fair' ? 'text-yellow-500' : 'text-green-500'}`}>
-                            {alert.healthStatus}
-                          </span>
+                        <p className="text-sm text-muted-foreground">{alert.message}</p>
+                        <div className="flex items-center space-x-4 mt-1">
+                          <div className="flex items-center space-x-1">
+                            <Battery className="w-3 h-3" />
+                            <span className={`text-xs ${Number(alert.batteryLevel ?? 0) < 20 ? 'text-red-500' : Number(alert.batteryLevel ?? 0) < 50 ? 'text-yellow-500' : 'text-green-500'}`}>
+                              {Number(alert.batteryLevel ?? 0)}%
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Activity className="w-3 h-3" />
+                            <span className={`text-xs ${alert.healthStatus === 'Critical' ? 'text-red-500' : alert.healthStatus === 'Warning' || alert.healthStatus === 'Fair' ? 'text-yellow-500' : 'text-green-500'}`}>
+                              {alert.healthStatus ?? ''}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
+                    <Badge variant={(String(alert.severity || '').toLowerCase() === 'critical') ? 'destructive' : 'secondary'}>
+                      {String(alert.severity || '').toLowerCase() || 'info'}
+                    </Badge>
                   </div>
-                  <Badge variant={alert.level === 'critical' ? 'destructive' : 'secondary'}>
-                    {alert.level}
-                  </Badge>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
