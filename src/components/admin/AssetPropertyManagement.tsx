@@ -37,20 +37,36 @@ export default function AssetPropertyManagement() {
     loadAssetTypes();
   }, []);
 
+  // const loadItems = async () => {
+  //   const res = await apiClient.getAssetProperties({ limit: 200, assetTypeId: selectedAssetType || undefined, search: searchTerm || undefined });
+  //   setItems(res.data || []);
+  // };
+
   const loadItems = async () => {
-    const res = await apiClient.getAssetProperties({ limit: 200, assetTypeId: selectedAssetType || undefined, search: searchTerm || undefined });
-    setItems(res.data || []);
+  const res = await apiClient.getAssetProperties({
+    limit: 200,
+    assetTypeId: selectedAssetType || undefined,  // filter applied on API side
+    search: searchTerm || undefined,              // pass search to API
+  });
+  setItems(res.data || []);
   };
+
 
   useEffect(() => {
     loadItems();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAssetType]);
 
+  // const filtered = useMemo(() => {
+  //   const term = searchTerm.toLowerCase();
+  //   return items.filter(i => i.name.toLowerCase().includes(term));
+  // }, [items, searchTerm]);
+
   const filtered = useMemo(() => {
-    const term = searchTerm.toLowerCase();
-    return items.filter(i => i.name.toLowerCase().includes(term));
+  const term = searchTerm.toLowerCase();
+  return items.filter(i => i.name.toLowerCase().includes(term));
   }, [items, searchTerm]);
+
 
   const resetForm = () => {
     setEditing(null);
@@ -195,7 +211,18 @@ export default function AssetPropertyManagement() {
                 {assetTypes.map(a => (<SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>))}
               </SelectContent>
             </Select>
-            <Button variant="outline" onClick={() => loadItems()}>Refresh</Button>
+            {/* <Button variant="outline" onClick={() => loadItems()}>Refresh</Button> */}
+
+            <Button
+  variant="outline"
+  onClick={() => {
+    setSelectedAssetType("");  // reset filter to All
+    setSearchTerm("");         // clear search
+    loadItems();               // reload all
+  }}
+>
+  Refresh
+</Button>
           </div>
         </div>
 
