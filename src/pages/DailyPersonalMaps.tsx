@@ -533,59 +533,51 @@ export const DailyPersonalMaps = () => {
                       Total Data Points
                     </span>
                     <span className="font-semibold text-lg">
-                      {surveyData.totalDataPoints}
+                      {surveyData.totalDataPoints ?? surveyData.snapshots.length}
                     </span>
                   </div>
 
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">
-                      Start Time
-                    </span>
-                    <span className="font-medium">{surveyData.startTime}</span>
-                  </div>
+                  {surveyData.startTime && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Start Time</span>
+                      <span className="font-medium">{surveyData.startTime}</span>
+                    </div>
+                  )}
 
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">
-                      End Time
-                    </span>
-                    <span className="font-medium">{surveyData.endTime}</span>
-                  </div>
+                  {surveyData.endTime && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">End Time</span>
+                      <span className="font-medium">{surveyData.endTime}</span>
+                    </div>
+                  )}
 
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">
-                      Pipeline Entries
-                    </span>
-                    <span className="font-medium">
-                      {surveyData.pipelineEntries}
-                    </span>
-                  </div>
+                  {typeof surveyData.pipelineEntries !== "undefined" && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Pipeline Entries</span>
+                      <span className="font-medium">{surveyData.pipelineEntries}</span>
+                    </div>
+                  )}
 
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">
-                      Valve Operations
-                    </span>
-                    <span className="font-medium">
-                      {surveyData.valveOperations}
-                    </span>
-                  </div>
+                  {typeof surveyData.valveOperations !== "undefined" && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Valve Operations</span>
+                      <span className="font-medium">{surveyData.valveOperations}</span>
+                    </div>
+                  )}
 
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">
-                      Average Depth
-                    </span>
-                    <span className="font-medium">
-                      {surveyData.averageDepth}m
-                    </span>
-                  </div>
+                  {typeof surveyData.averageDepth !== "undefined" && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Average Depth</span>
+                      <span className="font-medium">{surveyData.averageDepth}m</span>
+                    </div>
+                  )}
 
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">
-                      Total Perimeter
-                    </span>
-                    <span className="font-medium">
-                      {surveyData.totalPerimeterSurveyed}m
-                    </span>
-                  </div>
+                  {typeof surveyData.totalPerimeterSurveyed !== "undefined" && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Total Perimeter</span>
+                      <span className="font-medium">{surveyData.totalPerimeterSurveyed}m</span>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
