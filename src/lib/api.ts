@@ -2611,6 +2611,55 @@ class ApiClient {
     }
   }
 
+  // Survey entries summary by device and date
+  async getAssetPropertyEntriesByDevice(params: { deviceId: string | number; entryDate: string | Date }): Promise<{ snapshots: any[]; raw: any; }> {
+    const { deviceId, entryDate } = params;
+
+    const formatDate = (d: string | Date): string => {
+      if (typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+      const dt = typeof d === "string" ? new Date(d) : d;
+      if (Number.isNaN(dt.getTime())) return new Date().toISOString().slice(0, 10);
+      const y = dt.getFullYear();
+      const m = String(dt.getMonth() + 1).padStart(2, "0");
+      const da = String(dt.getDate()).padStart(2, "0");
+      return `${y}-${m}-${da}`;
+    };
+
+    const sp = new URLSearchParams();
+    sp.append("deviceId", String(deviceId));
+    sp.append("entryDate", formatDate(entryDate));
+
+    try {
+      const raw: any = await this.request<any>(`/AssetProperties/summary/EntriesByDevice?${sp.toString()}`);
+
+      const candidates: any[] = [
+        raw?.data?.snapshots,
+        raw?.data?.snapshot,
+        raw?.data?.items,
+        raw?.data?.entries,
+        raw?.snapshots,
+        raw?.snapshot,
+        raw?.items,
+        raw?.entries,
+        Array.isArray(raw?.data) ? raw.data : undefined,
+        Array.isArray(raw) ? raw : undefined,
+      ].filter(Boolean);
+
+      let snapshots: any[] = [];
+      for (const c of candidates) {
+        if (Array.isArray(c)) {
+          snapshots = c;
+          break;
+        }
+      }
+
+      snapshots = (snapshots || []).map((s) => (s && typeof s === "object" ? s : { value: s }));
+
+      return { snapshots, raw };
+    } catch (error) {
+      return { snapshots: [], raw: null };
+    }
+  }
 }
 
 // Compatibility helpers for backward compatibility with existing components

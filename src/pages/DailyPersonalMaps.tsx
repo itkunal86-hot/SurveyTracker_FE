@@ -17,13 +17,6 @@ import { TablePagination } from "@/components/ui/table-pagination";
 import { Pagination } from "@/components/ui/pagination";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -54,36 +47,21 @@ interface Device {
   type: string;
 }
 
-interface SurveySnapshot {
-  id: string;
-  timestamp: string;
-  coordinates: [number, number];
-  pipelineId: string;
-  pipelineName: string;
-  valveId?: string;
-  valveName?: string;
-  pipeDepth: number;
-  pipeDiameter: number;
-  perimeter: number;
-  activity:
-    | "enter_pipeline"
-    | "exit_pipeline"
-    | "valve_operation"
-    | "depth_measurement"
-    | "perimeter_survey";
-}
+// Dynamic snapshot row from API
+type SnapshotRow = Record<string, any>;
 
-interface SurveyData {
-  totalDataPoints: number;
-  startTime: string;
-  endTime: string;
-  pipeDiameters: number[];
-  averageDepth: number;
-  locationsCovered: string[];
-  snapshots: SurveySnapshot[];
-  pipelineEntries: number;
-  valveOperations: number;
-  totalPerimeterSurveyed: number;
+// Flexible survey data structure
+interface SurveyDataDynamic {
+  snapshots: SnapshotRow[];
+  totalDataPoints?: number;
+  startTime?: string;
+  endTime?: string;
+  pipeDiameters?: number[];
+  averageDepth?: number;
+  locationsCovered?: string[];
+  pipelineEntries?: number;
+  valveOperations?: number;
+  totalPerimeterSurveyed?: number;
 }
 
 export const DailyPersonalMaps = () => {
@@ -91,18 +69,58 @@ export const DailyPersonalMaps = () => {
   const [selectedDevice, setSelectedDevice] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [isLoading, setIsLoading] = useState(false);
-  const [surveyData, setSurveyData] = useState<SurveyData | null>(null);
+  const [surveyData, setSurveyData] = useState<SurveyDataDynamic | null>(null);
   const [devices, setDevices] = useState<Device[]>([]);
   const [isDevicesLoading, setIsDevicesLoading] = useState(false);
   const { currentSurvey } = useSurveyContext();
 
   // Table functionality for survey snapshots
-  const snapshots = useMemo(() => surveyData?.snapshots || [], [surveyData]);
+  const snapshots = useMemo<SnapshotRow[]>(() => surveyData?.snapshots || [], [surveyData]);
+  const selectedDeviceInfo = useMemo(() => {
+    if (!selectedDevice) return undefined;
+    return devices.find((device) => device.id === selectedDevice);
+  }, [devices, selectedDevice]);
+  const selectedDeviceLabel = selectedDeviceInfo?.name || selectedDevice || "";
+  const selectedDeviceType = selectedDeviceInfo?.type;
 
-  const { tableConfig, sortedAndPaginatedData } = useTable(
+  // Compute dynamic columns from snapshot keys
+  const snapshotKeys = useMemo(() => {
+    const keys = new Set<string>();
+    for (const s of snapshots) {
+      Object.keys(s || {}).forEach((k) => keys.add(k));
+    }
+    const preferredOrder = [
+      "timestamp",
+      "time",
+      "date",
+      "entryDate",
+      "entryTime",
+      "activity",
+      "pipelineName",
+      "pipelineId",
+      "valveName",
+      "valveId",
+      "coordinates",
+      "lat",
+      "lng",
+    ];
+    const ordered = preferredOrder.filter((k) => keys.has(k));
+    const remaining = Array.from(keys).filter((k) => !ordered.includes(k)).sort();
+    const combined = [...ordered, ...remaining];
+    if (combined.includes("id")) {
+      return ["id", ...combined.filter((key) => key !== "id")];
+    }
+    return combined;
+  }, [snapshots]);
+
+  const initialSortKey = useMemo(() => {
+    return (snapshotKeys.find((k) => /timestamp|time|date/i.test(k)) || snapshotKeys[0]) as keyof SnapshotRow | undefined;
+  }, [snapshotKeys]);
+
+  const { tableConfig, sortedAndPaginatedData, allSortedData } = useTable<SnapshotRow>(
     snapshots,
-    10, // Initial page size
-    "timestamp", // Initial sort key
+    10,
+    (initialSortKey as any) ?? undefined,
   );
 
   // Read URL parameters and set initial values
@@ -125,6 +143,13 @@ export const DailyPersonalMaps = () => {
       }, 500);
     }
   }, [searchParams]);
+
+  // Ensure a sensible default sort when data loads
+  useEffect(() => {
+    if (snapshots.length && !tableConfig.sortConfig.key && initialSortKey) {
+      tableConfig.setSortConfig({ key: initialSortKey as any, direction: "asc" });
+    }
+  }, [snapshots, initialSortKey]);
 
   // Load devices for current survey
   useEffect(() => {
@@ -160,96 +185,63 @@ export const DailyPersonalMaps = () => {
 
   // Devices are loaded from API based on selected survey
 
-  // Mock survey data with detailed snapshots
-  const mockSurveyData: SurveyData = {
-    totalDataPoints: 47,
-    startTime: "08:15 AM",
-    endTime: "04:30 PM",
-    pipeDiameters: [150, 200, 300, 400],
-    averageDepth: 2.4,
-    locationsCovered: [
-      "Zone A - Main Pipeline",
-      "Zone B - Distribution",
-      "Zone C - Terminal",
-    ],
-    pipelineEntries: 8,
-    valveOperations: 5,
-    totalPerimeterSurveyed: 1250.5,
-    snapshots: [
-      {
-        id: "SS001",
-        timestamp: "08:15:23",
-        coordinates: [40.7589, -73.9851],
-        pipelineId: "PL-001",
-        pipelineName: "Main Distribution Line A",
-        pipeDepth: 2.1,
-        pipeDiameter: 200,
-        perimeter: 125.5,
-        activity: "enter_pipeline",
-      },
-      {
-        id: "SS002",
-        timestamp: "08:32:15",
-        coordinates: [40.7592, -73.9848],
-        pipelineId: "PL-001",
-        pipelineName: "Main Distribution Line A",
-        valveId: "VLV-001",
-        valveName: "Control Valve Alpha",
-        pipeDepth: 2.3,
-        pipeDiameter: 200,
-        perimeter: 85.2,
-        activity: "valve_operation",
-      },
-      {
-        id: "SS003",
-        timestamp: "09:15:45",
-        coordinates: [40.7605, -73.9934],
-        pipelineId: "PL-002",
-        pipelineName: "Secondary Distribution Line B",
-        pipeDepth: 1.8,
-        pipeDiameter: 150,
-        perimeter: 95.8,
-        activity: "depth_measurement",
-      },
-      {
-        id: "SS004",
-        timestamp: "10:22:18",
-        coordinates: [40.7614, -73.9776],
-        pipelineId: "PL-003",
-        pipelineName: "Terminal Connection Line C",
-        pipeDepth: 2.8,
-        pipeDiameter: 300,
-        perimeter: 165.3,
-        activity: "perimeter_survey",
-      },
-      {
-        id: "SS005",
-        timestamp: "11:45:32",
-        coordinates: [40.7581, -73.9712],
-        pipelineId: "PL-002",
-        pipelineName: "Secondary Distribution Line B",
-        valveId: "VLV-002",
-        valveName: "Emergency Shutoff Beta",
-        pipeDepth: 2.0,
-        pipeDiameter: 150,
-        perimeter: 110.7,
-        activity: "valve_operation",
-      },
-    ],
-  };
-
-  const handleLoadSurveyData = (deviceId?: string, date?: Date) => {
+  const handleLoadSurveyData = async (deviceId?: string, date?: Date) => {
     const targetDevice = deviceId || selectedDevice;
     const targetDate = date || selectedDate;
 
     if (!targetDevice || !targetDate) return;
 
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setSurveyData(mockSurveyData);
+    try {
+      const resp = await apiClient.getAssetPropertyEntriesByDevice({ deviceId: targetDevice, entryDate: targetDate });
+      const snapshots = Array.isArray(resp.snapshots) ? resp.snapshots : [];
+
+      // Derive simple summary fields if possible
+      const keys = new Set<string>();
+      snapshots.forEach((s) => Object.keys(s || {}).forEach((k) => keys.add(k)));
+      const timeKey = ["timestamp", "time", "date", "entryDate", "entryTime"].find((k) => keys.has(k));
+
+      let startTime: string | undefined;
+      let endTime: string | undefined;
+      if (timeKey) {
+        const times = snapshots
+          .map((s) => s?.[timeKey!])
+          .filter((v) => v != null)
+          .map((v) => new Date(v))
+          .filter((d) => !Number.isNaN(d.getTime()))
+          .sort((a, b) => a.getTime() - b.getTime());
+        if (times.length) {
+          startTime = format(times[0], "p");
+          endTime = format(times[times.length - 1], "p");
+        }
+      }
+
+      const diameterKey = ["pipeDiameter", "diameter"].find((k) => keys.has(k));
+      const pipeDiameters = diameterKey
+        ? Array.from(new Set(snapshots.map((s) => s?.[diameterKey]).filter((v) => typeof v === "number")))
+        : [];
+
+      const depthKey = ["pipeDepth", "depth"].find((k) => keys.has(k));
+      const avgDepthVals = depthKey
+        ? snapshots.map((s) => s?.[depthKey]).filter((v) => typeof v === "number")
+        : [];
+      const averageDepth = avgDepthVals.length
+        ? Number((avgDepthVals.reduce((a: number, b: number) => a + b, 0) / avgDepthVals.length).toFixed(2))
+        : undefined;
+
+      setSurveyData({
+        snapshots,
+        totalDataPoints: snapshots.length,
+        startTime,
+        endTime,
+        pipeDiameters,
+        averageDepth,
+      });
+    } catch (e) {
+      setSurveyData({ snapshots: [] });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const handleExportPDF = () => {
@@ -281,7 +273,7 @@ export const DailyPersonalMaps = () => {
   };
 
   const canLoadData = selectedDevice && selectedDate;
-  const hasData = surveyData !== null;
+  const hasData = !!(surveyData && surveyData.snapshots && surveyData.snapshots.length);
 
   // Demo data for map
   const demoDevices = [
@@ -338,7 +330,7 @@ export const DailyPersonalMaps = () => {
     },
   ];
 
-  const getActivityIcon = (activity: SurveySnapshot["activity"]) => {
+  const getActivityIcon = (activity: string) => {
     switch (activity) {
       case "enter_pipeline":
         return <Layers className="w-4 h-4 text-primary" />;
@@ -355,7 +347,7 @@ export const DailyPersonalMaps = () => {
     }
   };
 
-  const getActivityLabel = (activity: SurveySnapshot["activity"]) => {
+  const getActivityLabel = (activity: string) => {
     switch (activity) {
       case "enter_pipeline":
         return "Pipeline Entry";
@@ -415,24 +407,21 @@ export const DailyPersonalMaps = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Device Selection */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Select Device</label>
-              <Select value={selectedDevice} onValueChange={setSelectedDevice} disabled={isDevicesLoading}>
-                <SelectTrigger>
-                  <SelectValue placeholder={isDevicesLoading ? "Loading devices..." : (devices.length ? "Choose a device..." : "No devices available")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {devices.map((device) => (
-                    <SelectItem key={device.id} value={device.id}>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{device.name}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {device.type}
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <label className="text-sm font-medium">Device Name</label>
+              <div className="rounded-md border border-input bg-background px-3 py-2">
+                {isDevicesLoading ? (
+                  <span className="text-sm text-muted-foreground">Loading devices...</span>
+                ) : selectedDeviceLabel ? (
+                  <div className="space-y-1">
+                    <span className="text-sm font-medium text-foreground">{selectedDeviceLabel}</span>
+                    {selectedDeviceType && (
+                      <span className="text-xs text-muted-foreground">{selectedDeviceType}</span>
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-sm text-muted-foreground">No device information available</span>
+                )}
+              </div>
             </div>
 
             {/* Date Selection */}
@@ -485,7 +474,11 @@ export const DailyPersonalMaps = () => {
           {!canLoadData && (
             <div className="mt-4 p-4 bg-muted rounded-lg">
               <p className="text-sm text-muted-foreground">
-                Please select both a device and date to load survey trail data.
+                {isDevicesLoading
+                  ? "Loading device information..."
+                  : selectedDevice
+                    ? "Please pick a date to load survey trail data."
+                    : "No device information available for this survey."}
               </p>
             </div>
           )}
@@ -502,7 +495,7 @@ export const DailyPersonalMaps = () => {
                 Survey Trail Map
                 {selectedDevice && selectedDate && (
                   <Badge variant="secondary" className="ml-2">
-                    {selectedDevice} - {format(selectedDate, "MMM dd, yyyy")}
+                    {(selectedDeviceLabel || selectedDevice)} - {format(selectedDate, "MMM dd, yyyy")}
                   </Badge>
                 )}
               </CardTitle>
@@ -544,90 +537,75 @@ export const DailyPersonalMaps = () => {
                       Total Data Points
                     </span>
                     <span className="font-semibold text-lg">
-                      {surveyData.totalDataPoints}
+                      {surveyData.totalDataPoints ?? surveyData.snapshots.length}
                     </span>
                   </div>
 
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">
-                      Start Time
-                    </span>
-                    <span className="font-medium">{surveyData.startTime}</span>
-                  </div>
+                  {surveyData.startTime && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Start Time</span>
+                      <span className="font-medium">{surveyData.startTime}</span>
+                    </div>
+                  )}
 
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">
-                      End Time
-                    </span>
-                    <span className="font-medium">{surveyData.endTime}</span>
-                  </div>
+                  {surveyData.endTime && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">End Time</span>
+                      <span className="font-medium">{surveyData.endTime}</span>
+                    </div>
+                  )}
 
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">
-                      Pipeline Entries
-                    </span>
-                    <span className="font-medium">
-                      {surveyData.pipelineEntries}
-                    </span>
-                  </div>
+                  {typeof surveyData.pipelineEntries !== "undefined" && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Pipeline Entries</span>
+                      <span className="font-medium">{surveyData.pipelineEntries}</span>
+                    </div>
+                  )}
 
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">
-                      Valve Operations
-                    </span>
-                    <span className="font-medium">
-                      {surveyData.valveOperations}
-                    </span>
-                  </div>
+                  {typeof surveyData.valveOperations !== "undefined" && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Valve Operations</span>
+                      <span className="font-medium">{surveyData.valveOperations}</span>
+                    </div>
+                  )}
 
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">
-                      Average Depth
-                    </span>
-                    <span className="font-medium">
-                      {surveyData.averageDepth}m
-                    </span>
-                  </div>
+                  {typeof surveyData.averageDepth !== "undefined" && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Average Depth</span>
+                      <span className="font-medium">{surveyData.averageDepth}m</span>
+                    </div>
+                  )}
 
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">
-                      Total Perimeter
-                    </span>
-                    <span className="font-medium">
-                      {surveyData.totalPerimeterSurveyed}m
-                    </span>
-                  </div>
+                  {typeof surveyData.totalPerimeterSurveyed !== "undefined" && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Total Perimeter</span>
+                      <span className="font-medium">{surveyData.totalPerimeterSurveyed}m</span>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {hasData && (
-            <>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Gauge className="w-5 h-5 mr-2" />
-                    Pipe Diameters Found
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {surveyData.pipeDiameters.map((diameter, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between"
-                      >
-                        <span className="text-sm text-muted-foreground">
-                          Diameter {index + 1}
-                        </span>
-                        <Badge variant="outline">{diameter}mm</Badge>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </>
+          {hasData && surveyData.pipeDiameters && surveyData.pipeDiameters.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Gauge className="w-5 h-5 mr-2" />
+                  Pipe Diameters Found
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {surveyData.pipeDiameters.map((diameter, index) => (
+                    <div key={index} className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Diameter {index + 1}</span>
+                      <Badge variant="outline">{diameter}mm</Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           )}
         </div>
       </div>
@@ -648,124 +626,77 @@ export const DailyPersonalMaps = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <SortableTableHead
-                    sortKey="timestamp"
-                    currentSortKey={tableConfig.sortConfig.key}
-                    sortDirection={tableConfig.sortConfig.direction}
-                    onSort={tableConfig.handleSort}
-                  >
-                    Time
-                  </SortableTableHead>
-                  <SortableTableHead
-                    sortKey="activity"
-                    currentSortKey={tableConfig.sortConfig.key}
-                    sortDirection={tableConfig.sortConfig.direction}
-                    onSort={tableConfig.handleSort}
-                  >
-                    Activity
-                  </SortableTableHead>
-                  <SortableTableHead
-                    sortKey="pipelineName"
-                    currentSortKey={tableConfig.sortConfig.key}
-                    sortDirection={tableConfig.sortConfig.direction}
-                    onSort={tableConfig.handleSort}
-                  >
-                    Pipeline
-                  </SortableTableHead>
-                  <SortableTableHead
-                    sortKey="valveName"
-                    currentSortKey={tableConfig.sortConfig.key}
-                    sortDirection={tableConfig.sortConfig.direction}
-                    onSort={tableConfig.handleSort}
-                  >
-                    Valve
-                  </SortableTableHead>
-                  <SortableTableHead
-                    sortKey="pipeDepth"
-                    currentSortKey={tableConfig.sortConfig.key}
-                    sortDirection={tableConfig.sortConfig.direction}
-                    onSort={tableConfig.handleSort}
-                  >
-                    Depth (m)
-                  </SortableTableHead>
-                  <SortableTableHead
-                    sortKey="pipeDiameter"
-                    currentSortKey={tableConfig.sortConfig.key}
-                    sortDirection={tableConfig.sortConfig.direction}
-                    onSort={tableConfig.handleSort}
-                  >
-                    Diameter (mm)
-                  </SortableTableHead>
-                  <SortableTableHead
-                    sortKey="perimeter"
-                    currentSortKey={tableConfig.sortConfig.key}
-                    sortDirection={tableConfig.sortConfig.direction}
-                    onSort={tableConfig.handleSort}
-                  >
-                    Perimeter (m)
-                  </SortableTableHead>
-                  <SortableTableHead
-                    sortKey="coordinates"
-                    currentSortKey={tableConfig.sortConfig.key}
-                    sortDirection={tableConfig.sortConfig.direction}
-                    onSort={tableConfig.handleSort}
-                    sortable={false}
-                  >
-                    Coordinates
-                  </SortableTableHead>
+                  {snapshotKeys.map((key) => {
+                    const firstVal = snapshots[0]?.[key];
+                    const isComplex = firstVal && (typeof firstVal === "object");
+                    const label = key
+                      .replace(/([A-Z])/g, " $1")
+                      .replace(/_/g, " ")
+                      .replace(/^\w/, (c) => c.toUpperCase());
+                    return (
+                      <SortableTableHead
+                        key={key}
+                        sortKey={key}
+                        currentSortKey={tableConfig.sortConfig.key as any}
+                        sortDirection={tableConfig.sortConfig.direction}
+                        onSort={(k) => tableConfig.handleSort(k as any)}
+                        sortable={!isComplex}
+                      >
+                        {label}
+                      </SortableTableHead>
+                    );
+                  })}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedAndPaginatedData.map((snapshot) => (
-                  <TableRow key={snapshot.id}>
-                    <TableCell className="font-mono text-sm">
-                      {snapshot.timestamp}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        {getActivityIcon(snapshot.activity)}
-                        <span className="text-sm">
-                          {getActivityLabel(snapshot.activity)}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium text-sm">
-                          {snapshot.pipelineName}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {snapshot.pipelineId}
-                        </p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {snapshot.valveId ? (
-                        <div>
-                          <p className="font-medium text-sm">
-                            {snapshot.valveName}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {snapshot.valveId}
-                          </p>
-                        </div>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">
-                      {snapshot.pipeDepth.toFixed(1)}
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">
-                      {snapshot.pipeDiameter}
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">
-                      {snapshot.perimeter.toFixed(1)}
-                    </TableCell>
-                    <TableCell className="font-mono text-xs text-muted-foreground">
-                      {snapshot.coordinates[0].toFixed(4)},{" "}
-                      {snapshot.coordinates[1].toFixed(4)}
-                    </TableCell>
+                {sortedAndPaginatedData.map((row, idx) => (
+                  <TableRow key={row.id ?? idx}>
+                    {snapshotKeys.map((key) => {
+                      const val = row[key];
+                      const renderValue = () => {
+                        if (key === "activity") {
+                          return (
+                            <div className="flex items-center space-x-2">
+                              {getActivityIcon(String(val) as any)}
+                              <span className="text-sm">{getActivityLabel(String(val) as any)}</span>
+                            </div>
+                          );
+                        }
+                        if (key === "coordinates" && Array.isArray(val) && val.length >= 2 && typeof val[0] === "number" && typeof val[1] === "number") {
+                          return (
+                            <span className="font-mono text-xs text-muted-foreground">
+                              {val[0].toFixed(4)}, {val[1].toFixed(4)}
+                            </span>
+                          );
+                        }
+                        if (typeof val === "number") {
+                          return <span className="font-mono text-sm">{Number.isInteger(val) ? val : Number(val.toFixed(2))}</span>;
+                        }
+                        if (val instanceof Date) {
+                          return <span className="font-mono text-sm">{format(val, "Pp")}</span>;
+                        }
+                        if (typeof val === "string") {
+                          const dt = new Date(val);
+                          if (!Number.isNaN(dt.getTime()) && /time|date/i.test(key)) {
+                            return <span className="font-mono text-sm">{format(dt, "Pp")}</span>;
+                          }
+                          return <span className="text-sm">{val}</span>;
+                        }
+                        if (Array.isArray(val)) {
+                          return <span className="text-xs text-muted-foreground">{JSON.stringify(val)}</span>;
+                        }
+                        if (val && typeof val === "object") {
+                          return <span className="text-xs text-muted-foreground">{JSON.stringify(val)}</span>;
+                        }
+                        return <span className="text-sm text-muted-foreground">—</span>;
+                      };
+
+                      return (
+                        <TableCell key={key}>
+                          {renderValue()}
+                        </TableCell>
+                      );
+                    })}
                   </TableRow>
                 ))}
               </TableBody>
