@@ -645,56 +645,54 @@ export const DailyPersonalMaps = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedAndPaginatedData.map((snapshot) => (
-                  <TableRow key={snapshot.id}>
-                    <TableCell className="font-mono text-sm">
-                      {snapshot.timestamp}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        {getActivityIcon(snapshot.activity)}
-                        <span className="text-sm">
-                          {getActivityLabel(snapshot.activity)}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium text-sm">
-                          {snapshot.pipelineName}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {snapshot.pipelineId}
-                        </p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {snapshot.valveId ? (
-                        <div>
-                          <p className="font-medium text-sm">
-                            {snapshot.valveName}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {snapshot.valveId}
-                          </p>
-                        </div>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">
-                      {snapshot.pipeDepth.toFixed(1)}
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">
-                      {snapshot.pipeDiameter}
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">
-                      {snapshot.perimeter.toFixed(1)}
-                    </TableCell>
-                    <TableCell className="font-mono text-xs text-muted-foreground">
-                      {snapshot.coordinates[0].toFixed(4)},{" "}
-                      {snapshot.coordinates[1].toFixed(4)}
-                    </TableCell>
+                {sortedAndPaginatedData.map((row, idx) => (
+                  <TableRow key={row.id ?? idx}>
+                    {snapshotKeys.map((key) => {
+                      const val = row[key];
+                      const renderValue = () => {
+                        if (key === "activity") {
+                          return (
+                            <div className="flex items-center space-x-2">
+                              {getActivityIcon(String(val) as any)}
+                              <span className="text-sm">{getActivityLabel(String(val) as any)}</span>
+                            </div>
+                          );
+                        }
+                        if (key === "coordinates" && Array.isArray(val) && val.length >= 2 && typeof val[0] === "number" && typeof val[1] === "number") {
+                          return (
+                            <span className="font-mono text-xs text-muted-foreground">
+                              {val[0].toFixed(4)}, {val[1].toFixed(4)}
+                            </span>
+                          );
+                        }
+                        if (typeof val === "number") {
+                          return <span className="font-mono text-sm">{Number.isInteger(val) ? val : Number(val.toFixed(2))}</span>;
+                        }
+                        if (val instanceof Date) {
+                          return <span className="font-mono text-sm">{format(val, "Pp")}</span>;
+                        }
+                        if (typeof val === "string") {
+                          const dt = new Date(val);
+                          if (!Number.isNaN(dt.getTime()) && /time|date/i.test(key)) {
+                            return <span className="font-mono text-sm">{format(dt, "Pp")}</span>;
+                          }
+                          return <span className="text-sm">{val}</span>;
+                        }
+                        if (Array.isArray(val)) {
+                          return <span className="text-xs text-muted-foreground">{JSON.stringify(val)}</span>;
+                        }
+                        if (val && typeof val === "object") {
+                          return <span className="text-xs text-muted-foreground">{JSON.stringify(val)}</span>;
+                        }
+                        return <span className="text-sm text-muted-foreground">—</span>;
+                      };
+
+                      return (
+                        <TableCell key={key}>
+                          {renderValue()}
+                        </TableCell>
+                      );
+                    })}
                   </TableRow>
                 ))}
               </TableBody>
