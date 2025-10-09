@@ -270,7 +270,7 @@ export const DailyPersonalMaps = () => {
   };
 
   const canLoadData = selectedDevice && selectedDate;
-  const hasData = surveyData !== null;
+  const hasData = !!(surveyData && surveyData.snapshots && surveyData.snapshots.length);
 
   // Demo data for map
   const demoDevices = [
