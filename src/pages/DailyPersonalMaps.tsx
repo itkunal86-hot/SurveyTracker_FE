@@ -304,9 +304,12 @@ export const DailyPersonalMaps = () => {
   ];
 
   const demoPipelines = [
-    { id: "PS-001", diameter: 200, depth: 1.5, status: "normal" as const },
-    { id: "PS-002", diameter: 150, depth: 2.0, status: "normal" as const },
-    { id: "PS-003", diameter: 300, depth: 1.8, status: "normal" as const },
+    { id: "PS-001", diameter: 200, depth: 1.5, lat: 40.7589,
+      lng: -73.9851, status: "normal" as const },
+    { id: "PS-002", diameter: 150, depth: 2.0, lat: 40.7614,
+      lng: -73.9776, status: "normal" as const },
+    { id: "PS-003", diameter: 300, depth: 1.8,  lat: 40.7505,
+      lng: -73.9934, status: "normal" as const },
   ];
 
   const demoValves = [
