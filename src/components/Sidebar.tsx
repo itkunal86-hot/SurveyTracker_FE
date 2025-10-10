@@ -183,7 +183,8 @@ export const Sidebar = ({
       navigate(`/assets/${key}`);
       return;
     }
-    navigate("/", { replace: true });
+    // Default: navigate to root with tab query so correct page renders (e.g., Instrument List)
+    navigate(`/?tab=${encodeURIComponent(tabId)}`, { replace: true });
   };
 
   const currentUserEmail = (() => {
