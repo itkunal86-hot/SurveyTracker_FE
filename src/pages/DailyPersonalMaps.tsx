@@ -443,13 +443,29 @@ export const DailyPersonalMaps = () => {
       const resp = await apiClient.getAssetPropertyEntriesByDevice({ deviceId: targetDevice, entryDate: targetDate });
       const snapshots = Array.isArray(resp.snapshots) ? resp.snapshots : [];
 
-      // Derive simple summary fields if possible
+      const raw = (resp as any)?.raw;
+      const summaryCandidates = [raw?.data?.summary, raw?.summary, raw?.data, raw].filter((s: any) => s && typeof s === "object");
+      let summary: any = {};
+      for (const s of summaryCandidates) {
+        if (
+          Object.prototype.hasOwnProperty.call(s, "totalDataPoints") ||
+          Object.prototype.hasOwnProperty.call(s, "startTime") ||
+          Object.prototype.hasOwnProperty.call(s, "endTime") ||
+          Object.prototype.hasOwnProperty.call(s, "averageDepth") ||
+          Object.prototype.hasOwnProperty.call(s, "pipeDiameters")
+        ) {
+          summary = s;
+          break;
+        }
+      }
+
+      // Derive simple summary fields as fallback from snapshots
       const keys = new Set<string>();
       snapshots.forEach((s) => Object.keys(s || {}).forEach((k) => keys.add(k)));
       const timeKey = ["timestamp", "time", "date", "entryDate", "entryTime"].find((k) => keys.has(k));
 
-      let startTime: string | undefined;
-      let endTime: string | undefined;
+      let derivedStart: string | undefined;
+      let derivedEnd: string | undefined;
       if (timeKey) {
         const times = snapshots
           .map((s) => s?.[timeKey!])
@@ -458,13 +474,13 @@ export const DailyPersonalMaps = () => {
           .filter((d) => !Number.isNaN(d.getTime()))
           .sort((a, b) => a.getTime() - b.getTime());
         if (times.length) {
-          startTime = format(times[0], "p");
-          endTime = format(times[times.length - 1], "p");
+          derivedStart = format(times[0], "p");
+          derivedEnd = format(times[times.length - 1], "p");
         }
       }
 
       const diameterKey = ["pipeDiameter", "diameter"].find((k) => keys.has(k));
-      const pipeDiameters = diameterKey
+      const derivedPipeDiameters = diameterKey
         ? Array.from(new Set(snapshots.map((s) => s?.[diameterKey]).filter((v) => typeof v === "number")))
         : [];
 
@@ -472,17 +488,55 @@ export const DailyPersonalMaps = () => {
       const avgDepthVals = depthKey
         ? snapshots.map((s) => s?.[depthKey]).filter((v) => typeof v === "number")
         : [];
-      const averageDepth = avgDepthVals.length
+      const derivedAverageDepth = avgDepthVals.length
         ? Number((avgDepthVals.reduce((a: number, b: number) => a + b, 0) / avgDepthVals.length).toFixed(2))
         : undefined;
 
+      // Normalize locationsCovered from summary if present
+      const normalizeLocations = (val: any): string[] | undefined => {
+        if (!val) return undefined;
+        const arr = Array.isArray(val) ? val : [];
+        return arr
+          .map((item) => {
+            if (typeof item === "string") return item;
+            if (item && typeof item === "object") {
+              const lat = (item as any).lat ?? (item as any).latitude;
+              const lng = (item as any).lng ?? (item as any).lon ?? (item as any).longitude;
+              if (typeof lat === "number" && typeof lng === "number") {
+                return `${lat}, ${lng}`;
+              }
+            }
+            if (Array.isArray(item) && item.length >= 2 && typeof item[0] === "number" && typeof item[1] === "number") {
+              return `${item[0]}, ${item[1]}`;
+            }
+            return String(item);
+          })
+          .filter((s) => typeof s === "string" && s.length > 0);
+      };
+
+      const totalDataPoints = typeof summary.totalDataPoints === "number" ? summary.totalDataPoints : snapshots.length;
+      const startTime = typeof summary.startTime === "string" && summary.startTime ? summary.startTime : derivedStart;
+      const endTime = typeof summary.endTime === "string" && summary.endTime ? summary.endTime : derivedEnd;
+      const pipeDiameters = Array.isArray(summary.pipeDiameters) && summary.pipeDiameters.every((n: any) => typeof n === "number")
+        ? summary.pipeDiameters
+        : derivedPipeDiameters;
+      const averageDepth = typeof summary.averageDepth === "number" ? summary.averageDepth : derivedAverageDepth;
+      const locationsCovered = normalizeLocations(summary.locationsCovered);
+      const pipelineEntries = typeof summary.pipelineEntries === "number" ? summary.pipelineEntries : undefined;
+      const valveOperations = typeof summary.valveOperations === "number" ? summary.valveOperations : undefined;
+      const totalPerimeterSurveyed = typeof summary.totalPerimeterSurveyed === "number" ? summary.totalPerimeterSurveyed : undefined;
+
       setSurveyData({
         snapshots,
-        totalDataPoints: snapshots.length,
+        totalDataPoints,
         startTime,
         endTime,
         pipeDiameters,
         averageDepth,
+        locationsCovered,
+        pipelineEntries,
+        valveOperations,
+        totalPerimeterSurveyed,
       });
     } catch (e) {
       setSurveyData({ snapshots: [] });
@@ -1032,6 +1086,13 @@ export const DailyPersonalMaps = () => {
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">Total Perimeter</span>
                       <span className="font-medium">{surveyData.totalPerimeterSurveyed}m</span>
+                    </div>
+                  )}
+
+                  {Array.isArray(surveyData.locationsCovered) && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Locations Covered</span>
+                      <span className="font-medium">{surveyData.locationsCovered.length}</span>
                     </div>
                   )}
                 </div>

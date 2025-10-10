@@ -79,6 +79,15 @@ export default function DeviceMaster() {
     setIsDialogOpen(false);
   };
 
+  // ✅ Update loadDevices or Refresh button handler
+  const handleRefresh = async () => {
+  setSearchTerm("");       // clear search
+  setStatusFilter("");     // clear status filter
+  setTypeFilter("");       // clear type filter
+  await loadDevices();     // reload all devices
+  };
+
+
   const validate = () => {
     const e: typeof errors = {};
     if (!form.name.trim()) e.name = "Name is required";
@@ -172,7 +181,11 @@ export default function DeviceMaster() {
             <CardDescription>Manage master records of Trimble and related devices</CardDescription>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={loadDevices} className="gap-2"><RefreshCw className="h-4 w-4" />Refresh</Button>
+            {/* <Button variant="outline" onClick={loadDevices} className="gap-2"><RefreshCw className="h-4 w-4" />Refresh</Button> */}
+            <Button variant="outline" onClick={handleRefresh} className="gap-2">
+  <RefreshCw className="h-4 w-4" /> Refresh
+</Button>
+
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button onClick={() => { setEditing(null); setIsDialogOpen(true); }} className="gap-2">

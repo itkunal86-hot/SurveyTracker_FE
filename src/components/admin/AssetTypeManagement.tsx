@@ -176,7 +176,18 @@ export default function AssetTypeManagement() {
                 {categories.map(c => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}
               </SelectContent>
             </Select>
-            <Button variant="outline" onClick={() => loadItems(selectedCategory || undefined)}>Refresh</Button>
+            {/* <Button variant="outline" onClick={() => loadItems(selectedCategory || undefined)}>Refresh</Button> */}
+<Button
+  variant="outline"
+  onClick={() => {
+    setSelectedCategory("");  // reset to ALL
+    setSearchTerm("");        // clear search
+    loadItems(undefined);     // load all categories
+  }}
+>
+  Refresh
+</Button>
+
           </div>
         </div>
 
