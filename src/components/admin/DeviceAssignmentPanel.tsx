@@ -347,6 +347,7 @@ export default function DeviceAssignmentPanel() {
               <SelectItem value="ALL">All Status</SelectItem>
               <SelectItem value="ACTIVE">Active Only</SelectItem>
               <SelectItem value="INACTIVE">Inactive Only</SelectItem>
+              <SelectItem value="EXPIRED">Expired Only</SelectItem>
             </SelectContent>
           </Select>
         </div>
