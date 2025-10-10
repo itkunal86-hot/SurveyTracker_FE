@@ -91,6 +91,8 @@ const COORDINATE_CONTAINER_KEYS = [
   "coordinates",
   "coordinate",
   "location",
+  "Location",
+  "LOCATION",
   "position",
   "geo",
   "gps",
@@ -109,6 +111,9 @@ const TIMESTAMP_KEYS = [
   "date",
   "entryDate",
   "entryTime",
+  "installedDate",
+  "Installed Date",
+  "installationDate",
   "recordedAt",
   "createdAt",
   "updatedAt",
@@ -119,8 +124,8 @@ const TIMESTAMP_KEYS = [
   "loggedAt",
 ];
 const VALVE_CONTAINER_KEYS = ["valve", "valveInfo", "valveDetails", "valveData"];
-const DIAMETER_KEYS = ["pipeDiameter", "diameter", "pipelineDiameter", "diameterMm", "diameterMM", "pipe_diameter"];
-const DEPTH_KEYS = ["pipeDepth", "depth", "pipelineDepth", "depthMeters", "depthM", "burialDepth"];
+const DIAMETER_KEYS = ["pipeDiameter", "diameter", "Diameter", "DIAMETER", "pipelineDiameter", "diameterMm", "diameterMM", "pipe_diameter"];
+const DEPTH_KEYS = ["pipeDepth", "depth", "Depth", "DEPTH", "pipelineDepth", "depthMeters", "depthM", "burialDepth"];
 
 const parseMaybeNumber = (value: unknown): number | null => {
   if (typeof value === "number" && Number.isFinite(value)) {
@@ -568,12 +573,24 @@ export const DailyPersonalMaps = () => {
       }
     }
 
-    const pipelineIdEntry = entries.find((entry) => entry.snapshot.pipelineId != null);
-    const pipelineNameEntry = entries.find((entry) => entry.snapshot.pipelineName != null);
+    const getFieldCI = (obj: Record<string, any>, candidates: string[]): any => {
+      const keys = Object.keys(obj || {});
+      for (const cand of candidates) {
+        // Exact match first
+        if (cand in obj) return obj[cand];
+        const normalized = cand.replace(/\s|_/g, "").toLowerCase();
+        const matched = keys.find(k => k.replace(/\s|_/g, "").toLowerCase() === normalized);
+        if (matched) return obj[matched];
+      }
+      return undefined;
+    };
+
+    const pipelineIdEntry = entries.find((entry) => getFieldCI(entry.snapshot, ["pipelineId", "pipeline_id", "Linked Segment", "linkedSegment", "segment", "Segment"]) != null);
+    const pipelineNameEntry = entries.find((entry) => getFieldCI(entry.snapshot, ["pipelineName", "pipeline_name", "Linked Segment", "linkedSegment"]) != null);
 
     const deviceNameFallback = selectedDeviceLabel || selectedDevice || "Selected Device";
-    const pipelineId = pipelineIdEntry ? String(pipelineIdEntry.snapshot.pipelineId) : `trail-${selectedDevice || "device"}`;
-    const pipelineName = pipelineNameEntry ? String(pipelineNameEntry.snapshot.pipelineName) : `${deviceNameFallback} Trail`;
+    const pipelineId = pipelineIdEntry ? String(getFieldCI(pipelineIdEntry.snapshot, ["pipelineId", "pipeline_id", "Linked Segment", "linkedSegment", "segment", "Segment"])) : `trail-${selectedDevice || "device"}`;
+    const pipelineName = pipelineNameEntry ? String(getFieldCI(pipelineNameEntry.snapshot, ["pipelineName", "pipeline_name", "Linked Segment", "linkedSegment"])) : `${deviceNameFallback} Trail`;
 
     const pipelineStatusEntry = [...entries].reverse().find((entry) => entry.snapshot.pipelineStatus != null || entry.snapshot.status != null);
     const pipelineStatus = normalizePipelineStatus(
@@ -652,8 +669,18 @@ export const DailyPersonalMaps = () => {
           break;
         }
       }
-      const valveIdRaw = valveSource?.id ?? entry.snapshot.valveId ?? entry.snapshot.valveID;
-      if (!valveIdRaw) continue;
+
+      let valveIdRaw = valveSource?.id ?? entry.snapshot.valveId ?? entry.snapshot.valveID;
+      let valveName: string | undefined = valveSource?.name ?? entry.snapshot.valveName;
+      let valveTypeText: any = valveSource?.type ?? entry.snapshot.valveType ?? entry.snapshot.Type;
+      let valveStatusText: any = valveSource?.status ?? entry.snapshot.valveStatus;
+      let valveSegmentRaw: any = valveSource?.pipelineId ?? entry.snapshot.pipelineId;
+
+      // Fallback to snapshot row itself (for datasets where each row is a valve point)
+      if (!valveIdRaw) valveIdRaw = entry.snapshot.id ?? `VAL-${entry.index + 1}`;
+      if (!valveName) valveName = String(entry.snapshot["Linked Segment"] ?? valveIdRaw);
+      if (!valveSegmentRaw) valveSegmentRaw = entry.snapshot["Linked Segment"] ?? pipelineId;
+
       const valveId = String(valveIdRaw);
       if (valvesMap.has(valveId)) continue;
 
@@ -663,10 +690,9 @@ export const DailyPersonalMaps = () => {
         extractCoordinateFromSnapshot(valveSource) ??
         entry.coords;
 
-      const valveType = normalizeValveType(valveSource?.type ?? entry.snapshot.valveType);
-      const valveStatus = normalizeValveStatus(valveSource?.status ?? entry.snapshot.valveStatus);
-      const valveName = String(valveSource?.name ?? entry.snapshot.valveName ?? `Valve ${valveId}`);
-      const valveSegment = String(valveSource?.pipelineId ?? entry.snapshot.pipelineId ?? pipelineId);
+      const valveType = normalizeValveType(valveTypeText);
+      const valveStatus = normalizeValveStatus(valveStatusText);
+      const valveSegment = String(valveSegmentRaw);
 
       valvesMap.set(valveId, {
         id: valveId,
