@@ -573,12 +573,24 @@ export const DailyPersonalMaps = () => {
       }
     }
 
-    const pipelineIdEntry = entries.find((entry) => entry.snapshot.pipelineId != null);
-    const pipelineNameEntry = entries.find((entry) => entry.snapshot.pipelineName != null);
+    const getFieldCI = (obj: Record<string, any>, candidates: string[]): any => {
+      const keys = Object.keys(obj || {});
+      for (const cand of candidates) {
+        // Exact match first
+        if (cand in obj) return obj[cand];
+        const normalized = cand.replace(/\s|_/g, "").toLowerCase();
+        const matched = keys.find(k => k.replace(/\s|_/g, "").toLowerCase() === normalized);
+        if (matched) return obj[matched];
+      }
+      return undefined;
+    };
+
+    const pipelineIdEntry = entries.find((entry) => getFieldCI(entry.snapshot, ["pipelineId", "pipeline_id", "Linked Segment", "linkedSegment", "segment", "Segment"]) != null);
+    const pipelineNameEntry = entries.find((entry) => getFieldCI(entry.snapshot, ["pipelineName", "pipeline_name", "Linked Segment", "linkedSegment"]) != null);
 
     const deviceNameFallback = selectedDeviceLabel || selectedDevice || "Selected Device";
-    const pipelineId = pipelineIdEntry ? String(pipelineIdEntry.snapshot.pipelineId) : `trail-${selectedDevice || "device"}`;
-    const pipelineName = pipelineNameEntry ? String(pipelineNameEntry.snapshot.pipelineName) : `${deviceNameFallback} Trail`;
+    const pipelineId = pipelineIdEntry ? String(getFieldCI(pipelineIdEntry.snapshot, ["pipelineId", "pipeline_id", "Linked Segment", "linkedSegment", "segment", "Segment"])) : `trail-${selectedDevice || "device"}`;
+    const pipelineName = pipelineNameEntry ? String(getFieldCI(pipelineNameEntry.snapshot, ["pipelineName", "pipeline_name", "Linked Segment", "linkedSegment"])) : `${deviceNameFallback} Trail`;
 
     const pipelineStatusEntry = [...entries].reverse().find((entry) => entry.snapshot.pipelineStatus != null || entry.snapshot.status != null);
     const pipelineStatus = normalizePipelineStatus(
