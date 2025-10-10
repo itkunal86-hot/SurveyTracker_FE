@@ -523,7 +523,7 @@ export const DailyPersonalMaps = () => {
     }
 
     const entries = snapshots
-      .map((snapshot, index) => {
+      .map<SnapshotEntry | null>((snapshot, index) => {
         const coords = extractCoordinateFromSnapshot(snapshot);
         if (!coords) return null;
         const timestamp = getTimestampFromSnapshot(snapshot);
@@ -532,7 +532,7 @@ export const DailyPersonalMaps = () => {
           timestamp,
           snapshot,
           index,
-        } satisfies SnapshotEntry;
+        };
       })
       .filter((entry): entry is SnapshotEntry => entry !== null);
 
