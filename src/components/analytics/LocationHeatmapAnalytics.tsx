@@ -472,8 +472,6 @@ export const LocationHeatmapAnalytics = () => {
       <Tabs defaultValue="heatmap" className="space-y-6">
         <TabsList>
           <TabsTrigger value="heatmap">Location Heatmap</TabsTrigger>
-          <TabsTrigger value="usage">Usage Analytics</TabsTrigger>
-          <TabsTrigger value="performance">Performance Metrics</TabsTrigger>
         </TabsList>
 
         <TabsContent value="heatmap" className="space-y-6">
@@ -488,7 +486,7 @@ export const LocationHeatmapAnalytics = () => {
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Asset Type Filters */}
-                <div className="space-y-4">
+                <div className="space-y-4 hidden">
                   <h4 className="font-medium">Asset Layers</h4>
                   
                   <div className="flex items-center justify-between">
@@ -590,166 +588,7 @@ export const LocationHeatmapAnalytics = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="usage" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Hourly Usage Pattern */}
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>24-Hour Usage Pattern</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <AreaChart data={usageData.hourlyData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="hour" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Area 
-                      type="monotone" 
-                      dataKey="usage" 
-                      stroke="#8884d8" 
-                      fill="#8884d8" 
-                      fillOpacity={0.6}
-                      name="Usage (Units)"
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="flowRate" 
-                      stroke="#82ca9d" 
-                      fill="#82ca9d" 
-                      fillOpacity={0.4}
-                      name="Flow Rate (L/s)"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
 
-            {/* Pipeline Usage Distribution */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Pipeline Usage Distribution</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={usageData.pipelineUsage}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="usage" fill="#8884d8" name="Usage (L/min)" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            {/* Device Utilization */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Device Utilization</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={usageData.deviceUtilization}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, utilization }) => `${name.split(' ')[0]}: ${utilization}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="utilization"
-                    >
-                      {usageData.deviceUtilization.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="performance" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Pressure vs Flow Correlation */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Pressure vs Flow Rate</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <ScatterChart data={usageData.hourlyData}>
-                    <CartesianGrid />
-                    <XAxis type="number" dataKey="pressure" name="Pressure" unit=" Bar" />
-                    <YAxis type="number" dataKey="flowRate" name="Flow Rate" unit=" L/s" />
-                    <Tooltip cursor={{ strokeDasharray: '3 3' }} />
-                    <Scatter name="Pressure vs Flow" data={usageData.hourlyData} fill="#8884d8" />
-                  </ScatterChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            {/* Control Station Performance */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Control Station Performance</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={usageData.pressureDistribution}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="efficiency" fill="#82ca9d" name="Efficiency %" />
-                    <Bar dataKey="pressure" fill="#8884d8" name="Pressure (Bar)" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            {/* Temperature and Pressure Trends */}
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Temperature and Pressure Trends</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={usageData.hourlyData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="hour" />
-                    <YAxis yAxisId="left" />
-                    <YAxis yAxisId="right" orientation="right" />
-                    <Tooltip />
-                    <Legend />
-                    <Line 
-                      yAxisId="left"
-                      type="monotone" 
-                      dataKey="pressure" 
-                      stroke="#8884d8" 
-                      strokeWidth={2}
-                      name="Pressure (Bar)"
-                    />
-                    <Line 
-                      yAxisId="right"
-                      type="monotone" 
-                      dataKey="temperature" 
-                      stroke="#82ca9d" 
-                      strokeWidth={2}
-                      name="Temperature (°C)"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
       </Tabs>
     </div>
   );
