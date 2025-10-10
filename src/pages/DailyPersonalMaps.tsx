@@ -50,6 +50,248 @@ interface Device {
 // Dynamic snapshot row from API
 type SnapshotRow = Record<string, any>;
 
+interface CoordinatePoint {
+  lat: number;
+  lng: number;
+  elevation?: number;
+}
+
+interface SnapshotEntry {
+  coords: CoordinatePoint;
+  timestamp: Date | null;
+  snapshot: SnapshotRow;
+  index: number;
+}
+
+const LATITUDE_KEYS = [
+  "lat",
+  "latitude",
+  "latDeg",
+  "latitudeDeg",
+  "latitudeDegree",
+  "latDegrees",
+  "gpsLat",
+  "lat_value",
+  "latValue",
+];
+const LONGITUDE_KEYS = [
+  "lng",
+  "lon",
+  "long",
+  "longitude",
+  "longitudeDeg",
+  "longitudeDegree",
+  "lngDegrees",
+  "gpsLng",
+  "long_value",
+  "lonValue",
+];
+const ELEVATION_KEYS = ["elevation", "elev", "altitude", "alt", "height", "z"];
+const COORDINATE_CONTAINER_KEYS = [
+  "coordinates",
+  "coordinate",
+  "location",
+  "position",
+  "geo",
+  "gps",
+  "point",
+  "latlng",
+  "locationPoint",
+  "locationInfo",
+  "geometry",
+  "lastKnownLocation",
+  "geoCoordinates",
+  "geo_location",
+];
+const TIMESTAMP_KEYS = [
+  "timestamp",
+  "time",
+  "date",
+  "entryDate",
+  "entryTime",
+  "recordedAt",
+  "createdAt",
+  "updatedAt",
+  "startTime",
+  "endTime",
+  "logTime",
+  "capturedAt",
+  "loggedAt",
+];
+const VALVE_CONTAINER_KEYS = ["valve", "valveInfo", "valveDetails", "valveData"];
+const DIAMETER_KEYS = ["pipeDiameter", "diameter", "pipelineDiameter", "diameterMm", "diameterMM", "pipe_diameter"];
+const DEPTH_KEYS = ["pipeDepth", "depth", "pipelineDepth", "depthMeters", "depthM", "burialDepth"];
+
+const parseMaybeNumber = (value: unknown): number | null => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string") {
+    const sanitized = value.trim().replace(/[^0-9.+-]/g, "");
+    if (!sanitized) return null;
+    const parsed = Number(sanitized);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+};
+
+const extractCoordinateFromCandidate = (candidate: any): CoordinatePoint | null => {
+  if (!candidate) return null;
+
+  if (Array.isArray(candidate)) {
+    const [latRaw, lngRaw, elevRaw] = candidate;
+    const lat = parseMaybeNumber(latRaw);
+    const lng = parseMaybeNumber(lngRaw);
+    if (lat == null || lng == null) return null;
+    const elevation = parseMaybeNumber(elevRaw);
+    return {
+      lat,
+      lng,
+      ...(elevation != null ? { elevation } : {}),
+    };
+  }
+
+  if (typeof candidate === "string") {
+    const numericParts = candidate
+      .split(/[,;\s]+/)
+      .map((part) => parseMaybeNumber(part))
+      .filter((part): part is number => part != null);
+
+    if (numericParts.length >= 2) {
+      const [lat, lng, elevation] = numericParts;
+      return {
+        lat,
+        lng,
+        ...(typeof elevation === "number" ? { elevation } : {}),
+      };
+    }
+    const matches = candidate.match(/-?\d+(\.\d+)?/g);
+    if (matches && matches.length >= 2) {
+      const lat = parseMaybeNumber(matches[0]);
+      const lng = parseMaybeNumber(matches[1]);
+      if (lat != null && lng != null) {
+        const elevation = matches[2] ? parseMaybeNumber(matches[2]) : null;
+        return {
+          lat,
+          lng,
+          ...(elevation != null ? { elevation } : {}),
+        };
+      }
+    }
+    return null;
+  }
+
+  if (typeof candidate === "object") {
+    for (const key of COORDINATE_CONTAINER_KEYS) {
+      const nested = (candidate as Record<string, any>)[key];
+      if (nested && nested !== candidate) {
+        const resolved = extractCoordinateFromCandidate(nested);
+        if (resolved) return resolved;
+      }
+    }
+
+    const latKey = LATITUDE_KEYS.find((key) => parseMaybeNumber((candidate as Record<string, any>)[key]) != null);
+    const lngKey = LONGITUDE_KEYS.find((key) => parseMaybeNumber((candidate as Record<string, any>)[key]) != null);
+
+    if (latKey && lngKey) {
+      const lat = parseMaybeNumber((candidate as Record<string, any>)[latKey])!;
+      const lng = parseMaybeNumber((candidate as Record<string, any>)[lngKey])!;
+      const elevationKey = ELEVATION_KEYS.find(
+        (key) => parseMaybeNumber((candidate as Record<string, any>)[key]) != null,
+      );
+      const elevation = elevationKey != null ? parseMaybeNumber((candidate as Record<string, any>)[elevationKey]) : null;
+
+      return {
+        lat,
+        lng,
+        ...(elevation != null ? { elevation } : {}),
+      };
+    }
+  }
+
+  return null;
+};
+
+const extractCoordinateFromSnapshot = (snapshot: Record<string, any> | null | undefined): CoordinatePoint | null => {
+  if (!snapshot || typeof snapshot !== "object") return null;
+  return extractCoordinateFromCandidate(snapshot);
+};
+
+const parseDateValue = (value: unknown): Date | null => {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value;
+  }
+  if (typeof value === "number" && Number.isFinite(value)) {
+    if (value > 1e12) return new Date(value);
+    if (value > 1e9) return new Date(value * 1000);
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const parsed = new Date(trimmed);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+  return null;
+};
+
+const getTimestampFromSnapshot = (snapshot: Record<string, any>): Date | null => {
+  for (const key of TIMESTAMP_KEYS) {
+    if (snapshot[key] != null) {
+      const parsed = parseDateValue(snapshot[key]);
+      if (parsed) return parsed;
+    }
+  }
+
+  const nestedContainers = ["metadata", "details", "summary", "info", "context"];
+  for (const container of nestedContainers) {
+    const nested = snapshot[container];
+    if (nested && typeof nested === "object") {
+      for (const key of TIMESTAMP_KEYS) {
+        const parsed = parseDateValue((nested as Record<string, any>)[key]);
+        if (parsed) return parsed;
+      }
+    }
+  }
+
+  return null;
+};
+
+const normalizeDeviceStatus = (value: unknown): "active" | "offline" | "maintenance" | "error" => {
+  if (typeof value === "number") {
+    if (value <= 0) return "offline";
+    if (value === 2) return "maintenance";
+  }
+  const text = typeof value === "string" ? value.toLowerCase() : "";
+  if (text.includes("maint")) return "maintenance";
+  if (text.includes("error") || text.includes("fault") || text.includes("critical") || text.includes("alarm")) return "error";
+  if (text.includes("inactive") || text.includes("offline") || text.includes("lost") || text.includes("disconnect")) return "offline";
+  return "active";
+};
+
+const normalizePipelineStatus = (value: unknown): "normal" | "warning" | "maintenance" | "critical" => {
+  const text = typeof value === "string" ? value.toLowerCase() : "";
+  if (text.includes("maint")) return "maintenance";
+  if (text.includes("warn") || text.includes("caution")) return "warning";
+  if (text.includes("critical") || text.includes("fault") || text.includes("alarm")) return "critical";
+  return "normal";
+};
+
+const normalizeValveType = (value: unknown): "control" | "emergency" | "isolation" | "station" => {
+  const text = typeof value === "string" ? value.toLowerCase() : "";
+  if (text.includes("emerg")) return "emergency";
+  if (text.includes("iso")) return "isolation";
+  if (text.includes("station") || text.includes("hub")) return "station";
+  return "control";
+};
+
+const normalizeValveStatus = (value: unknown): "open" | "closed" | "maintenance" | "fault" => {
+  const text = typeof value === "string" ? value.toLowerCase() : "";
+  if (text.includes("clos")) return "closed";
+  if (text.includes("maint")) return "maintenance";
+  if (text.includes("fault") || text.includes("error") || text.includes("fail")) return "fault";
+  return "open";
+};
+
 // Flexible survey data structure
 interface SurveyDataDynamic {
   snapshots: SnapshotRow[];
@@ -275,7 +517,187 @@ export const DailyPersonalMaps = () => {
   const canLoadData = selectedDevice && selectedDate;
   const hasData = !!(surveyData && surveyData.snapshots && surveyData.snapshots.length);
 
-  // Demo data for map
+  const mapData = useMemo(() => {
+    if (!snapshots.length) {
+      return { devices: [], pipelines: [], valves: [] };
+    }
+
+    const entries = snapshots
+      .map((snapshot, index) => {
+        const coords = extractCoordinateFromSnapshot(snapshot);
+        if (!coords) return null;
+        const timestamp = getTimestampFromSnapshot(snapshot);
+        return {
+          coords,
+          timestamp,
+          snapshot,
+          index,
+        } satisfies SnapshotEntry;
+      })
+      .filter((entry): entry is SnapshotEntry => entry !== null);
+
+    if (!entries.length) {
+      return { devices: [], pipelines: [], valves: [] };
+    }
+
+    const pipelineCoordinates = entries.map((entry) => ({
+      lat: entry.coords.lat,
+      lng: entry.coords.lng,
+      ...(entry.coords.elevation != null ? { elevation: entry.coords.elevation } : {}),
+    }));
+
+    let pipelineDiameter: number | null = surveyData?.pipeDiameters?.[0] ?? null;
+    if (pipelineDiameter == null) {
+      for (const entry of entries) {
+        const candidate = DIAMETER_KEYS.map((key) => parseMaybeNumber(entry.snapshot[key])).find((val) => val != null);
+        if (candidate != null) {
+          pipelineDiameter = candidate;
+          break;
+        }
+      }
+    }
+
+    let pipelineDepth: number | null = surveyData?.averageDepth ?? null;
+    if (pipelineDepth == null) {
+      for (const entry of entries) {
+        const candidate = DEPTH_KEYS.map((key) => parseMaybeNumber(entry.snapshot[key])).find((val) => val != null);
+        if (candidate != null) {
+          pipelineDepth = candidate;
+          break;
+        }
+      }
+    }
+
+    const pipelineIdEntry = entries.find((entry) => entry.snapshot.pipelineId != null);
+    const pipelineNameEntry = entries.find((entry) => entry.snapshot.pipelineName != null);
+
+    const deviceNameFallback = selectedDeviceLabel || selectedDevice || "Selected Device";
+    const pipelineId = pipelineIdEntry ? String(pipelineIdEntry.snapshot.pipelineId) : `trail-${selectedDevice || "device"}`;
+    const pipelineName = pipelineNameEntry ? String(pipelineNameEntry.snapshot.pipelineName) : `${deviceNameFallback} Trail`;
+
+    const pipelineStatusEntry = [...entries].reverse().find((entry) => entry.snapshot.pipelineStatus != null || entry.snapshot.status != null);
+    const pipelineStatus = normalizePipelineStatus(
+      pipelineStatusEntry?.snapshot.pipelineStatus ?? pipelineStatusEntry?.snapshot.status,
+    );
+
+    const diameterValue = pipelineDiameter != null && Number.isFinite(pipelineDiameter) ? Number(pipelineDiameter) : 100;
+    const depthValue = pipelineDepth != null && Number.isFinite(pipelineDepth) ? Number(pipelineDepth) : 0;
+
+    const pipelines = pipelineCoordinates.length >= 2
+      ? [
+        {
+          id: pipelineId,
+          name: pipelineName,
+          diameter: diameterValue,
+          depth: depthValue,
+          status: pipelineStatus,
+          coordinates: pipelineCoordinates,
+        },
+      ]
+      : [];
+
+    const lastEntry = entries[entries.length - 1];
+    const rawDeviceStatus =
+      lastEntry.snapshot.deviceStatus ??
+      lastEntry.snapshot.status ??
+      lastEntry.snapshot.activityStatus ??
+      lastEntry.snapshot.operationalStatus;
+    const deviceStatus = normalizeDeviceStatus(rawDeviceStatus);
+    const lastTimestamp = lastEntry.timestamp;
+    const fallbackPing =
+      lastEntry.snapshot.lastKnown ??
+      lastEntry.snapshot.lastSync ??
+      lastEntry.snapshot.entryTime ??
+      lastEntry.snapshot.entryDate ??
+      "";
+    const lastPing = lastTimestamp
+      ? format(lastTimestamp, "PPpp")
+      : fallbackPing
+        ? String(fallbackPing)
+        : "Latest recorded position";
+    const batteryCandidate = parseMaybeNumber(
+      lastEntry.snapshot.batteryLevel ?? lastEntry.snapshot.battery ?? lastEntry.snapshot.battery_percentage,
+    );
+
+    const devices = [
+      {
+        id: selectedDevice || "selected-device",
+        name: deviceNameFallback,
+        lat: lastEntry.coords.lat,
+        lng: lastEntry.coords.lng,
+        status: deviceStatus,
+        lastPing,
+        type: selectedDeviceType,
+        batteryLevel: batteryCandidate ?? undefined,
+      },
+    ];
+
+    const valvesMap = new Map<
+      string,
+      {
+        id: string;
+        name: string;
+        type: "control" | "emergency" | "isolation" | "station";
+        status: "open" | "closed" | "maintenance" | "fault";
+        segmentId: string;
+        coordinates?: { lat: number; lng: number; elevation?: number };
+      }
+    >();
+
+    for (const entry of entries) {
+      let valveSource: any;
+      for (const key of VALVE_CONTAINER_KEYS) {
+        if (entry.snapshot[key]) {
+          valveSource = entry.snapshot[key];
+          break;
+        }
+      }
+      const valveIdRaw = valveSource?.id ?? entry.snapshot.valveId ?? entry.snapshot.valveID;
+      if (!valveIdRaw) continue;
+      const valveId = String(valveIdRaw);
+      if (valvesMap.has(valveId)) continue;
+
+      const valveCoord =
+        extractCoordinateFromCandidate(valveSource?.coordinates) ??
+        extractCoordinateFromCandidate(entry.snapshot.valveCoordinates) ??
+        extractCoordinateFromSnapshot(valveSource) ??
+        entry.coords;
+
+      const valveType = normalizeValveType(valveSource?.type ?? entry.snapshot.valveType);
+      const valveStatus = normalizeValveStatus(valveSource?.status ?? entry.snapshot.valveStatus);
+      const valveName = String(valveSource?.name ?? entry.snapshot.valveName ?? `Valve ${valveId}`);
+      const valveSegment = String(valveSource?.pipelineId ?? entry.snapshot.pipelineId ?? pipelineId);
+
+      valvesMap.set(valveId, {
+        id: valveId,
+        name: valveName,
+        type: valveType,
+        status: valveStatus,
+        segmentId: valveSegment,
+        coordinates: valveCoord
+          ? {
+            lat: valveCoord.lat,
+            lng: valveCoord.lng,
+            ...(valveCoord.elevation != null ? { elevation: valveCoord.elevation } : {}),
+          }
+          : undefined,
+      });
+    }
+
+    const valves = Array.from(valvesMap.values());
+
+    return {
+      devices,
+      pipelines,
+      valves,
+    };
+  }, [snapshots, surveyData, selectedDevice, selectedDeviceLabel, selectedDeviceType]);
+
+  const mapDevices = mapData.devices;
+  const mapPipelines = mapData.pipelines;
+  const mapValves = mapData.valves;
+
+  /* // Demo data for map
   const demoDevices = [
     {
       id: "T001",
@@ -329,6 +751,7 @@ export const DailyPersonalMaps = () => {
       segmentId: "PS-003",
     },
   ];
+  */
 
   const getActivityIcon = (activity: string) => {
     switch (activity) {
@@ -503,12 +926,12 @@ export const DailyPersonalMaps = () => {
             <CardContent>
               <div className="h-[500px]">
                 <LeafletMap
-                  devices={demoDevices}
-                  pipelines={demoPipelines}
-                  valves={demoValves}
-                  showDevices={true}
-                  showPipelines={hasData}
-                  showValves={hasData}
+                  devices={mapDevices}
+                  pipelines={mapPipelines}
+                  valves={mapValves}
+                  showDevices={mapDevices.length > 0}
+                  showPipelines={mapPipelines.length > 0}
+                  showValves={mapValves.length > 0}
                 />
               </div>
             </CardContent>
