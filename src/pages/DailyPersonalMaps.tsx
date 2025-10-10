@@ -91,6 +91,8 @@ const COORDINATE_CONTAINER_KEYS = [
   "coordinates",
   "coordinate",
   "location",
+  "Location",
+  "LOCATION",
   "position",
   "geo",
   "gps",
@@ -109,6 +111,9 @@ const TIMESTAMP_KEYS = [
   "date",
   "entryDate",
   "entryTime",
+  "installedDate",
+  "Installed Date",
+  "installationDate",
   "recordedAt",
   "createdAt",
   "updatedAt",
@@ -119,8 +124,8 @@ const TIMESTAMP_KEYS = [
   "loggedAt",
 ];
 const VALVE_CONTAINER_KEYS = ["valve", "valveInfo", "valveDetails", "valveData"];
-const DIAMETER_KEYS = ["pipeDiameter", "diameter", "pipelineDiameter", "diameterMm", "diameterMM", "pipe_diameter"];
-const DEPTH_KEYS = ["pipeDepth", "depth", "pipelineDepth", "depthMeters", "depthM", "burialDepth"];
+const DIAMETER_KEYS = ["pipeDiameter", "diameter", "Diameter", "DIAMETER", "pipelineDiameter", "diameterMm", "diameterMM", "pipe_diameter"];
+const DEPTH_KEYS = ["pipeDepth", "depth", "Depth", "DEPTH", "pipelineDepth", "depthMeters", "depthM", "burialDepth"];
 
 const parseMaybeNumber = (value: unknown): number | null => {
   if (typeof value === "number" && Number.isFinite(value)) {
