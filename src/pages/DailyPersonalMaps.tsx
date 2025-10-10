@@ -926,10 +926,10 @@ export const DailyPersonalMaps = () => {
             <CardContent>
               <div className="h-[500px]">
                 <LeafletMap
-                  devices={mapDevices}
+                  devices={[]}
                   pipelines={mapPipelines}
                   valves={mapValves}
-                  showDevices={mapDevices.length > 0}
+                  showDevices={false}
                   showPipelines={mapPipelines.length > 0}
                   showValves={mapValves.length > 0}
                 />
