@@ -669,8 +669,18 @@ export const DailyPersonalMaps = () => {
           break;
         }
       }
-      const valveIdRaw = valveSource?.id ?? entry.snapshot.valveId ?? entry.snapshot.valveID;
-      if (!valveIdRaw) continue;
+
+      let valveIdRaw = valveSource?.id ?? entry.snapshot.valveId ?? entry.snapshot.valveID;
+      let valveName: string | undefined = valveSource?.name ?? entry.snapshot.valveName;
+      let valveTypeText: any = valveSource?.type ?? entry.snapshot.valveType ?? entry.snapshot.Type;
+      let valveStatusText: any = valveSource?.status ?? entry.snapshot.valveStatus;
+      let valveSegmentRaw: any = valveSource?.pipelineId ?? entry.snapshot.pipelineId;
+
+      // Fallback to snapshot row itself (for datasets where each row is a valve point)
+      if (!valveIdRaw) valveIdRaw = entry.snapshot.id ?? `VAL-${entry.index + 1}`;
+      if (!valveName) valveName = String(entry.snapshot["Linked Segment"] ?? valveIdRaw);
+      if (!valveSegmentRaw) valveSegmentRaw = entry.snapshot["Linked Segment"] ?? pipelineId;
+
       const valveId = String(valveIdRaw);
       if (valvesMap.has(valveId)) continue;
 
@@ -680,10 +690,9 @@ export const DailyPersonalMaps = () => {
         extractCoordinateFromSnapshot(valveSource) ??
         entry.coords;
 
-      const valveType = normalizeValveType(valveSource?.type ?? entry.snapshot.valveType);
-      const valveStatus = normalizeValveStatus(valveSource?.status ?? entry.snapshot.valveStatus);
-      const valveName = String(valveSource?.name ?? entry.snapshot.valveName ?? `Valve ${valveId}`);
-      const valveSegment = String(valveSource?.pipelineId ?? entry.snapshot.pipelineId ?? pipelineId);
+      const valveType = normalizeValveType(valveTypeText);
+      const valveStatus = normalizeValveStatus(valveStatusText);
+      const valveSegment = String(valveSegmentRaw);
 
       valvesMap.set(valveId, {
         id: valveId,
