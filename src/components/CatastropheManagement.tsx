@@ -80,6 +80,7 @@ const CatastropheManagement = () => {
   const [editingCatastrophe, setEditingCatastrophe] =
     useState<Catastrophe | null>(null);
   const [showAddButton, setShowAddButton] = useState(true);
+  const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -156,6 +157,10 @@ const CatastropheManagement = () => {
   const handleCancel = () => {
     setShowForm(false);
     setEditingCatastrophe(null);
+  };
+
+  const handleMapClick = (lat: number, lng: number) => {
+    setSelectedLocation({ lat, lng });
   };
 
   // Transform API data for map
@@ -353,6 +358,7 @@ const CatastropheManagement = () => {
                 catastrophe={editingCatastrophe}
                 onSave={handleSave}
                 onCancel={handleCancel}
+                selectedLocation={selectedLocation}
               />
             ) : (
               <CatastropheList
@@ -379,6 +385,8 @@ const CatastropheManagement = () => {
                   showDevices={true}
                   showPipelines={true}
                   showValves={true}
+                  onMapClick={handleMapClick}
+                  selectedLocation={selectedLocation}
                 />
               </div>
             </CardContent>
