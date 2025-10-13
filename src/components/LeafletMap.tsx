@@ -133,6 +133,8 @@ interface LeafletMapProps {
   showDevices: boolean;
   showPipelines: boolean;
   showValves: boolean;
+  onMapClick?: (lat: number, lng: number) => void;
+  selectedLocation?: { lat: number; lng: number } | null;
 }
 
 const getPipelineColor = (status: PipelineSegment["status"]) => {
@@ -156,12 +158,15 @@ export const LeafletMap = ({
   showDevices,
   showPipelines,
   showValves,
+  onMapClick,
+  selectedLocation,
 }: LeafletMapProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const [markersLayer, setMarkersLayer] = useState<L.LayerGroup | null>(null);
   const [pipelinesLayer, setPipelinesLayer] = useState<L.LayerGroup | null>(null);
   const [valvesLayer, setValvesLayer] = useState<L.LayerGroup | null>(null);
+  const [selectionLayer, setSelectionLayer] = useState<L.LayerGroup | null>(null);
   const lastBoundsRef = useRef<LatLngBounds | null>(null);
   const lastCenterRef = useRef<{ lat: number; lng: number; zoom: number } | null>(
     null,
@@ -211,16 +216,24 @@ export const LeafletMap = ({
     const deviceLayer = L.layerGroup().addTo(map);
     const pipelineLayer = L.layerGroup().addTo(map);
     const valveLayer = L.layerGroup().addTo(map);
+    const selectionLayerGroup = L.layerGroup().addTo(map);
 
     setMarkersLayer(deviceLayer);
     setPipelinesLayer(pipelineLayer);
     setValvesLayer(valveLayer);
+    setSelectionLayer(selectionLayerGroup);
+
+    if (onMapClick) {
+      map.on("click", (e: L.LeafletMouseEvent) => {
+        onMapClick(e.latlng.lat, e.latlng.lng);
+      });
+    }
 
     return () => {
       map.remove();
       mapInstanceRef.current = null;
     };
-  }, []);
+  }, [onMapClick]);
 
   useEffect(() => {
     if (!markersLayer) return;
@@ -348,6 +361,22 @@ export const LeafletMap = ({
       });
     }
   }, [valves, valvePositions, showValves, valvesLayer]);
+
+  useEffect(() => {
+    if (!selectionLayer) return;
+    selectionLayer.clearLayers();
+    if (selectedLocation && Number.isFinite(selectedLocation.lat) && Number.isFinite(selectedLocation.lng)) {
+      const marker = L.circleMarker([selectedLocation.lat, selectedLocation.lng], {
+        radius: 6,
+        fillColor: "#0ea5e9",
+        color: "#ffffff",
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.9,
+      });
+      selectionLayer.addLayer(marker);
+    }
+  }, [selectedLocation, selectionLayer]);
 
   useEffect(() => {
     const map = mapInstanceRef.current;
