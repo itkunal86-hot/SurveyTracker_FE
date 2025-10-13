@@ -587,3 +587,12 @@ export function useSurveyCategories(params?: { page?: number; limit?: number; se
     staleTime: 5 * 60 * 1000,
   });
 }
+
+// Pipeline segments from AssetProperties ByType endpoint (external)
+export function usePipelineSegmentsByType(type: string = "pipeline") {
+  return useQuery({
+    queryKey: ["assetPropertiesByType", type],
+    queryFn: () => apiClient.getAssetPropertiesByType(type),
+    staleTime: 5 * 60 * 1000,
+  });
+}
