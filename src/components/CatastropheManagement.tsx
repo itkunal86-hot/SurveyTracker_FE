@@ -13,14 +13,13 @@ import { LeafletMap } from "@/components/LeafletMap";
 import { CatastropheForm } from "./CatastropheForm";
 import { CatastropheList } from "./CatastropheList";
 import {
-  useCatastrophes,
   useDevices,
   usePipelines,
   useValves,
   useCreateCatastrophe,
   useUpdateCatastrophe,
 } from "@/hooks/useApiQueries";
-import apiClient, { Catastrophe as APICatastrophe } from "@/lib/api";
+import apiClient from "@/lib/api";
 import { toast } from "sonner";
 
 export interface Catastrophe {
@@ -37,13 +36,11 @@ export interface Catastrophe {
 }
 
 const CatastropheManagement = () => {
-  // API hooks
-  const {
-    data: catastrophesResponse,
-    isLoading: loadingCatastrophes,
-    error: catastrophesError,
-    refetch: refetchCatastrophes,
-  } = useCatastrophes({ limit: 100 });
+  // External data for grid (AssetProperties/ByType/Catastrophe)
+  const [catastrophes, setCatastrophes] = useState<Catastrophe[]>([]);
+  const [loadingCatastrophes, setLoadingCatastrophes] = useState(false);
+  const [catastrophesError, setCatastrophesError] = useState<Error | null>(null);
+
   const { data: devicesResponse, isLoading: loadingDevices } = useDevices({
     limit: 50,
   });
@@ -56,25 +53,59 @@ const CatastropheManagement = () => {
   const createCatastropheMutation = useCreateCatastrophe();
   const updateCatastropheMutation = useUpdateCatastrophe();
 
-  // Transform API data to component format
-  const catastrophes = useMemo(() => {
-    if (!Array.isArray(catastrophesResponse?.data)) return [];
+  // Fetch catastrophe rows from provided endpoint and map to grid model
+  const fetchCatastrophes = async () => {
+    setLoadingCatastrophes(true);
+    setCatastrophesError(null);
+    try {
+      const res = await apiClient.getAssetPropertiesByType("Catastrophe");
+      const rows = Array.isArray(res?.data) ? res.data : [];
+      const mapped: Catastrophe[] = rows.map((r: any, idx: number) => {
+        const id = String(
+          r?.id ?? r?.ID ?? r?.Id ?? r?.apId ?? r?.AP_ID ?? r?.code ?? `ROW_${idx}`,
+        );
+        const seg = String(
+          r?.["Linked Segment"] ?? r?.linkedSegment ?? r?.LinkedSegment ?? r?.segmentId ?? r?.Segment ?? r?.pipelineId ?? r?.PipelineId ?? "Unknown",
+        );
+        const rawType = r?.type ?? r?.Type ?? r?.Category ?? r?.category ?? "other";
+        const type = String(rawType).toLowerCase().replace(/[_\s]+/g, "-");
+        const desc = r?.description ?? r?.Description ?? r?.remarks ?? r?.Remarks ?? "No description provided";
 
-    return catastrophesResponse.data.map(
-      (cat: APICatastrophe): Catastrophe => ({
-        id: cat.id,
-        segmentId: cat.pipelineId || "Unknown",
-        type: cat.type.toLowerCase().replace("_", "-"),
-        description: cat.description || "No description provided",
-        location: {
-          lat: cat.coordinates.lat,
-          lng: cat.coordinates.lng,
-          address: `${cat.coordinates.lat.toFixed(4)}, ${cat.coordinates.lng.toFixed(4)}`,
-        },
-        reportedDate: new Date(cat.reportedAt),
-      }),
-    );
-  }, [catastrophesResponse]);
+        const latRaw = r?.lat ?? r?.latitude ?? r?.Latitude ?? r?.coordinates?.lat;
+        const lngRaw = r?.lng ?? r?.longitude ?? r?.Longitude ?? r?.coordinates?.lng;
+        const lat = typeof latRaw === "number" ? latRaw : Number(latRaw);
+        const lng = typeof lngRaw === "number" ? lngRaw : Number(lngRaw);
+        const safeLat = Number.isFinite(lat) ? lat : 0;
+        const safeLng = Number.isFinite(lng) ? lng : 0;
+
+        const dateRaw = r?.reportedAt ?? r?.ReportedAt ?? r?.createdAt ?? r?.CreatedAt ?? r?.timestamp ?? r?.Timestamp ?? new Date().toISOString();
+        const reportedDate = new Date(String(dateRaw));
+
+        return {
+          id,
+          segmentId: seg,
+          type,
+          description: String(desc),
+          location: {
+            lat: safeLat,
+            lng: safeLng,
+            address: `${safeLat.toFixed(4)}, ${safeLng.toFixed(4)}`,
+          },
+          reportedDate,
+        } as Catastrophe;
+      });
+      setCatastrophes(mapped);
+    } catch (e: any) {
+      setCatastrophes([]);
+      setCatastrophesError(e instanceof Error ? e : new Error(String(e?.message || e)));
+    } finally {
+      setLoadingCatastrophes(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCatastrophes();
+  }, []);
 
   const [showForm, setShowForm] = useState(false);
   const [editingCatastrophe, setEditingCatastrophe] =
@@ -94,12 +125,9 @@ const CatastropheManagement = () => {
           return name === "catastrophe" || menu.includes("catastrophe");
         });
         if (mounted && catastropheType && !catastropheType.isSurveyElement) {
-          // Only enforce show when API explicitly marks it as non-survey element
           setShowAddButton(true);
         }
-      } catch {
-        // Ignore errors; keep previous behavior (button visible)
-      }
+      } catch {}
     })();
     return () => { mounted = false; };
   }, []);
@@ -117,7 +145,6 @@ const CatastropheManagement = () => {
   const handleSave = async (catastropheData: Omit<Catastrophe, "id">) => {
     try {
       if (editingCatastrophe) {
-        // Update existing
         await updateCatastropheMutation.mutateAsync({
           id: editingCatastrophe.id,
           catastrophe: {
@@ -135,7 +162,6 @@ const CatastropheManagement = () => {
         });
         toast.success("Catastrophe updated successfully");
       } else {
-        // Add new
         await createCatastropheMutation.mutateAsync({
           type: catastropheData.type.toUpperCase().replace("-", "_") as any,
           location: catastropheData.location.lat + "," + catastropheData.location.lng,
@@ -154,6 +180,8 @@ const CatastropheManagement = () => {
       }
       setShowForm(false);
       setEditingCatastrophe(null);
+      // After save, refresh grid
+      fetchCatastrophes();
     } catch (error) {
       toast.error("Failed to save catastrophe");
       console.error("Error saving catastrophe:", error);
@@ -233,7 +261,7 @@ const CatastropheManagement = () => {
   }, [valvesResponse]);
 
   const handleRefresh = () => {
-    refetchCatastrophes();
+    fetchCatastrophes();
   };
 
   const isLoading =
