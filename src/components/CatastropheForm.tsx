@@ -14,11 +14,13 @@ import {
 import { MapPin, Save, X, AlertCircle } from "lucide-react";
 import { Catastrophe } from "./CatastropheManagement";
 import { useCatastropheTypes, usePipelines } from "@/hooks/useApiQueries";
+import { toast } from "sonner";
 
 interface CatastropheFormProps {
   catastrophe?: Catastrophe | null;
   onSave: (catastrophe: Omit<Catastrophe, "id">) => void;
   onCancel: () => void;
+  selectedLocation?: { lat: number; lng: number } | null;
 }
 
 // Fallback data in case API is not available
@@ -36,6 +38,7 @@ export const CatastropheForm = ({
   catastrophe,
   onSave,
   onCancel,
+  selectedLocation,
 }: CatastropheFormProps) => {
   // API hooks
   const {
@@ -111,19 +114,37 @@ export const CatastropheForm = ({
     }
   };
 
-  const handleLocationClick = () => {
-    // Simulate map click - in real app would open map modal
-    const sampleLocations = [
-      { lat: 40.7128, lng: -74.006, address: "Downtown Area" },
-      { lat: 40.7589, lng: -73.9851, address: "Midtown District" },
-      { lat: 40.7831, lng: -73.9712, address: "Uptown Zone" },
-    ];
+  const handleLocationClick = async () => {
+    if (!selectedLocation) {
+      toast.warning("Please click a location on the map first.");
+      return;
+    }
 
-    const randomLocation =
-      sampleLocations[Math.floor(Math.random() * sampleLocations.length)];
+    const { lat, lng } = selectedLocation;
+
+    let address = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&zoom=16`,
+        {
+          headers: {
+            "Accept": "application/json",
+          },
+        },
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.display_name) {
+          address = data.display_name as string;
+        }
+      }
+    } catch {
+      // Ignore network errors, fallback to lat,lng string
+    }
+
     setFormData((prev) => ({
       ...prev,
-      location: randomLocation,
+      location: { lat, lng, address },
     }));
   };
 
