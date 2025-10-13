@@ -54,16 +54,41 @@ export default function DeviceAssignmentPanel() {
   const deleteAssignment = useDeleteDeviceAssignment();
   const { toast } = useToast();
 
-  const filteredAssignments = assignments.filter((assignment) => {
-    const matchesSearch = 
-      assignment.deviceName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      assignment.surveyName?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "ALL" || 
-      (statusFilter === "ACTIVE" && assignment.isActive) ||
-      (statusFilter === "INACTIVE" && !assignment.isActive);
+  // const filteredAssignments = assignments.filter((assignment) => {
+  //   const matchesSearch = 
+  //     assignment.deviceName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //     assignment.surveyName?.toLowerCase().includes(searchTerm.toLowerCase());
+  //   const matchesStatus = statusFilter === "ALL" || 
+  //     (statusFilter === "ACTIVE" && assignment.isActive) ||
+  //     (statusFilter === "INACTIVE" && !assignment.isActive);
     
-    return matchesSearch && matchesStatus;
+  //   return matchesSearch && matchesStatus;
+  // });
+
+  const filteredAssignments = assignments.filter((assignment) => {
+  const matchesSearch =
+    assignment.deviceName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    assignment.surveyName?.toLowerCase().includes(searchTerm.toLowerCase());
+
+  const now = new Date();
+  const endDate = new Date(assignment.toDate);
+  const daysRemaining = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+  let matchesStatus = false;
+
+  if (statusFilter === "ALL") {
+    matchesStatus = true;
+  } else if (statusFilter === "ACTIVE") {
+    matchesStatus = assignment.isActive && daysRemaining > 0;
+  // } else if (statusFilter === "INACTIVE") {
+  //   matchesStatus = !assignment.isActive;
+  } else if (statusFilter === "EXPIRED") {
+    matchesStatus = daysRemaining <= 0;
+  }
+
+  return matchesSearch && matchesStatus;
   });
+
 
   const getAvailableDevices = () => {
     const safeAssignments = Array.isArray(assignments) ? assignments : [];
@@ -346,7 +371,7 @@ export default function DeviceAssignmentPanel() {
             <SelectContent>
               <SelectItem value="ALL">All Status</SelectItem>
               <SelectItem value="ACTIVE">Active Only</SelectItem>
-              <SelectItem value="INACTIVE">Inactive Only</SelectItem>
+              {/* <SelectItem value="INACTIVE">Inactive Only</SelectItem> */}
               <SelectItem value="EXPIRED">Expired Only</SelectItem>
             </SelectContent>
           </Select>
