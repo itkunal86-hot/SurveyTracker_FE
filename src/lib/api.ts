@@ -1282,6 +1282,27 @@ class ApiClient {
     });
   }
 
+  // AssetProperties ByType endpoint (e.g., /AssetProperties/ByType/pipeline)
+  async getAssetPropertiesByType(type: string): Promise<ApiResponse<any[]>> {
+    try {
+      const raw: any = await this.request<any>(`/AssetProperties/ByType/${encodeURIComponent(type)}`);
+      const items = Array.isArray(raw?.data) ? raw.data : Array.isArray(raw) ? raw : [];
+      return {
+        success: true,
+        data: items,
+        message: raw?.message ?? raw?.status_message ?? "",
+        timestamp: raw?.timestamp ?? new Date().toISOString(),
+      };
+    } catch (_) {
+      return {
+        success: true,
+        data: [],
+        message: "",
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
   // Survey Categories endpoints
   async getSurveyCategories(params?: { page?: number; limit?: number; search?: string; }): Promise<PaginatedResponse<SurveyCategoryType>> {
     const sp = new URLSearchParams();

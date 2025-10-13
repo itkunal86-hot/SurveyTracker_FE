@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { MapPin, Save, X, AlertCircle } from "lucide-react";
 import { Catastrophe } from "./CatastropheManagement";
-import { useCatastropheTypes, usePipelines } from "@/hooks/useApiQueries";
+import { useCatastropheTypes, usePipelineSegmentsByType } from "@/hooks/useApiQueries";
 import { toast } from "sonner";
 
 interface CatastropheFormProps {
@@ -47,10 +47,10 @@ export const CatastropheForm = ({
     error: typesError,
   } = useCatastropheTypes();
   const {
-    data: pipelinesResponse,
-    isLoading: loadingPipelines,
-    error: pipelinesError,
-  } = usePipelines({ limit: 100 });
+    data: pipelineSegmentsResponse,
+    isLoading: loadingPipelineSegments,
+    error: pipelineSegmentsError,
+  } = usePipelineSegmentsByType("pipeline");
 
   // Transform API data or use fallbacks
   const catastropheTypes =
@@ -59,11 +59,20 @@ export const CatastropheForm = ({
       label: type.label,
     })) || FALLBACK_CATASTROPHE_TYPES;
 
-  const segments =
-    pipelinesResponse?.data?.map((pipeline) => ({
-      value: pipeline.id,
-      label: `${pipeline.name} - ${pipeline.material} (${pipeline.diameter}mm)`,
-    })) || [];
+  const segments = Array.isArray(pipelineSegmentsResponse?.data)
+    ? pipelineSegmentsResponse.data.map((row: any, idx: number) => {
+        const id = String(row?.id ?? row?.ID ?? row?.Id ?? `ROW_${idx}`);
+        const linked = String(
+          row?.["Linked Segment"] ?? row?.linkedSegment ?? row?.LinkedSegment ?? row?.name ?? row?.Name ?? id,
+        );
+        const type = row?.Type ?? row?.type;
+        const diameterRaw = row?.Diameter ?? row?.diameter;
+        const diameter = typeof diameterRaw === "number" ? diameterRaw : (typeof diameterRaw === "string" ? Number(diameterRaw) : undefined);
+        const typePart = type != null && String(type) !== "" ? ` - ${String(type)}` : "";
+        const diameterPart = diameter != null && !Number.isNaN(diameter) ? ` (${Number(diameter)}mm)` : "";
+        return { value: id, label: `${linked}${typePart}${diameterPart}` };
+      })
+    : [];
 
   const [formData, setFormData] = useState({
     segmentId: catastrophe?.segmentId || "",
@@ -158,7 +167,7 @@ export const CatastropheForm = ({
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Error States */}
-          {(typesError || pipelinesError) && (
+          {(typesError || pipelineSegmentsError) && (
             <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mb-4">
               <div className="flex items-center space-x-2 text-destructive">
                 <AlertCircle className="w-4 h-4" />
@@ -186,12 +195,12 @@ export const CatastropheForm = ({
                 onValueChange={(value) =>
                   setFormData((prev) => ({ ...prev, segmentId: value }))
                 }
-                disabled={loadingPipelines}
+                disabled={loadingPipelineSegments}
               >
                 <SelectTrigger>
                   <SelectValue
                     placeholder={
-                      loadingPipelines
+                      loadingPipelineSegments
                         ? "Loading segments..."
                         : "Select pipeline segment"
                     }
@@ -203,7 +212,7 @@ export const CatastropheForm = ({
                       {segment.label}
                     </SelectItem>
                   ))}
-                  {segments.length === 0 && !loadingPipelines && (
+                  {segments.length === 0 && !loadingPipelineSegments && (
                     <SelectItem value="unknown" disabled>
                       No pipeline segments available
                     </SelectItem>
