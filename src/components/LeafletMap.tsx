@@ -173,6 +173,7 @@ export const LeafletMap = ({
   const lastCenterRef = useRef<{ lat: number; lng: number; zoom: number } | null>(
     null,
   );
+  const userInteractedRef = useRef(false);
 
   const devicePositions = useMemo<[number, number][]>(() => {
     return devices
@@ -225,11 +226,22 @@ export const LeafletMap = ({
     setValvesLayer(valveLayer);
     setSelectionLayer(selectionLayerGroup);
 
-    if (onMapClick) {
-      map.on("click", (e: L.LeafletMouseEvent) => {
+    map.on("click", (e: L.LeafletMouseEvent) => {
+      userInteractedRef.current = true;
+      if (onMapClick) {
         onMapClick(e.latlng.lat, e.latlng.lng);
-      });
-    }
+      }
+    });
+
+    map.on("movestart", () => {
+      userInteractedRef.current = true;
+    });
+    map.on("zoomstart", () => {
+      userInteractedRef.current = true;
+    });
+    map.on("dragstart", () => {
+      userInteractedRef.current = true;
+    });
 
     return () => {
       map.remove();
@@ -384,7 +396,7 @@ export const LeafletMap = ({
     const map = mapInstanceRef.current;
     if (!map) return;
 
-    if (disableAutoFit || selectedLocation) {
+    if (disableAutoFit || selectedLocation || userInteractedRef.current) {
       return;
     }
 
