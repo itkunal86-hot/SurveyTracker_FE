@@ -78,7 +78,7 @@ export const PipelineNetworkEditor = () => {
       setPropLoading(true);
       setPropError(null);
       try {
-        const url = `https://localhost:7215/api/AssetProperties/ByType/pipe`;
+        const url = `https://localhost:7215/api/AssetProperties/ByType/pipeline`;
         const res = await fetch(url, { signal: controller.signal });
         if (!res.ok) throw new Error(`Request failed: ${res.status}`);
         const json = await res.json();
@@ -463,12 +463,7 @@ export const PipelineNetworkEditor = () => {
           </CardHeader>
           <CardContent className="p-0">
             <div className="p-6 pb-0">
-              {propError && (
-                <Alert variant="destructive" className="mb-4">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>{propError}</AlertDescription>
-                </Alert>
-              )}
+              
               {propLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin" />

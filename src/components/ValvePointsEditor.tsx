@@ -114,12 +114,7 @@ export const ValvePointsEditor = () => {
           </CardHeader>
           <CardContent className="p-0">
             <div className="p-6 pb-0">
-              {error && (
-                <Alert variant="destructive" className="mb-4">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
+             
               {loading ? (
                 <div className="text-sm text-muted-foreground">Loading...</div>
               ) : (

@@ -240,6 +240,9 @@ export interface Catastrophe {
   estimatedCost?: number;
   actualCost?: number;
   pipelineId?: string;
+  reportedDate?: Date;
+  location?: string;
+  segment?: string;
 }
 
 export interface AssetType {
@@ -1431,7 +1434,8 @@ class ApiClient {
 
   async getCatastrophe(id: string): Promise<ApiResponse<Catastrophe>> {
     try {
-      return await this.request<ApiResponse<Catastrophe>>(`/catastrophes/${id}`);
+      debugger
+      return await this.request<ApiResponse<Catastrophe>>(`/surveyEntries/${id}`);
     } catch (error) {
       // Fallback to mock data
       const catastrophe = mockCatastrophes.find(c => c.id === id);
@@ -1445,9 +1449,12 @@ class ApiClient {
   async createCatastrophe(
     catastrophe: Omit<Catastrophe, "id" | "reportedAt">,
   ): Promise<ApiResponse<Catastrophe>> {
-    return this.request<ApiResponse<Catastrophe>>("/catastrophes", {
+    const { coordinates, severity, status, pipelineId, ...filteredData } = catastrophe;
+
+    console.log(filteredData);
+    return this.request<ApiResponse<Catastrophe>>("/surveyEntries", {
       method: "POST",
-      body: JSON.stringify(catastrophe),
+      body: JSON.stringify(filteredData),
     });
   }
 

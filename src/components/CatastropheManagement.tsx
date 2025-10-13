@@ -128,6 +128,9 @@ const CatastropheManagement = () => {
             },
             description: catastropheData.description,
             pipelineId: catastropheData.segmentId,
+            reportedDate: new Date(catastropheData.reportedDate),
+            location: catastropheData.location.lat + "," + catastropheData.location.lng,
+            segment: catastropheData.segmentId,
           },
         });
         toast.success("Catastrophe updated successfully");
@@ -135,14 +138,17 @@ const CatastropheManagement = () => {
         // Add new
         await createCatastropheMutation.mutateAsync({
           type: catastropheData.type.toUpperCase().replace("-", "_") as any,
-          coordinates: {
+          location: catastropheData.location.lat + "," + catastropheData.location.lng,
+          coordinates : {
             lat: catastropheData.location.lat,
             lng: catastropheData.location.lng,
           },
           description: catastropheData.description,
           pipelineId: catastropheData.segmentId,
+          segment: catastropheData.segmentId,
           severity: "MEDIUM",
           status: "REPORTED",
+          reportedDate: new Date(catastropheData.reportedDate),
         });
         toast.success("Catastrophe created successfully");
       }
