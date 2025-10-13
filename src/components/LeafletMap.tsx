@@ -135,6 +135,7 @@ interface LeafletMapProps {
   showValves: boolean;
   onMapClick?: (lat: number, lng: number) => void;
   selectedLocation?: { lat: number; lng: number } | null;
+  disableAutoFit?: boolean;
 }
 
 const getPipelineColor = (status: PipelineSegment["status"]) => {
@@ -160,6 +161,7 @@ export const LeafletMap = ({
   showValves,
   onMapClick,
   selectedLocation,
+  disableAutoFit,
 }: LeafletMapProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -382,6 +384,10 @@ export const LeafletMap = ({
     const map = mapInstanceRef.current;
     if (!map) return;
 
+    if (disableAutoFit || selectedLocation) {
+      return;
+    }
+
     const points: [number, number][] = [];
 
     if (showDevices) {
@@ -438,7 +444,7 @@ export const LeafletMap = ({
     map.fitBounds(bounds, { padding: [32, 32], maxZoom: 17 });
     lastBoundsRef.current = bounds;
     lastCenterRef.current = null;
-  }, [devicePositions, pipelineRoutes, valvePositions, showDevices, showPipelines, showValves]);
+  }, [devicePositions, pipelineRoutes, valvePositions, showDevices, showPipelines, showValves, disableAutoFit, selectedLocation]);
 
   return (
     <div className="w-full h-full relative">
