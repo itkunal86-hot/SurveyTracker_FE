@@ -387,6 +387,7 @@ const CatastropheManagement = () => {
                   showValves={true}
                   onMapClick={handleMapClick}
                   selectedLocation={selectedLocation}
+                  disableAutoFit={!!selectedLocation}
                 />
               </div>
             </CardContent>
