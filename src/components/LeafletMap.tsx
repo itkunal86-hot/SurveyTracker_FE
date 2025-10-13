@@ -226,22 +226,21 @@ export const LeafletMap = ({
     setValvesLayer(valveLayer);
     setSelectionLayer(selectionLayerGroup);
 
-    map.on("click", (e: L.LeafletMouseEvent) => {
-      userInteractedRef.current = true;
-      if (onMapClick) {
+    if (onMapClick) {
+      map.on("click", (e: L.LeafletMouseEvent) => {
+        userInteractedRef.current = true;
         onMapClick(e.latlng.lat, e.latlng.lng);
-      }
-    });
-
-    map.on("movestart", () => {
-      userInteractedRef.current = true;
-    });
-    map.on("zoomstart", () => {
-      userInteractedRef.current = true;
-    });
-    map.on("dragstart", () => {
-      userInteractedRef.current = true;
-    });
+      });
+      map.on("movestart", () => {
+        userInteractedRef.current = true;
+      });
+      map.on("zoomstart", () => {
+        userInteractedRef.current = true;
+      });
+      map.on("dragstart", () => {
+        userInteractedRef.current = true;
+      });
+    }
 
     return () => {
       map.remove();
