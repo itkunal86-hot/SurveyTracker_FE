@@ -70,13 +70,25 @@ const CatastropheManagement = () => {
         const rawType = r?.type ?? r?.Type ?? r?.Category ?? r?.category ?? "other";
         const type = String(rawType).toLowerCase().replace(/[_\s]+/g, "-");
         const desc = r?.description ?? r?.Description ?? r?.remarks ?? r?.Remarks ?? "No description provided";
+        const locationString = r.Location;
+        let safeLat = 0;
+        let safeLng =0;
+        if (locationString) {
+          const [latStr, lngStr] = locationString.split(",").map(s => s.trim());
+          const lat = parseFloat(latStr);
+          const lng = parseFloat(lngStr);
+          safeLat = Number.isFinite(lat) ? lat : 0;
+          safeLng = Number.isFinite(lng) ? lng : 0;
+          console.log("Latitude:", lat);
+          console.log("Longitude:", lng);
+        }
 
-        const latRaw = r?.lat ?? r?.latitude ?? r?.Latitude ?? r?.coordinates?.lat;
-        const lngRaw = r?.lng ?? r?.longitude ?? r?.Longitude ?? r?.coordinates?.lng;
-        const lat = typeof latRaw === "number" ? latRaw : Number(latRaw);
-        const lng = typeof lngRaw === "number" ? lngRaw : Number(lngRaw);
-        const safeLat = Number.isFinite(lat) ? lat : 0;
-        const safeLng = Number.isFinite(lng) ? lng : 0;
+        //const latRaw = r?.lat ?? r?.latitude ?? r?.Latitude ?? r?.coordinates?.lat;
+        //const lngRaw = r?.lng ?? r?.longitude ?? r?.Longitude ?? r?.coordinates?.lng;
+        //const lat = typeof latRaw === "number" ? latRaw : Number(latRaw);
+        //const lng = typeof lngRaw === "number" ? lngRaw : Number(lngRaw);
+        //const safeLat = Number.isFinite(lat) ? lat : 0;
+        //const safeLng = Number.isFinite(lng) ? lng : 0;
 
         const dateRaw = r?.reportedAt ?? r?.ReportedAt ?? r?.createdAt ?? r?.CreatedAt ?? r?.timestamp ?? r?.Timestamp ?? new Date().toISOString();
         const reportedDate = new Date(String(dateRaw));
@@ -127,7 +139,7 @@ const CatastropheManagement = () => {
         if (mounted && catastropheType && !catastropheType.isSurveyElement) {
           setShowAddButton(true);
         }
-      } catch {}
+      } catch { }
     })();
     return () => { mounted = false; };
   }, []);
@@ -165,7 +177,7 @@ const CatastropheManagement = () => {
         await createCatastropheMutation.mutateAsync({
           type: catastropheData.type.toUpperCase().replace("-", "_") as any,
           location: catastropheData.location.lat + "," + catastropheData.location.lng,
-          coordinates : {
+          coordinates: {
             lat: catastropheData.location.lat,
             lng: catastropheData.location.lng,
           },
@@ -362,22 +374,22 @@ const CatastropheManagement = () => {
               <div className="text-2xl font-bold">
                 {catastrophes.length > 0
                   ? (catastrophes.reduce(
-                      (acc, cat) => {
-                        acc[cat.type] = (acc[cat.type] || 0) + 1;
-                        return acc;
-                      },
-                      {} as Record<string, number>,
-                    ).hasOwnProperty &&
-                      Object.entries(
-                        catastrophes.reduce(
-                          (acc, cat) => {
-                            acc[cat.type] = (acc[cat.type] || 0) + 1;
-                            return acc;
-                          },
-                          {} as Record<string, number>,
-                        ),
-                      ).sort(([, a], [, b]) => b - a)[0]?.[0]) ||
-                    "N/A"
+                    (acc, cat) => {
+                      acc[cat.type] = (acc[cat.type] || 0) + 1;
+                      return acc;
+                    },
+                    {} as Record<string, number>,
+                  ).hasOwnProperty &&
+                    Object.entries(
+                      catastrophes.reduce(
+                        (acc, cat) => {
+                          acc[cat.type] = (acc[cat.type] || 0) + 1;
+                          return acc;
+                        },
+                        {} as Record<string, number>,
+                      ),
+                    ).sort(([, a], [, b]) => b - a)[0]?.[0]) ||
+                  "N/A"
                   : "N/A"}
               </div>
             </CardContent>
