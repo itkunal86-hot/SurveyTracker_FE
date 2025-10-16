@@ -196,59 +196,18 @@ export const PipelineNetworkEditor = () => {
     [mapPipelines],
   );
 
-  const mapValves = useMemo(
-    () => {
-      const valves: Array<{
-        id: string;
-        name?: string;
-        type: "control" | "emergency" | "isolation" | "station";
-        status: "open" | "closed" | "maintenance" | "fault";
-        segmentId: string;
-        coordinates?: { lat: number; lng: number; elevation?: number };
-        criticality?: string;
-      }> = [];
-
-      segments.forEach((segment) => {
-        (segment.coordinates ?? []).forEach((point, index) => {
-          if (
-            typeof point.pointType === "string" &&
-            point.pointType.toUpperCase() === "VALVE" &&
-            Number.isFinite(point.lat) &&
-            Number.isFinite(point.lng)
-          ) {
-            const status: "open" | "closed" | "maintenance" | "fault" =
-              segment.status === "OPERATIONAL"
-                ? "open"
-                : segment.status === "MAINTENANCE"
-                  ? "maintenance"
-                  : segment.status === "DAMAGED"
-                    ? "fault"
-                    : "closed";
-
-            valves.push({
-              id: `${segment.id}-valve-${index}`,
-              name: point.description
-                ? point.description
-                : segment.name
-                  ? `${segment.name} Valve`
-                  : `Segment ${segment.id} Valve`,
-              type: "control",
-              status,
-              segmentId: segment.id,
-              coordinates: {
-                lat: point.lat,
-                lng: point.lng,
-                elevation: point.elevation,
-              },
-            });
-          }
-        });
-      });
-
-      return valves;
-    },
-    [segments],
-  );
+  // Valves for map from AssetProperties/ByType/valve (no coordinates provided -> LeafletMap will use defaults)
+  const mapValves = useMemo(() => {
+    return valveRows.map((r) => {
+      const rawType = String(r["Type"] ?? r["type"] ?? "").toLowerCase();
+      const mappedType: "control" | "emergency" | "isolation" | "station" =
+        rawType === "emergency" ? "emergency" : rawType === "isolation" ? "isolation" : "control";
+      const status: "open" | "closed" | "maintenance" | "fault" = mappedType === "emergency" ? "closed" : rawType === "safety" ? "maintenance" : "open";
+      const segmentId = String(r["Linked Segment"] ?? r["segmentId"] ?? r["Segment"] ?? "Unknown");
+      const id = String(r["id"] ?? r["ID"] ?? "");
+      return { id, type: mappedType, status, segmentId } as any;
+    });
+  }, [valveRows]);
 
   const showDevicesOnMap = mapDevices.length > 0;
   const showPipelinesOnMap = hasPipelineGeometry || mapPipelines.length > 0;
