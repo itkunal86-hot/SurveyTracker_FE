@@ -125,8 +125,8 @@ export const CatastrophePointsEditor = () => {
       setLoading(true);
       setError(null);
       try {
-        // Use provided endpoint exactly
-        const url = `https://localhost:7215/api/AssetProperties/ByType/Catastrophe`;
+        // Fetch actual catastrophe records with coordinates
+        const url = `https://localhost:7215/api/catastrophes`;
         const res = await fetch(url, { signal: controller.signal });
         if (!res.ok) {
           throw new Error(`Request failed: ${res.status}`);
