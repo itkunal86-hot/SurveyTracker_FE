@@ -126,6 +126,15 @@ interface ValvePoint {
   criticality?: string;
 }
 
+interface CatastrophePoint {
+  id: string;
+  name?: string;
+  severity?: string;
+  status?: string;
+  coordinates?: { lat: number; lng: number };
+  description?: string;
+}
+
 interface LeafletMapProps {
   devices: DeviceLocation[];
   pipelines: PipelineSegment[];
@@ -136,6 +145,8 @@ interface LeafletMapProps {
   onMapClick?: (lat: number, lng: number) => void;
   selectedLocation?: { lat: number; lng: number } | null;
   disableAutoFit?: boolean;
+  catastrophes?: CatastrophePoint[];
+  showCatastrophes?: boolean;
 }
 
 const getPipelineColor = (status: PipelineSegment["status"]) => {
@@ -162,12 +173,15 @@ export const LeafletMap = ({
   onMapClick,
   selectedLocation,
   disableAutoFit,
+  catastrophes = [],
+  showCatastrophes = false,
 }: LeafletMapProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const [markersLayer, setMarkersLayer] = useState<L.LayerGroup | null>(null);
   const [pipelinesLayer, setPipelinesLayer] = useState<L.LayerGroup | null>(null);
   const [valvesLayer, setValvesLayer] = useState<L.LayerGroup | null>(null);
+  const [catastrophesLayer, setCatastrophesLayer] = useState<L.LayerGroup | null>(null);
   const [selectionLayer, setSelectionLayer] = useState<L.LayerGroup | null>(null);
   const lastBoundsRef = useRef<LatLngBounds | null>(null);
   const lastCenterRef = useRef<{ lat: number; lng: number; zoom: number } | null>(
@@ -205,6 +219,21 @@ export const LeafletMap = ({
     });
   }, [valves]);
 
+  const catastrophePositions = useMemo<[number, number][]>(() => {
+    return (catastrophes || [])
+      .map((c) => sanitizeCoordinate(c.coordinates))
+      .filter((coord): coord is [number, number] => coord !== null);
+  }, [catastrophes]);
+
+  const getCatastropheColor = (severity?: string) => {
+    const s = String(severity || "").toLowerCase();
+    if (s.includes("critical")) return "#991b1b";
+    if (s.includes("high") || s.includes("major")) return "#ef4444";
+    if (s.includes("medium") || s.includes("moderate")) return "#f59e0b";
+    if (s.includes("low") || s.includes("minor")) return "#22c55e";
+    return "#a855f7";
+  };
+
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
 
@@ -219,11 +248,13 @@ export const LeafletMap = ({
     const deviceLayer = L.layerGroup().addTo(map);
     const pipelineLayer = L.layerGroup().addTo(map);
     const valveLayer = L.layerGroup().addTo(map);
+    const catastropheLayer = L.layerGroup().addTo(map);
     const selectionLayerGroup = L.layerGroup().addTo(map);
 
     setMarkersLayer(deviceLayer);
     setPipelinesLayer(pipelineLayer);
     setValvesLayer(valveLayer);
+    setCatastrophesLayer(catastropheLayer);
     setSelectionLayer(selectionLayerGroup);
 
     if (onMapClick) {
@@ -289,6 +320,35 @@ export const LeafletMap = ({
       });
     }
   }, [devices, showDevices, markersLayer]);
+
+  useEffect(() => {
+    if (!catastrophesLayer) return;
+    catastrophesLayer.clearLayers();
+
+    if (showCatastrophes) {
+      (catastrophes || []).forEach((c) => {
+        const coord = sanitizeCoordinate(c.coordinates);
+        if (!coord) return;
+        const color = getCatastropheColor(c.severity);
+        const marker = L.circleMarker(coord, {
+          radius: 6,
+          fillColor: color,
+          color: "white",
+          weight: 1.5,
+          opacity: 1,
+          fillOpacity: 0.9,
+        });
+        marker.bindPopup(`
+          <div style="font-family: system-ui; padding: 4px; min-width: 180px;">
+            <strong>${c.name ?? `Catastrophe ${c.id}`}</strong><br/>
+            <span style="color: ${color};">Severity: ${c.severity ?? "Unknown"}</span><br/>
+            <span style="color: #666;">Status: ${c.status ?? "REPORTED"}</span>
+          </div>
+        `);
+        catastrophesLayer.addLayer(marker);
+      });
+    }
+  }, [catastrophes, showCatastrophes, catastrophesLayer]);
 
   useEffect(() => {
     if (!pipelinesLayer) return;
@@ -419,6 +479,10 @@ export const LeafletMap = ({
       });
     }
 
+    if (showCatastrophes) {
+      catastrophePositions.forEach((coord) => points.push(coord));
+    }
+
     if (points.length === 0) {
       return;
     }
@@ -455,17 +519,17 @@ export const LeafletMap = ({
     map.fitBounds(bounds, { padding: [32, 32], maxZoom: 17 });
     lastBoundsRef.current = bounds;
     lastCenterRef.current = null;
-  }, [devicePositions, pipelineRoutes, valvePositions, showDevices, showPipelines, showValves, disableAutoFit, selectedLocation]);
+  }, [devicePositions, pipelineRoutes, valvePositions, catastrophePositions, showDevices, showPipelines, showValves, showCatastrophes, disableAutoFit, selectedLocation]);
 
   return (
     <div className="w-full h-full relative">
       <div ref={mapRef} className="w-full h-full rounded-lg leaflet-container" />
-      {(showPipelines || showValves) && (
+      {(showPipelines || showValves || showCatastrophes) && (
         <div className="absolute top-2 left-2 z-[10002] bg-background/90 backdrop-blur-sm border border-border rounded-md px-3 py-2 text-xs text-muted-foreground">
           <div className="flex items-center space-x-1">
             <div className="w-2 h-2 bg-muted-foreground rounded-full"></div>
             <span>
-              Pipeline & Valve data sourced from Trimble equipment (read-only)
+              Pipeline, Valve & Catastrophe markers (read-only)
             </span>
           </div>
         </div>
