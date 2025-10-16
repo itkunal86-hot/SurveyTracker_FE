@@ -107,9 +107,10 @@ export const PipelineNetworkEditor = () => {
   const fetchSegments = async () => {
     try {
       setLoading(true);
+      //const response = await apiClient.getAssetPropertiesByType("pipeline");
       const response = await apiClient.getPipelines({ limit: 100 });
       setSegments(Array.isArray(response?.data) ? response.data : []);
-    } catch (error) {
+      } catch (error) {
       console.error("Failed to fetch pipeline segments:", error);
       toast({
         title: "Error",
