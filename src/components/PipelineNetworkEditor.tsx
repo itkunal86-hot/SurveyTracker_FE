@@ -43,6 +43,7 @@ import {
 
 import { useToast } from "@/hooks/use-toast";
 import { apiClient, PipelineSegment } from "@/lib/api";
+import { useDeviceLogs } from "@/hooks/useApiQueries";
 
 export const PipelineNetworkEditor = () => {
   const [segments, setSegments] = useState<PipelineSegment[]>([]);
@@ -71,6 +72,9 @@ export const PipelineNetworkEditor = () => {
   const [propColumns, setPropColumns] = useState<string[]>([]);
   const [propLoading, setPropLoading] = useState<boolean>(false);
   const [propError, setPropError] = useState<string | null>(null);
+
+  const [valveRows, setValveRows] = useState<DynamicRow[]>([]);
+  const [valveError, setValveError] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -103,6 +107,31 @@ export const PipelineNetworkEditor = () => {
     return () => controller.abort();
   }, []);
 
+  // Load valves from external endpoint for map layer
+  useEffect(() => {
+    const controller = new AbortController();
+    async function loadValves() {
+      setValveError(null);
+      try {
+        const url = `https://localhost:7215/api/AssetProperties/ByType/valve`;
+        const res = await fetch(url, { signal: controller.signal });
+        if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+        const json = await res.json();
+        const arr: DynamicRow[] = Array.isArray(json?.data)
+          ? json.data
+          : Array.isArray(json)
+            ? json
+            : [];
+        setValveRows(arr.map((it) => ({ ...it })));
+      } catch (e: any) {
+        setValveRows([]);
+        setValveError(e?.message || "Failed to load valve data");
+      }
+    }
+    loadValves();
+    return () => controller.abort();
+  }, []);
+
   // Fetch pipeline segments from API
   const fetchSegments = async () => {
     try {
@@ -127,147 +156,59 @@ export const PipelineNetworkEditor = () => {
     fetchSegments();
   }, []);
 
+  // Devices for map from DeviceLog endpoint (selected survey)
+  const { data: deviceLogsResponse } = useDeviceLogs({ limit: 100 });
   const mapDevices = useMemo(() => {
-    const points = new Map<
-      string,
-      {
-        id: string;
-        name: string;
-        lat: number;
-        lng: number;
-        status: "active" | "offline" | "maintenance" | "error";
-        lastPing: string;
-      }
-    >();
+    const items = Array.isArray(deviceLogsResponse?.data) ? deviceLogsResponse!.data : [];
+    return items.map((device: any) => ({
+      id: device.id,
+      name: device.name,
+      lat: Number(device.coordinates?.lat) || 0,
+      lng: Number(device.coordinates?.lng) || 0,
+      status:
+        String(device.status).toUpperCase() === "ACTIVE"
+          ? ("active" as const)
+          : String(device.status).toUpperCase() === "MAINTENANCE"
+            ? ("maintenance" as const)
+            : String(device.status).toUpperCase() === "ERROR"
+              ? ("error" as const)
+              : ("offline" as const),
+      lastPing: device.lastSeen || "Unknown",
+    }));
+  }, [deviceLogsResponse]);
 
-    segments.forEach((segment) => {
-      const status: "active" | "offline" | "maintenance" | "error" =
-        segment.status === "OPERATIONAL"
-          ? "active"
-          : segment.status === "MAINTENANCE"
-            ? "maintenance"
-            : segment.status === "DAMAGED"
-              ? "error"
-              : "offline";
-
-      (segment.coordinates ?? []).forEach((point, index) => {
-        if (!Number.isFinite(point.lat) || !Number.isFinite(point.lng)) return;
-
-        const key = `${point.lat.toFixed(6)}:${point.lng.toFixed(6)}`;
-        if (points.has(key)) return;
-
-        const pointLabel =
-          point.pointType && typeof point.pointType === "string"
-            ? point.pointType
-                .toLowerCase()
-                .replace(/_/g, " ")
-                .replace(/\b\w/g, (char) => char.toUpperCase())
-            : `Point ${index + 1}`;
-
-        points.set(key, {
-          id: `${segment.id}-${point.pointType ?? index}`,
-          name: segment.name
-            ? `${segment.name} ${pointLabel}`
-            : `Segment ${segment.id} ${pointLabel}`,
-          lat: point.lat,
-          lng: point.lng,
-          status,
-          lastPing: "N/A",
-        });
-      });
-    });
-
-    return Array.from(points.values());
-  }, [segments]);
-
+  // Pipelines for map from AssetProperties/ByType/pipeline
   const mapPipelines = useMemo(() => {
-    return segments.map((segment) => {
-      const coordinates = (segment.coordinates ?? [])
-        .map((point) => ({
-          lat: point.lat,
-          lng: point.lng,
-          elevation: point.elevation,
-        }))
-        .filter((point) => Number.isFinite(point.lat) && Number.isFinite(point.lng));
-
+    return propRows.map((r, idx) => {
+      const id = String(r["id"] ?? r["ID"] ?? r["segmentId"] ?? r["SegmentId"] ?? `PS-${idx + 1}`);
+      const diameterVal = Number(r["diameter"] ?? r["Diameter"] ?? r["pipeDiameter"] ?? r["PipeDiameter"] ?? 200);
+      const depthVal = Number(r["depth"] ?? r["Depth"] ?? r["installationDepth"] ?? r["InstallationDepth"] ?? 1.5);
       return {
-        id: segment.id,
-        name: segment.name,
-        type: segment.specifications?.material,
-        diameter: segment.specifications?.diameter?.value || 0,
-        depth: segment.installation?.depth?.value || 0,
-        status:
-          segment.status === "OPERATIONAL"
-            ? ("normal" as const)
-            : segment.status === "MAINTENANCE"
-              ? ("maintenance" as const)
-              : segment.status === "DAMAGED"
-                ? ("critical" as const)
-                : ("warning" as const),
-        material: segment.specifications?.material,
-        coordinates: coordinates.length > 0 ? coordinates : undefined,
+        id,
+        diameter: Number.isFinite(diameterVal) ? diameterVal : 200,
+        depth: Number.isFinite(depthVal) ? depthVal : 1.5,
+        status: "normal" as const,
       };
     });
-  }, [segments]);
+  }, [propRows]);
 
   const hasPipelineGeometry = useMemo(
     () => mapPipelines.some((pipeline) => (pipeline.coordinates?.length ?? 0) >= 2),
     [mapPipelines],
   );
 
-  const mapValves = useMemo(
-    () => {
-      const valves: Array<{
-        id: string;
-        name?: string;
-        type: "control" | "emergency" | "isolation" | "station";
-        status: "open" | "closed" | "maintenance" | "fault";
-        segmentId: string;
-        coordinates?: { lat: number; lng: number; elevation?: number };
-        criticality?: string;
-      }> = [];
-
-      segments.forEach((segment) => {
-        (segment.coordinates ?? []).forEach((point, index) => {
-          if (
-            typeof point.pointType === "string" &&
-            point.pointType.toUpperCase() === "VALVE" &&
-            Number.isFinite(point.lat) &&
-            Number.isFinite(point.lng)
-          ) {
-            const status: "open" | "closed" | "maintenance" | "fault" =
-              segment.status === "OPERATIONAL"
-                ? "open"
-                : segment.status === "MAINTENANCE"
-                  ? "maintenance"
-                  : segment.status === "DAMAGED"
-                    ? "fault"
-                    : "closed";
-
-            valves.push({
-              id: `${segment.id}-valve-${index}`,
-              name: point.description
-                ? point.description
-                : segment.name
-                  ? `${segment.name} Valve`
-                  : `Segment ${segment.id} Valve`,
-              type: "control",
-              status,
-              segmentId: segment.id,
-              coordinates: {
-                lat: point.lat,
-                lng: point.lng,
-                elevation: point.elevation,
-              },
-            });
-          }
-        });
-      });
-
-      return valves;
-    },
-    [segments],
-  );
+  // Valves for map from AssetProperties/ByType/valve (no coordinates provided -> LeafletMap will use defaults)
+  const mapValves = useMemo(() => {
+    return valveRows.map((r) => {
+      const rawType = String(r["Type"] ?? r["type"] ?? "").toLowerCase();
+      const mappedType: "control" | "emergency" | "isolation" | "station" =
+        rawType === "emergency" ? "emergency" : rawType === "isolation" ? "isolation" : "control";
+      const status: "open" | "closed" | "maintenance" | "fault" = mappedType === "emergency" ? "closed" : rawType === "safety" ? "maintenance" : "open";
+      const segmentId = String(r["Linked Segment"] ?? r["segmentId"] ?? r["Segment"] ?? "Unknown");
+      const id = String(r["id"] ?? r["ID"] ?? "");
+      return { id, type: mappedType, status, segmentId } as any;
+    });
+  }, [valveRows]);
 
   const showDevicesOnMap = mapDevices.length > 0;
   const showPipelinesOnMap = hasPipelineGeometry || mapPipelines.length > 0;
