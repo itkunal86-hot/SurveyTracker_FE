@@ -73,6 +73,9 @@ export const PipelineNetworkEditor = () => {
   const [propLoading, setPropLoading] = useState<boolean>(false);
   const [propError, setPropError] = useState<string | null>(null);
 
+  const [valveRows, setValveRows] = useState<DynamicRow[]>([]);
+  const [valveError, setValveError] = useState<string | null>(null);
+
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
