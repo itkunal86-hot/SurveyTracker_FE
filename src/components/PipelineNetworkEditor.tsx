@@ -176,35 +176,20 @@ export const PipelineNetworkEditor = () => {
     }));
   }, [deviceLogsResponse]);
 
+  // Pipelines for map from AssetProperties/ByType/pipeline
   const mapPipelines = useMemo(() => {
-    return segments.map((segment) => {
-      const coordinates = (segment.coordinates ?? [])
-        .map((point) => ({
-          lat: point.lat,
-          lng: point.lng,
-          elevation: point.elevation,
-        }))
-        .filter((point) => Number.isFinite(point.lat) && Number.isFinite(point.lng));
-
+    return propRows.map((r, idx) => {
+      const id = String(r["id"] ?? r["ID"] ?? r["segmentId"] ?? r["SegmentId"] ?? `PS-${idx + 1}`);
+      const diameterVal = Number(r["diameter"] ?? r["Diameter"] ?? r["pipeDiameter"] ?? r["PipeDiameter"] ?? 200);
+      const depthVal = Number(r["depth"] ?? r["Depth"] ?? r["installationDepth"] ?? r["InstallationDepth"] ?? 1.5);
       return {
-        id: segment.id,
-        name: segment.name,
-        type: segment.specifications?.material,
-        diameter: segment.specifications?.diameter?.value || 0,
-        depth: segment.installation?.depth?.value || 0,
-        status:
-          segment.status === "OPERATIONAL"
-            ? ("normal" as const)
-            : segment.status === "MAINTENANCE"
-              ? ("maintenance" as const)
-              : segment.status === "DAMAGED"
-                ? ("critical" as const)
-                : ("warning" as const),
-        material: segment.specifications?.material,
-        coordinates: coordinates.length > 0 ? coordinates : undefined,
+        id,
+        diameter: Number.isFinite(diameterVal) ? diameterVal : 200,
+        depth: Number.isFinite(depthVal) ? depthVal : 1.5,
+        status: "normal" as const,
       };
     });
-  }, [segments]);
+  }, [propRows]);
 
   const hasPipelineGeometry = useMemo(
     () => mapPipelines.some((pipeline) => (pipeline.coordinates?.length ?? 0) >= 2),
