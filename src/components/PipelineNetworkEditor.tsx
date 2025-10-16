@@ -43,6 +43,7 @@ import {
 
 import { useToast } from "@/hooks/use-toast";
 import { apiClient, PipelineSegment } from "@/lib/api";
+import { useDeviceLogs } from "@/hooks/useApiQueries";
 
 export const PipelineNetworkEditor = () => {
   const [segments, setSegments] = useState<PipelineSegment[]>([]);
