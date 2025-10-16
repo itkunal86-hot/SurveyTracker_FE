@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -9,6 +10,74 @@ import { useDeviceAlerts } from "@/hooks/useApiQueries";
 
 export const SurveyDashboard = () => {
   const [selectedLocation, setSelectedLocation] = useState("all");
+  const [stats, setStats] = useState({
+    totalDevices: 0,
+    activeDevices: 0,
+    inactiveDevices: 0,
+    surveyors: 0
+  });
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  // ✅ Fetch smId (Survey ID) from localStorage
+  // const smId = localStorage.getItem("activeSurveyId");
+  // ✅ Track active survey ID as state (reactive)
+  const [smId, setSmId] = useState(localStorage.getItem("activeSurveyId"));
+
+// ✅ Listen for changes to localStorage (from other tabs or in-app updates)
+useEffect(() => {
+  const handleStorageChange = (event: StorageEvent) => {
+    if (event.key === "activeSurveyId") {
+      setSmId(event.newValue);
+    }
+  };
+
+  window.addEventListener("storage", handleStorageChange);
+
+  // Optional: also support same-tab changes
+  const checkLocalChange = () => {
+    const currentId = localStorage.getItem("activeSurveyId");
+    setSmId(currentId);
+  };
+  const interval = setInterval(checkLocalChange, 1000); // check every second
+
+  return () => {
+    window.removeEventListener("storage", handleStorageChange);
+    clearInterval(interval);
+  };
+}, []);
+
+// ✅ Fetch summary data from API whenever smId changes
+useEffect(() => {
+  const fetchStats = async () => {
+    if (!smId) {
+      console.warn("No activeSurveyId found in localStorage");
+      return;
+    }
+
+    try {
+      setLoadingStats(true);
+      const response = await fetch(`https://localhost:7215/api/DeviceAssignments/summary/${smId}`);
+      if (!response.ok) throw new Error("Failed to fetch summary data");
+      const data = await response.json();
+
+      setStats({
+        totalDevices: data.totalDevices ?? 0,
+        activeDevices: data.activeDevices ?? 0,
+        inactiveDevices: data.inactiveDevices ?? 0,
+        surveyors: data.surveyors ?? 0
+      });
+    } catch (error) {
+      console.error("Error fetching device summary:", error);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  fetchStats();
+}, [smId]);
+
+// export const SurveyDashboard = () => {
+//   const [selectedLocation, setSelectedLocation] = useState("all");
 
   // Location/Zone filter options
   const locationOptions = [
@@ -21,13 +90,13 @@ export const SurveyDashboard = () => {
   ];
 
   // Mock data - replace with actual API calls
-  const stats = {
-    totalInstruments: 156,
-    activeInstruments: 142,
-    inactiveInstruments: 14,
-    inGodown: 23,
-    withSurveyors: 133
-  };
+  // const stats = {
+  //   totalInstruments: 156,
+  //   activeInstruments: 142,
+  //   inactiveInstruments: 14,
+  //   inGodown: 23,
+  //   withSurveyors: 133
+  // };
 
   // Usage data for the last 7 days
   const usageData = [
@@ -79,7 +148,8 @@ export const SurveyDashboard = () => {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalInstruments}</div>
+            {/* <div className="text-2xl font-bold">{stats.totalInstruments}</div> */}
+            <div className="text-2xl font-bold">{stats.totalDevices}</div>
           </CardContent>
         </Card>
 
@@ -89,7 +159,8 @@ export const SurveyDashboard = () => {
             <div className="h-2 w-2 bg-green-500 rounded-full"></div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.activeInstruments}</div>
+            {/* <div className="text-2xl font-bold text-green-600">{stats.activeInstruments}</div> */}
+            <div className="text-2xl font-bold text-green-600">{stats.activeDevices}</div>
           </CardContent>
         </Card>
 
@@ -99,7 +170,8 @@ export const SurveyDashboard = () => {
             <div className="h-2 w-2 bg-red-500 rounded-full"></div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{stats.inactiveInstruments}</div>
+            {/* <div className="text-2xl font-bold text-red-600">{stats.inactiveInstruments}</div> */}
+            <div className="text-2xl font-bold text-red-600">{stats.inactiveDevices}</div>
           </CardContent>
         </Card>
 
@@ -109,7 +181,7 @@ export const SurveyDashboard = () => {
             <MapPin className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.inGodown}</div>
+            {/* <div className="text-2xl font-bold">{stats.inGodown}</div> */}
           </CardContent>
         </Card>
 
@@ -119,7 +191,8 @@ export const SurveyDashboard = () => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.withSurveyors}</div>
+            {/* <div className="text-2xl font-bold">{stats.withSurveyors}</div> */}
+            <div className="text-2xl font-bold">{stats.surveyors}</div>
           </CardContent>
         </Card>
       </div>

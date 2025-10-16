@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { MapPin, AlertTriangle } from "lucide-react";
 import { useTable } from "@/hooks/use-table";
 import { useEffect, useMemo, useState } from "react";
+import { useDeviceLogs } from "@/hooks/useApiQueries";
 
 // Dynamic row type for arbitrary property names
 type DynamicRow = Record<string, any>;
@@ -26,21 +27,89 @@ interface MapValve {
   segmentId: string;
 }
 
+// Map pipeline segment shape expected by LeafletMap
+interface MapPipelineSegment {
+  id: string;
+  name?: string;
+  type?: string;
+  diameter: number;
+  depth: number;
+  status: "normal" | "warning" | "critical" | "maintenance";
+  material?: string;
+  coordinates?: Array<{ lat: number; lng: number; elevation?: number }>;
+}
+
 export const CatastrophePointsEditor = () => {
   const [rows, setRows] = useState<DynamicRow[]>([]);
   const [columns, setColumns] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Demo layers for map (devices/pipelines)
-  const demoDevices = [
-    { id: "CT-MON-001", name: "Catastrophe Monitor 1", lat: 40.7589, lng: -73.9851, status: "active" as const, lastPing: "12 sec ago" },
-    { id: "CT-MON-002", name: "Catastrophe Monitor 2", lat: 40.7614, lng: -73.9776, status: "active" as const, lastPing: "29 sec ago" },
-  ];
-  const demoPipelines = [
-    { id: "PS-101", diameter: 200, depth: 1.5, status: "normal" as const },
-    { id: "PS-102", diameter: 250, depth: 1.8, status: "warning" as const },
-  ];
+  // Pipelines state and error
+  const [pipelineRows, setPipelineRows] = useState<DynamicRow[]>([]);
+  const [pipelineError, setPipelineError] = useState<string | null>(null);
+
+  // Load pipelines for map layer from required endpoint
+  useEffect(() => {
+    const controller = new AbortController();
+    async function loadPipelines() {
+      setPipelineError(null);
+      try {
+        const url = `https://localhost:7215/api/AssetProperties/ByType/pipeline`;
+        const res = await fetch(url, { signal: controller.signal });
+        if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+        const json = await res.json();
+        const arr: DynamicRow[] = Array.isArray(json?.data)
+          ? json.data
+          : Array.isArray(json)
+            ? json
+            : [];
+        setPipelineRows(arr.map((it) => ({ ...it })));
+      } catch (e: any) {
+        setPipelineRows([]);
+        setPipelineError(e?.message || "Failed to load pipeline data");
+      }
+    }
+    loadPipelines();
+    return () => controller.abort();
+  }, []);
+
+  // Devices from DeviceLog for the active survey
+  const { data: deviceLogsResponse } = useDeviceLogs({ limit: 100 });
+  const mapDevices = useMemo(() => {
+    const items = Array.isArray(deviceLogsResponse?.data) ? deviceLogsResponse!.data : [];
+    return items.map((device: any) => ({
+      id: device.id,
+      name: device.name,
+      lat: Number(device.coordinates?.lat) || 0,
+      lng: Number(device.coordinates?.lng) || 0,
+      status:
+        String(device.status).toUpperCase() === "ACTIVE"
+          ? ("active" as const)
+          : String(device.status).toUpperCase() === "MAINTENANCE"
+            ? ("maintenance" as const)
+            : String(device.status).toUpperCase() === "ERROR"
+              ? ("error" as const)
+              : ("offline" as const),
+      lastPing: device.lastSeen || "Unknown",
+    }));
+  }, [deviceLogsResponse]);
+
+  // Pipelines mapped minimally for LeafletMap (geometry may fall back to defaults)
+  const mapPipelines: MapPipelineSegment[] = useMemo(() => {
+    return pipelineRows.map((r, idx) => {
+      const id = String(r["id"] ?? r["ID"] ?? r["segmentId"] ?? r["SegmentId"] ?? `PS-${idx + 1}`);
+      const diameterVal = Number(r["diameter"] ?? r["Diameter"] ?? r["pipeDiameter"] ?? r["PipeDiameter"] ?? 200);
+      const depthVal = Number(r["depth"] ?? r["Depth"] ?? r["installationDepth"] ?? r["InstallationDepth"] ?? 1.5);
+      const status: MapPipelineSegment["status"] = "normal";
+      return {
+        id,
+        diameter: Number.isFinite(diameterVal) ? diameterVal : 200,
+        depth: Number.isFinite(depthVal) ? depthVal : 1.5,
+        status,
+      };
+    });
+  }, [pipelineRows]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -179,12 +248,12 @@ export const CatastrophePointsEditor = () => {
           <CardContent>
             <div className="h-96">
               <LeafletMap
-                devices={demoDevices}
-                pipelines={demoPipelines}
+                devices={mapDevices}
+                pipelines={mapPipelines}
                 valves={mapValves}
-                showDevices={true}
-                showPipelines={true}
-                showValves={true}
+                showDevices={mapDevices.length > 0}
+                showPipelines={mapPipelines.length > 0}
+                showValves={mapValves.length > 0}
               />
             </div>
           </CardContent>
