@@ -39,6 +39,14 @@ interface MapPipelineSegment {
   coordinates?: Array<{ lat: number; lng: number; elevation?: number }>;
 }
 
+interface MapCatastrophe {
+  id: string;
+  name?: string;
+  severity?: string;
+  status?: string;
+  coordinates?: { lat: number; lng: number };
+}
+
 export const CatastrophePointsEditor = () => {
   const [rows, setRows] = useState<DynamicRow[]>([]);
   const [columns, setColumns] = useState<string[]>([]);
@@ -161,6 +169,40 @@ export const CatastrophePointsEditor = () => {
     });
   }, [rows]);
 
+  // Derive catastrophe points for map markers from dynamic rows
+  const mapCatastrophes: MapCatastrophe[] = useMemo(() => {
+    const toNum = (v: any) => {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : NaN;
+    };
+    return rows.map((r, idx) => {
+      const id = String(r["id"] ?? r["ID"] ?? `CATA_${idx + 1}`);
+      const name = String(r["name"] ?? r["title"] ?? r["Type"] ?? r["type"] ?? id);
+      const severity = String(r["severity"] ?? r["Severity"] ?? r["level"] ?? r["Level"] ?? "");
+      const status = String(r["status"] ?? r["Status"] ?? "REPORTED");
+      let coordinates: { lat: number; lng: number } | undefined;
+
+      const candidates: any[] = [
+        r["coordinates"],
+        r["location"],
+        r["Location"],
+        { lat: r["lat"], lng: r["lng"] },
+        { lat: r["latitude"], lng: r["longitude"] },
+        { lat: r["Latitude"], lng: r["Longitude"] },
+      ];
+      for (const c of candidates) {
+        const lat = toNum(c?.lat);
+        const lng = toNum(c?.lng ?? c?.lon ?? c?.longitude);
+        if (Number.isFinite(lat) && Number.isFinite(lng)) {
+          coordinates = { lat, lng };
+          break;
+        }
+      }
+
+      return { id, name, severity, status, coordinates };
+    });
+  }, [rows]);
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -254,6 +296,8 @@ export const CatastrophePointsEditor = () => {
                 showDevices={mapDevices.length > 0}
                 showPipelines={mapPipelines.length > 0}
                 showValves={mapValves.length > 0}
+                catastrophes={mapCatastrophes}
+                showCatastrophes={mapCatastrophes.some((c) => c.coordinates && Number.isFinite(c.coordinates.lat) && Number.isFinite(c.coordinates.lng))}
               />
             </div>
           </CardContent>
