@@ -107,6 +107,31 @@ export const PipelineNetworkEditor = () => {
     return () => controller.abort();
   }, []);
 
+  // Load valves from external endpoint for map layer
+  useEffect(() => {
+    const controller = new AbortController();
+    async function loadValves() {
+      setValveError(null);
+      try {
+        const url = `https://localhost:7215/api/AssetProperties/ByType/valve`;
+        const res = await fetch(url, { signal: controller.signal });
+        if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+        const json = await res.json();
+        const arr: DynamicRow[] = Array.isArray(json?.data)
+          ? json.data
+          : Array.isArray(json)
+            ? json
+            : [];
+        setValveRows(arr.map((it) => ({ ...it })));
+      } catch (e: any) {
+        setValveRows([]);
+        setValveError(e?.message || "Failed to load valve data");
+      }
+    }
+    loadValves();
+    return () => controller.abort();
+  }, []);
+
   // Fetch pipeline segments from API
   const fetchSegments = async () => {
     try {
