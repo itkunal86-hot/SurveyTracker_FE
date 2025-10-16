@@ -155,58 +155,26 @@ export const PipelineNetworkEditor = () => {
     fetchSegments();
   }, []);
 
+  // Devices for map from DeviceLog endpoint (selected survey)
+  const { data: deviceLogsResponse } = useDeviceLogs({ limit: 100 });
   const mapDevices = useMemo(() => {
-    const points = new Map<
-      string,
-      {
-        id: string;
-        name: string;
-        lat: number;
-        lng: number;
-        status: "active" | "offline" | "maintenance" | "error";
-        lastPing: string;
-      }
-    >();
-
-    segments.forEach((segment) => {
-      const status: "active" | "offline" | "maintenance" | "error" =
-        segment.status === "OPERATIONAL"
-          ? "active"
-          : segment.status === "MAINTENANCE"
-            ? "maintenance"
-            : segment.status === "DAMAGED"
-              ? "error"
-              : "offline";
-
-      (segment.coordinates ?? []).forEach((point, index) => {
-        if (!Number.isFinite(point.lat) || !Number.isFinite(point.lng)) return;
-
-        const key = `${point.lat.toFixed(6)}:${point.lng.toFixed(6)}`;
-        if (points.has(key)) return;
-
-        const pointLabel =
-          point.pointType && typeof point.pointType === "string"
-            ? point.pointType
-                .toLowerCase()
-                .replace(/_/g, " ")
-                .replace(/\b\w/g, (char) => char.toUpperCase())
-            : `Point ${index + 1}`;
-
-        points.set(key, {
-          id: `${segment.id}-${point.pointType ?? index}`,
-          name: segment.name
-            ? `${segment.name} ${pointLabel}`
-            : `Segment ${segment.id} ${pointLabel}`,
-          lat: point.lat,
-          lng: point.lng,
-          status,
-          lastPing: "N/A",
-        });
-      });
-    });
-
-    return Array.from(points.values());
-  }, [segments]);
+    const items = Array.isArray(deviceLogsResponse?.data) ? deviceLogsResponse!.data : [];
+    return items.map((device: any) => ({
+      id: device.id,
+      name: device.name,
+      lat: Number(device.coordinates?.lat) || 0,
+      lng: Number(device.coordinates?.lng) || 0,
+      status:
+        String(device.status).toUpperCase() === "ACTIVE"
+          ? ("active" as const)
+          : String(device.status).toUpperCase() === "MAINTENANCE"
+            ? ("maintenance" as const)
+            : String(device.status).toUpperCase() === "ERROR"
+              ? ("error" as const)
+              : ("offline" as const),
+      lastPing: device.lastSeen || "Unknown",
+    }));
+  }, [deviceLogsResponse]);
 
   const mapPipelines = useMemo(() => {
     return segments.map((segment) => {
