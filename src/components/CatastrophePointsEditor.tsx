@@ -246,7 +246,7 @@ export const CatastrophePointsEditor = () => {
                             onSort={(k) => tableConfig.handleSort(k as keyof DynamicRow)}
                           >
                             {col}
-                          </SortableTableHead>
+                          </SortableTableHead> 
                         ))
                       )}
                     </TableRow>

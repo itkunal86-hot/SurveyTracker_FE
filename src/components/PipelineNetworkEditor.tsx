@@ -192,10 +192,10 @@ export const PipelineNetworkEditor = () => {
     });
   }, [propRows]);
 
-  const hasPipelineGeometry = useMemo(
-    () => mapPipelines.some((pipeline) => (pipeline.coordinates?.length ?? 0) >= 2),
-    [mapPipelines],
-  );
+  // const hasPipelineGeometry = useMemo(
+  //   () => mapPipelines.some((pipeline) => (pipeline.coordinates?.length ?? 0) >= 2),
+  //   [mapPipelines],
+  // );
 
   // Valves for map from AssetProperties/ByType/valve (no coordinates provided -> LeafletMap will use defaults)
   const mapValves = useMemo(() => {
@@ -211,7 +211,8 @@ export const PipelineNetworkEditor = () => {
   }, [valveRows]);
 
   const showDevicesOnMap = mapDevices.length > 0;
-  const showPipelinesOnMap = hasPipelineGeometry || mapPipelines.length > 0;
+  //const showPipelinesOnMap = hasPipelineGeometry || mapPipelines.length > 0;
+  const showPipelinesOnMap = mapPipelines.length > 0;
   const showValvesOnMap = mapValves.length > 0;
 
   const validateForm = () => {
