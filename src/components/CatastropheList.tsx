@@ -50,7 +50,8 @@ export const CatastropheList = ({
   catastrophes,
   onEdit,
 }: CatastropheListProps) => {
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date | null | undefined) => {
+    if (!date) return "-";
     return new Intl.DateTimeFormat("en-US", {
       year: "numeric",
       month: "short",
