@@ -58,7 +58,7 @@ const CatastropheManagement = () => {
     setLoadingCatastrophes(true);
     setCatastrophesError(null);
     try {
-      const res = await apiClient.getAssetPropertiesByType("Catastrophe");
+      const res = await apiClient.getAssetPropertiesByType("Catastrophe-");
       const rows = Array.isArray(res?.data) ? res.data : [];
       const mapped: Catastrophe[] = rows.map((r: any, idx: number) => {
         const id = String(
@@ -435,6 +435,13 @@ const CatastropheManagement = () => {
                   showDevices={true}
                   showPipelines={true}
                   showValves={true}
+                  catastrophes={catastrophes.map((c) => ({
+                    id: c.id,
+                    name: c.type,
+                    coordinates: { lat: c.location.lat, lng: c.location.lng },
+                    description: c.description,
+                  }))}
+                  showCatastrophes={true}
                   onMapClick={handleMapClick}
                   selectedLocation={selectedLocation}
                   disableAutoFit={!!selectedLocation}
