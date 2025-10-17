@@ -32,7 +32,7 @@ export interface Catastrophe {
     lng: number;
     address?: string;
   };
-  reportedDate: Date;
+  reportedDate: Date | null;
 }
 
 const CatastropheManagement = () => {
@@ -90,8 +90,12 @@ const CatastropheManagement = () => {
         //const safeLat = Number.isFinite(lat) ? lat : 0;
         //const safeLng = Number.isFinite(lng) ? lng : 0;
 
-        const dateRaw = r?.ReportedDate ?? r?.reportedDate ?? r?.reportedAt ?? r?.ReportedAt ?? r?.createdAt ?? r?.CreatedAt ?? r?.timestamp ?? r?.Timestamp ?? new Date().toISOString();
-        const reportedDate = new Date(String(dateRaw));
+        const dateRaw = r?.ReportedDate ?? r?.reportedDate ?? r?.reportedAt ?? r?.ReportedAt ?? r?.createdAt ?? r?.CreatedAt ?? r?.timestamp ?? r?.Timestamp;
+        let reportedDate: Date | null = null;
+        if (dateRaw != null && String(dateRaw).trim() !== "") {
+          const parsed = new Date(String(dateRaw));
+          reportedDate = isNaN(parsed.getTime()) ? null : parsed;
+        }
 
         return {
           id,
@@ -356,7 +360,7 @@ const CatastropheManagement = () => {
                       now.getMonth(),
                       1,
                     );
-                    return cat.reportedDate >= monthAgo;
+                    return cat.reportedDate != null && cat.reportedDate >= monthAgo;
                   }).length
                 }
               </div>
