@@ -90,7 +90,7 @@ const CatastropheManagement = () => {
         //const safeLat = Number.isFinite(lat) ? lat : 0;
         //const safeLng = Number.isFinite(lng) ? lng : 0;
 
-        const dateRaw = r?.reportedAt ?? r?.ReportedAt ?? r?.createdAt ?? r?.CreatedAt ?? r?.timestamp ?? r?.Timestamp ?? new Date().toISOString();
+        const dateRaw = r?.ReportedDate ?? r?.reportedDate ?? r?.reportedAt ?? r?.ReportedAt ?? r?.createdAt ?? r?.CreatedAt ?? r?.timestamp ?? r?.Timestamp ?? new Date().toISOString();
         const reportedDate = new Date(String(dateRaw));
 
         return {
