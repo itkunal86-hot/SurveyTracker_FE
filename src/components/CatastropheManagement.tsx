@@ -435,6 +435,13 @@ const CatastropheManagement = () => {
                   showDevices={true}
                   showPipelines={true}
                   showValves={true}
+                  catastrophes={catastrophes.map((c) => ({
+                    id: c.id,
+                    name: c.type,
+                    coordinates: { lat: c.location.lat, lng: c.location.lng },
+                    description: c.description,
+                  }))}
+                  showCatastrophes={true}
                   onMapClick={handleMapClick}
                   selectedLocation={selectedLocation}
                   disableAutoFit={!!selectedLocation}
