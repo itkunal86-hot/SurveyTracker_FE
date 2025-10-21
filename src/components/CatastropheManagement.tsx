@@ -246,11 +246,23 @@ const CatastropheManagement = () => {
       coordinates: Array.isArray(pipeline.coordinates)
         ? pipeline.coordinates
             .map((pt) => {
-              const lat = (pt as any)?.coordinates?.lat ?? (pt as any)?.lat;
-              const lng = (pt as any)?.coordinates?.lng ?? (pt as any)?.lng;
-              const elevation = (pt as any)?.coordinates?.elevation ?? (pt as any)?.elevation;
-              return (Number.isFinite(lat) && Number.isFinite(lng))
-                ? { lat: Number(lat), lng: Number(lng), elevation: typeof elevation === 'number' ? elevation : undefined }
+              const latRaw = (pt as any)?.coordinates?.lat ?? (pt as any)?.lat;
+              const lngRaw = (pt as any)?.coordinates?.lng ?? (pt as any)?.lng;
+              const elevRaw = (pt as any)?.coordinates?.elevation ?? (pt as any)?.elevation;
+
+              const latNum = typeof latRaw === "number" ? latRaw : parseFloat(String(latRaw));
+              const lngNum = typeof lngRaw === "number" ? lngRaw : parseFloat(String(lngRaw));
+
+              let elevationNum: number | undefined;
+              if (typeof elevRaw === "number") {
+                elevationNum = elevRaw;
+              } else if (elevRaw != null) {
+                const n = parseFloat(String(elevRaw));
+                elevationNum = Number.isFinite(n) ? n : undefined;
+              }
+
+              return Number.isFinite(latNum) && Number.isFinite(lngNum)
+                ? { lat: latNum, lng: lngNum, elevation: elevationNum }
                 : null;
             })
             .filter((pt): pt is { lat: number; lng: number; elevation?: number } => pt !== null)
