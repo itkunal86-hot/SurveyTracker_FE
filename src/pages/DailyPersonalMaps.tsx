@@ -545,19 +545,70 @@ export const DailyPersonalMaps = () => {
     }
   };
 
-  const handleExportPDF = () => {
-    // Mock PDF export
-    const blob = new Blob(
-      ["PDF export functionality would be implemented here"],
-      { type: "application/pdf" },
-    );
+  // const handleExportPDF = () => {
+  //   // Mock PDF export
+  //   const blob = new Blob(
+  //     ["PDF export functionality would be implemented here"],
+  //     { type: "application/pdf" },
+  //   );
+  //   const url = window.URL.createObjectURL(blob);
+  //   const a = document.createElement("a");
+  //   a.href = url;
+  //   a.download = `survey-trail-${selectedDevice}-${selectedDate ? format(selectedDate, "yyyy-MM-dd") : "unknown"}.pdf`;
+  //   a.click();
+  //   window.URL.revokeObjectURL(url);
+  // };
+
+  const handleExportPDF = async () => {
+  try {
+    // ✅ Determine deviceId (same as before)
+    let deviceId = selectedDevice;
+    if (!deviceId && devices.length > 0) {
+      deviceId = devices[0].id; // fallback like in handleLoadSurveyData
+    }
+
+    if (!deviceId) {
+      alert("Please select a device first.");
+      return;
+    }
+
+    if (!selectedDate) {
+      alert("Please select a date before exporting.");
+      return;
+    }
+
+    // ✅ Fix timezone issue — use local date instead of UTC ISO string
+    const dateObj = new Date(selectedDate);
+    const formattedDate = dateObj.toLocaleDateString("en-CA"); // outputs YYYY-MM-DD in local time
+
+    const exportUrl = `https://localhost:7215/api/AssetProperties/summary/ExportSnapshots?deviceId=${deviceId}&entryDate=${formattedDate}&format=excel`;
+
+    const response = await fetch(exportUrl, {
+      method: "GET",
+      headers: { "Accept": "application/pdf" },
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to export PDF");
+    }
+
+    const blob = await response.blob();
     const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `survey-trail-${selectedDevice}-${selectedDate ? format(selectedDate, "yyyy-MM-dd") : "unknown"}.pdf`;
-    a.click();
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `Snapshots_${deviceId}_${formattedDate}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
     window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error("Error exporting PDF:", error);
+    alert("An error occurred while exporting the PDF. Please try again.");
+  }
   };
+
+
+
 
   const handleExportShapefile = () => {
     // Mock Shapefile export
@@ -891,12 +942,12 @@ export const DailyPersonalMaps = () => {
           <div className="flex space-x-2">
             <Button onClick={handleExportPDF} variant="outline">
               <Download className="w-4 h-4 mr-2" />
-              Export PDF
+              Export EXCEL
             </Button>
-            <Button onClick={handleExportShapefile} variant="outline">
+            {/* <Button onClick={handleExportShapefile} variant="outline">
               <Download className="w-4 h-4 mr-2" />
               Export Shapefile
-            </Button>
+            </Button> */}
           </div>
         )}
       </div>
