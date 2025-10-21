@@ -13,7 +13,7 @@ L.Icon.Default.mergeOptions({
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
 });
 
-const DEFAULT_CENTER: [number, number] = [40.7589, -73.9851];
+const DEFAULT_CENTER: [number, number] = [22.5744, 88.3629];
 const DEFAULT_ZOOM = 13;
 
 const DEFAULT_PIPELINE_ROUTES: [number, number][][] = [

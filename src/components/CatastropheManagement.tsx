@@ -58,7 +58,7 @@ const CatastropheManagement = () => {
     setLoadingCatastrophes(true);
     setCatastrophesError(null);
     try {
-      const res = await apiClient.getAssetPropertiesByType("Catastrophe-");
+      const res = await apiClient.getAssetPropertiesByType("Catastrophe");
       const rows = Array.isArray(res?.data) ? res.data : [];
       const mapped: Catastrophe[] = rows.map((r: any, idx: number) => {
         const id = String(
