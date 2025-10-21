@@ -243,6 +243,18 @@ const CatastropheManagement = () => {
             : pipeline.status === "DAMAGED"
               ? ("critical" as const)
               : ("normal" as const),
+      coordinates: Array.isArray(pipeline.coordinates)
+        ? pipeline.coordinates
+            .map((pt) => {
+              const lat = (pt as any)?.coordinates?.lat ?? (pt as any)?.lat;
+              const lng = (pt as any)?.coordinates?.lng ?? (pt as any)?.lng;
+              const elevation = (pt as any)?.coordinates?.elevation ?? (pt as any)?.elevation;
+              return (Number.isFinite(lat) && Number.isFinite(lng))
+                ? { lat: Number(lat), lng: Number(lng), elevation: typeof elevation === 'number' ? elevation : undefined }
+                : null;
+            })
+            .filter((pt): pt is { lat: number; lng: number; elevation?: number } => pt !== null)
+        : undefined,
     }));
   }, [pipelinesResponse]);
 
@@ -273,6 +285,9 @@ const CatastropheManagement = () => {
                 ? ("maintenance" as const)
                 : ("closed" as const),
       segmentId: valve.pipelineId || "Unknown",
+      coordinates: valve.coordinates && Number.isFinite(valve.coordinates.lat) && Number.isFinite(valve.coordinates.lng)
+        ? { lat: valve.coordinates.lat, lng: valve.coordinates.lng }
+        : undefined,
     }));
   }, [valvesResponse]);
 
