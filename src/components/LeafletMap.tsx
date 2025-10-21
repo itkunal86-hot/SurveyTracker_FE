@@ -236,6 +236,10 @@ export const LeafletMap = ({
   };
 
   useEffect(() => {
+    onMapClickRef.current = onMapClick;
+  }, [onMapClick]);
+
+  useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
 
     const map = L.map(mapRef.current).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
@@ -258,27 +262,26 @@ export const LeafletMap = ({
     setCatastrophesLayer(catastropheLayer);
     setSelectionLayer(selectionLayerGroup);
 
-    if (onMapClick) {
-      map.on("click", (e: L.LeafletMouseEvent) => {
-        userInteractedRef.current = true;
-        onMapClick(e.latlng.lat, e.latlng.lng);
-      });
-      map.on("movestart", () => {
-        userInteractedRef.current = true;
-      });
-      map.on("zoomstart", () => {
-        userInteractedRef.current = true;
-      });
-      map.on("dragstart", () => {
-        userInteractedRef.current = true;
-      });
-    }
+    map.on("click", (e: L.LeafletMouseEvent) => {
+      userInteractedRef.current = true;
+      const handler = onMapClickRef.current;
+      if (handler) handler(e.latlng.lat, e.latlng.lng);
+    });
+    map.on("movestart", () => {
+      userInteractedRef.current = true;
+    });
+    map.on("zoomstart", () => {
+      userInteractedRef.current = true;
+    });
+    map.on("dragstart", () => {
+      userInteractedRef.current = true;
+    });
 
     return () => {
       map.remove();
       mapInstanceRef.current = null;
     };
-  }, [onMapClick]);
+  }, []);
 
   useEffect(() => {
     if (!markersLayer) return;
@@ -439,7 +442,11 @@ export const LeafletMap = ({
   useEffect(() => {
     if (!selectionLayer) return;
     selectionLayer.clearLayers();
-    if (selectedLocation && Number.isFinite(selectedLocation.lat) && Number.isFinite(selectedLocation.lng)) {
+    if (
+      selectedLocation &&
+      Number.isFinite(selectedLocation.lat) &&
+      Number.isFinite(selectedLocation.lng)
+    ) {
       const marker = L.circleMarker([selectedLocation.lat, selectedLocation.lng], {
         radius: 6,
         fillColor: "#0ea5e9",
