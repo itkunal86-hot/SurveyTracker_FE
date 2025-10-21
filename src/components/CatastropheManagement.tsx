@@ -448,8 +448,8 @@ const CatastropheManagement = () => {
                   pipelines={mapPipelines}
                   valves={mapValves}
                   showDevices={true}
-                  showPipelines={true}
-                  showValves={true}
+                  showPipelines={mapPipelines.some(p => (p.coordinates?.length ?? 0) >= 2)}
+                  showValves={mapValves.some(v => !!v.coordinates)}
                   catastrophes={catastrophes.map((c) => ({
                     id: c.id,
                     name: c.type,
