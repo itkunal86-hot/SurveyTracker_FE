@@ -188,6 +188,7 @@ export const LeafletMap = ({
     null,
   );
   const userInteractedRef = useRef(false);
+  const onMapClickRef = useRef<typeof onMapClick | undefined>(onMapClick);
 
   const devicePositions = useMemo<[number, number][]>(() => {
     return devices
