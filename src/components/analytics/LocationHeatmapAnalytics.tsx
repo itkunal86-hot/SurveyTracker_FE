@@ -332,8 +332,8 @@ export const LocationHeatmapAnalytics = () => {
   }, [devices, filters]);
 
   const heatmapDensity = useMemo(() => {
-    const latBounds: [number, number] = [40.7589, 40.7000];
-    const lngBounds: [number, number] = [-73.9851, -74.0100];
+    const latBounds: [number, number] = [19.076, 19.05];
+    const lngBounds: [number, number] = [72.8777, 72.86];
     return generateHeatmapDensity(filteredAssets, latBounds, lngBounds);
   }, [filteredAssets]);
 
