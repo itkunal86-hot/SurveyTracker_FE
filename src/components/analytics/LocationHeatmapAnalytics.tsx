@@ -67,13 +67,13 @@ interface HeatmapFilters {
 }
 
 // Generate usage data based on infrastructure assets
-const generateUsageData = () => {
+const generateUsageData = (devices: any[] = []) => {
   const hourlyData = Array.from({ length: 24 }, (_, i) => {
     const hour = i.toString().padStart(2, '0') + ':00';
     const baseUsage = Math.sin((i - 6) * Math.PI / 12) * 50 + 100;
     const peakHours = i >= 8 && i <= 18;
     const usage = Math.max(0, baseUsage + (peakHours ? Math.random() * 30 : Math.random() * 15));
-    
+
     return {
       hour,
       usage: Math.round(usage),
@@ -94,7 +94,7 @@ const generateUsageData = () => {
     type: pipeline.type,
   }));
 
-  const deviceUtilization = mockInfrastructureDevices.map(device => ({
+  const deviceUtilization = devices.map((device: any) => ({
     id: device.id,
     name: device.name,
     utilization: device.batteryLevel || Math.round(Math.random() * 100),
