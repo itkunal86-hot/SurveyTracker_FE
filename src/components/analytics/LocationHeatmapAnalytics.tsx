@@ -211,12 +211,13 @@ const HeatmapLeafletMap = ({ filteredAssets, heatmapDensity, filters }: HeatmapL
   useEffect(() => {
     if (!layersRef.current) return;
 
-    const { assets: assetLayer, heatmap: heatmapLayer, pipelines: pipelineLayer } = layersRef.current;
+    //const { assets: assetLayer, heatmap: heatmapLayer, pipelines: pipelineLayer } = layersRef.current;
+    const { heatmap: heatmapLayer } = layersRef.current;
 
     // Clear existing layers
-    assetLayer.clearLayers();
+    //assetLayer.clearLayers();
     heatmapLayer.clearLayers();
-    pipelineLayer.clearLayers();
+    //pipelineLayer.clearLayers();
 
     // Add heatmap density circles
     heatmapDensity.forEach((point) => {
@@ -261,7 +262,7 @@ const HeatmapLeafletMap = ({ filteredAssets, heatmapDensity, filters }: HeatmapL
             </div>
           `);
 
-          pipelineLayer.addLayer(polyline);
+          //pipelineLayer.addLayer(polyline);
         }
       });
     }
@@ -287,7 +288,7 @@ const HeatmapLeafletMap = ({ filteredAssets, heatmapDensity, filters }: HeatmapL
         </div>
       `);
 
-      assetLayer.addLayer(marker);
+      //assetLayer.addLayer(marker);
     });
 
   }, [filteredAssets, heatmapDensity, filters]);
@@ -311,7 +312,7 @@ export const LocationHeatmapAnalytics = () => {
     showControlStations: true,
     timeRange: "24h",
     statusFilter: "all",
-    assetType: "all",
+    assetType: "device",
   });
 
   const usageData = useMemo(() => generateUsageData(), []);
@@ -322,29 +323,29 @@ export const LocationHeatmapAnalytics = () => {
     if (filters.showDevices) {
       assets.push(...mockInfrastructureDevices.map(d => ({ ...d, assetType: 'device' })));
     }
-    if (filters.showValves) {
-      assets.push(...mockInfrastructureValves.map(v => ({ ...v, assetType: 'valve' })));
-    }
-    if (filters.showControlStations) {
-      assets.push(...mockControlStations.map(c => ({ ...c, assetType: 'controlStation' })));
-    }
+    // if (filters.showValves) {
+    //   assets.push(...mockInfrastructureValves.map(v => ({ ...v, assetType: 'valve' })));
+    // }
+    // if (filters.showControlStations) {
+    //   assets.push(...mockControlStations.map(c => ({ ...c, assetType: 'controlStation' })));
+    // }
     
     // Apply status filter
-    if (filters.statusFilter !== "all") {
-      assets = assets.filter(asset => asset.status === filters.statusFilter);
-    }
+    // if (filters.statusFilter !== "all") {
+    //   assets = assets.filter(asset => asset.status === filters.statusFilter);
+    // }
     
-    // Apply asset type filter
-    if (filters.assetType !== "all") {
-      assets = assets.filter(asset => asset.assetType === filters.assetType);
-    }
+    // // Apply asset type filter
+    // if (filters.assetType !== "all") {
+    //   assets = assets.filter(asset => asset.assetType === filters.assetType);
+    // }
     
     return assets;
   }, [filters]);
 
   const heatmapDensity = useMemo(() => {
-    const latBounds: [number, number] = [19.065, 19.090];
-    const lngBounds: [number, number] = [72.870, 72.895];
+    const latBounds: [number, number] = [40.7589, 40.7000];
+    const lngBounds: [number, number] = [-73.9851, -74.0100];
     return generateHeatmapDensity(filteredAssets, latBounds, lngBounds);
   }, [filteredAssets]);
 
