@@ -315,13 +315,30 @@ export const LocationHeatmapAnalytics = () => {
     assetType: "device",
   });
 
-  const usageData = useMemo(() => generateUsageData(), []);
-  
+  // Get current survey context
+  const { currentSurvey } = useSurveyContext();
+
+  // Fetch device logs from API
+  const {
+    data: devicesResponse,
+    isLoading: loadingDevices,
+    error: devicesError,
+    refetch: refetchDevices,
+  } = useDeviceLogs({ limit: 100, surveyId: currentSurvey?.id });
+
+  const devices = Array.isArray(devicesResponse?.data) ? devicesResponse.data : [];
+
+  const usageData = useMemo(() => generateUsageData(devices), [devices]);
+
   const filteredAssets = useMemo(() => {
     let assets: any[] = [];
-    
+
     if (filters.showDevices) {
-      assets.push(...mockInfrastructureDevices.map(d => ({ ...d, assetType: 'device' })));
+      assets.push(...devices.map((d: any) => ({
+        ...d,
+        coordinates: d.coordinates || { lat: 0, lng: 0 },
+        assetType: 'device'
+      })));
     }
     // if (filters.showValves) {
     //   assets.push(...mockInfrastructureValves.map(v => ({ ...v, assetType: 'valve' })));
@@ -329,19 +346,19 @@ export const LocationHeatmapAnalytics = () => {
     // if (filters.showControlStations) {
     //   assets.push(...mockControlStations.map(c => ({ ...c, assetType: 'controlStation' })));
     // }
-    
+
     // Apply status filter
     // if (filters.statusFilter !== "all") {
     //   assets = assets.filter(asset => asset.status === filters.statusFilter);
     // }
-    
+
     // // Apply asset type filter
     // if (filters.assetType !== "all") {
     //   assets = assets.filter(asset => asset.assetType === filters.assetType);
     // }
-    
+
     return assets;
-  }, [filters]);
+  }, [devices, filters]);
 
   const heatmapDensity = useMemo(() => {
     const latBounds: [number, number] = [40.7589, 40.7000];
@@ -350,12 +367,12 @@ export const LocationHeatmapAnalytics = () => {
   }, [filteredAssets]);
 
   const summaryStats = useMemo(() => {
-    const totalDevices = mockInfrastructureDevices.length;
-    const activeDevices = mockInfrastructureDevices.filter(d => d.status === 'ACTIVE').length;
+    const totalDevices = devices.length;
+    const activeDevices = devices.filter((d: any) => d.status === 'ACTIVE').length;
     const totalValves = mockInfrastructureValves.length;
     const operationalPipelines = mockInfrastructurePipelines.filter(p => p.status === 'OPERATIONAL').length;
     const totalPipelines = mockInfrastructurePipelines.length;
-    
+
     return {
       totalAssets: totalDevices + totalValves + totalPipelines + mockControlStations.length,
       activeDevices: `${activeDevices}/${totalDevices}`,
@@ -364,7 +381,7 @@ export const LocationHeatmapAnalytics = () => {
       avgPressure: Math.round(usageData.hourlyData.reduce((sum, d) => sum + d.pressure, 0) / usageData.hourlyData.length),
       peakFlow: Math.max(...usageData.hourlyData.map(d => d.flowRate)),
     };
-  }, [usageData]);
+  }, [devices, usageData]);
 
   return (
     <div className="p-6 space-y-6">
