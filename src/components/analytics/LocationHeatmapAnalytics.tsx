@@ -184,7 +184,7 @@ const HeatmapLeafletMap = ({ filteredAssets, heatmapDensity, filters }: HeatmapL
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
 
-    const map = L.map(mapRef.current).setView([40.7589, -73.9851], 13); // Mumbai coordinates
+    const map = L.map(mapRef.current).setView([19.076, 72.8777], 13); // Mumbai coordinates
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: "© OpenStreetMap contributors",
