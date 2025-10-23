@@ -43,18 +43,18 @@ import {
   Cell,
 } from "recharts";
 import {
-  mockInfrastructureDevices,
   mockInfrastructurePipelines,
   mockInfrastructureValves,
   mockControlStations,
   getAssetColorByStatus,
   getPipelineColorByType,
   getValveColorByClass,
-  InfrastructureDevice,
   InfrastructurePipeline,
   InfrastructureValve,
   ControlStation,
 } from "@/lib/mockAssetData";
+import { useDeviceLogs } from "@/hooks/useApiQueries";
+import { useSurveyContext } from "@/contexts/SurveyContext";
 
 interface HeatmapFilters {
   showDevices: boolean;
