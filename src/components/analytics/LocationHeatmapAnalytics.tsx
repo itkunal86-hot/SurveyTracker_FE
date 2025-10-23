@@ -132,7 +132,7 @@ const generateHeatmapDensity = (assets: any[], latBounds: [number, number], lngB
       const lng = lngBounds[0] + (lngBounds[1] - lngBounds[0]) * (j / gridSize);
       
       // Count assets within a radius
-      const radius = 0.01; // ~1km
+      const radius = 0.1; // ~1km
       const count = assets.filter(asset => {
         const distance = Math.sqrt(
           Math.pow(asset.coordinates.lat - lat, 2) + 
@@ -184,7 +184,7 @@ const HeatmapLeafletMap = ({ filteredAssets, heatmapDensity, filters }: HeatmapL
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
 
-    const map = L.map(mapRef.current).setView([19.0760, 72.8777], 13); // Mumbai coordinates
+    const map = L.map(mapRef.current).setView([40.7589, -73.9851], 13); // Mumbai coordinates
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: "© OpenStreetMap contributors",
@@ -327,12 +327,11 @@ export const LocationHeatmapAnalytics = () => {
   } = useDeviceLogs({ limit: 100, surveyId: currentSurvey?.id });
 
   const devices = Array.isArray(devicesResponse?.data) ? devicesResponse.data : [];
-
+  console.log(devices)
   const usageData = useMemo(() => generateUsageData(devices), [devices]);
 
   const filteredAssets = useMemo(() => {
     let assets: any[] = [];
-
     if (filters.showDevices) {
       assets.push(...devices.map((d: any) => ({
         ...d,
