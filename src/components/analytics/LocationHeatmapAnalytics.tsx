@@ -263,30 +263,6 @@ const HeatmapLeafletMap = ({ filteredAssets, heatmapDensity, filters }: HeatmapL
       });
     }
 
-    // Add asset markers
-    filteredAssets.forEach((asset) => {
-      const marker = L.circleMarker([asset.coordinates.lat, asset.coordinates.lng], {
-        radius: 8,
-        fillColor: getAssetColorByStatus(asset.status, asset.assetType),
-        color: "white",
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 0.8,
-      });
-
-      marker.bindPopup(`
-        <div style="font-family: system-ui; padding: 4px;">
-          <strong>${asset.name}</strong><br/>
-          <span style="color: #666;">Type: ${asset.assetType}</span><br/>
-          <span style="color: #666;">Status: ${asset.status}</span><br/>
-          ${asset.pressure ? `<span style="color: #666;">Pressure: ${asset.pressure} Bar</span><br/>` : ''}
-          ${asset.batteryLevel ? `<span style="color: #666;">Battery: ${asset.batteryLevel}%</span><br/>` : ''}
-        </div>
-      `);
-
-      //assetLayer.addLayer(marker);
-    });
-
   }, [filteredAssets, heatmapDensity, filters]);
 
   return (
