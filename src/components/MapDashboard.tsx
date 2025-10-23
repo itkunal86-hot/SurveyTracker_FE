@@ -20,18 +20,17 @@ import {
 } from "lucide-react";
 import { useDeviceLogs, usePipelines, useValves } from "@/hooks/useApiQueries";
 import {
-  mockInfrastructureDevices,
   mockInfrastructurePipelines,
   mockInfrastructureValves,
   mockControlStations,
   getAssetColorByStatus,
   getPipelineColorByType,
   getValveColorByClass,
-  type InfrastructureDevice,
   type InfrastructurePipeline,
   type InfrastructureValve,
   type ControlStation,
 } from "@/lib/mockAssetData";
+import { useSurveyContext } from "@/contexts/SurveyContext";
 
 // Legacy interfaces for backward compatibility with LeafletMap
 interface DeviceLocation {
