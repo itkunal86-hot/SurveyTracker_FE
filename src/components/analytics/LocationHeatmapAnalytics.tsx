@@ -219,21 +219,17 @@ const HeatmapLeafletMap = ({ filteredAssets, heatmapDensity, filters }: HeatmapL
     heatmapLayer.clearLayers();
     //pipelineLayer.clearLayers();
 
-    // Add heatmap density circles
-    heatmapDensity.forEach((point) => {
-      const radius = 20 + point.density * 30; // Scale radius based on density
-      const color = point.intensity > 0.7 ? '#ef4444' :
-                   point.intensity > 0.4 ? '#f97316' : '#eab308';
-
-      const circle = L.circle([point.lat, point.lng], {
-        radius: radius,
-        color: color,
-        fillColor: color,
-        fillOpacity: 0.3,
-        weight: 1,
+    // Add circles only for the visible assets, not for the entire grid
+    filteredAssets.forEach((asset) => {
+      const circle = L.circle([asset.coordinates.lat, asset.coordinates.lng], {
+        radius: 100,
+        color: '#f97316',
+        fillColor: '#f97316',
+        fillOpacity: 0.4,
+        weight: 2,
       });
 
-      circle.bindTooltip(`Density: ${point.density} assets`, {
+      circle.bindTooltip(`${asset.name}`, {
         permanent: false,
         direction: 'top'
       });
