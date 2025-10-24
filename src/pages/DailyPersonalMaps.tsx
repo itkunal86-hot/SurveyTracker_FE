@@ -559,12 +559,12 @@ export const DailyPersonalMaps = () => {
   //   window.URL.revokeObjectURL(url);
   // };
 
-  const handleExportPDF = async () => {
+const handleExportXML = async () => {
   try {
-    // ✅ Determine deviceId (same as before)
+    // ✅ Determine deviceId
     let deviceId = selectedDevice;
     if (!deviceId && devices.length > 0) {
-      deviceId = devices[0].id; // fallback like in handleLoadSurveyData
+      deviceId = devices[0].id;
     }
 
     if (!deviceId) {
@@ -577,35 +577,37 @@ export const DailyPersonalMaps = () => {
       return;
     }
 
-    // ✅ Fix timezone issue — use local date instead of UTC ISO string
+    // ✅ Fix timezone issue — ensure correct YYYY-MM-DD
     const dateObj = new Date(selectedDate);
-    const formattedDate = dateObj.toLocaleDateString("en-CA"); // outputs YYYY-MM-DD in local time
+    const formattedDate = dateObj.toLocaleDateString("en-CA"); // e.g., 2025-10-01
 
-    const exportUrl = `https://localhost:7215/api/AssetProperties/summary/ExportSnapshots?deviceId=${deviceId}&entryDate=${formattedDate}&format=excel`;
+    // ✅ Use XML format in the URL
+    const exportUrl = `https://localhost:7215/api/AssetProperties/summary/ExportSnapshots?deviceId=${deviceId}&entryDate=${formattedDate}&format=xml`;
 
     const response = await fetch(exportUrl, {
       method: "GET",
-      headers: { "Accept": "application/pdf" },
+      headers: { "Accept": "application/xml" },
     });
 
     if (!response.ok) {
-      throw new Error("Failed to export PDF");
+      throw new Error("Failed to export XML file");
     }
 
+    // ✅ Handle XML download
     const blob = await response.blob();
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `Snapshots_${deviceId}_${formattedDate}.pdf`;
+    link.download = `Snapshots_${deviceId}_${formattedDate}.xml`;
     document.body.appendChild(link);
     link.click();
     link.remove();
     window.URL.revokeObjectURL(url);
   } catch (error) {
-    console.error("Error exporting PDF:", error);
-    alert("An error occurred while exporting the PDF. Please try again.");
+    console.error("Error exporting XML:", error);
+    alert("An error occurred while exporting the XML. Please try again.");
   }
-  };
+};
 
 
 
@@ -940,7 +942,7 @@ export const DailyPersonalMaps = () => {
         </div>
         {hasData && (
           <div className="flex space-x-2">
-            <Button onClick={handleExportPDF} variant="outline">
+            <Button onClick={handleExportXML} variant="outline">
               <Download className="w-4 h-4 mr-2" />
               Export EXCEL
             </Button>
