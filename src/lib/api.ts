@@ -2764,6 +2764,6 @@ export function fromLegacyPipelineSegment(legacy: Partial<LegacyPipelineSegment>
     coordinates
   };
 }
-
+export const API_BASE_PATH = normalizeApiBase(CLEANED_API_URL);
 export const apiClient = new ApiClient();
 export default apiClient;

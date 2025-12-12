@@ -15,6 +15,7 @@ import { MapPin, AlertTriangle } from "lucide-react";
 import { useTable } from "@/hooks/use-table";
 import { useEffect, useMemo, useState } from "react";
 import { useDeviceLogs } from "@/hooks/useApiQueries";
+import { API_BASE_PATH } from "@/lib/api";
 
 // Dynamic row type for arbitrary property names
 type DynamicRow = Record<string, any>;
@@ -63,7 +64,8 @@ export const CatastrophePointsEditor = () => {
     async function loadPipelines() {
       setPipelineError(null);
       try {
-        const url = `https://localhost:7215/api/AssetProperties/ByType/pipeline`;
+        const url = `${API_BASE_PATH}/AssetProperties/ByType/pipeline`;
+        //const url = `https://localhost:7215/api/AssetProperties/ByType/pipeline`;
         const res = await fetch(url, { signal: controller.signal });
         if (!res.ok) throw new Error(`Request failed: ${res.status}`);
         const json = await res.json();
@@ -126,7 +128,8 @@ export const CatastrophePointsEditor = () => {
       setError(null);
       try {
         // Fetch actual catastrophe records with coordinates
-        const url = `https://localhost:7215/api/catastrophes`;
+        const url = `${API_BASE_PATH}/catastrophes`;
+        //const url = `https://localhost:7215/api/catastrophes`;
         const res = await fetch(url, { signal: controller.signal });
         if (!res.ok) {
           throw new Error(`Request failed: ${res.status}`);

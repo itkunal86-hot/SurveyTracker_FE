@@ -15,6 +15,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { MapPin, AlertTriangle } from "lucide-react";
 import { useTable } from "@/hooks/use-table";
 import { useDeviceLogs } from "@/hooks/useApiQueries";
+import { API_BASE_PATH } from "@/lib/api";
 
 // Dynamic row type for arbitrary property names
 type DynamicRow = Record<string, any>;
@@ -55,7 +56,8 @@ export const ValvePointsEditor = () => {
       setLoading(true);
       setError(null);
       try {
-        const url = `https://localhost:7215/api/AssetProperties/ByType/valve`;
+        //const url = `https://localhost:7215/api/AssetProperties/ByType/valve`;
+        const url = `${API_BASE_PATH}/AssetProperties/ByType/valve`;
         const res = await fetch(url, { signal: controller.signal });
         if (!res.ok) {
           throw new Error(`Request failed: ${res.status}`);
@@ -89,7 +91,8 @@ export const ValvePointsEditor = () => {
     async function loadPipelines() {
       setPipelineError(null);
       try {
-        const url = `https://localhost:7215/api/AssetProperties/ByType/pipeline`;
+        const url = `${API_BASE_PATH}/AssetProperties/ByType/pipeline`;
+        //const url = `https://localhost:7215/api/AssetProperties/ByType/pipeline`;
         const res = await fetch(url, { signal: controller.signal });
         if (!res.ok) throw new Error(`Request failed: ${res.status}`);
         const json = await res.json();
