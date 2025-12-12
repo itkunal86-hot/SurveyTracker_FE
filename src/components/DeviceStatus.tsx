@@ -67,7 +67,7 @@ export const DeviceStatus = () => {
 
   // Transform API data to match component interface
   const devices: ExtendedDevice[] = useMemo(() => {
-    if (!devicesResponse?.data) return [];
+    if (!Array.isArray(devicesResponse?.data)) return [];
 
     return devicesResponse.data.map((device) => ({
       ...device,
@@ -494,6 +494,7 @@ export const DeviceStatus = () => {
                 >
                   Accuracy
                 </SortableTableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -582,6 +583,11 @@ export const DeviceStatus = () => {
                   </TableCell>
                   <TableCell>
                     {typeof device.accuracy === "number" ? device.accuracy.toFixed(2) : "N/A"}
+                  </TableCell>
+                  <TableCell>
+                    <Button size="sm" onClick={() => navigate(`/daily-personal-maps?device=${encodeURIComponent(device.id)}`)}>
+                      Instrument
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}

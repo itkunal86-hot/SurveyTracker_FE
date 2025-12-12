@@ -1,4 +1,3 @@
-import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LeafletMap } from "@/components/LeafletMap";
 import {
@@ -14,12 +13,13 @@ import { Pagination } from "@/components/ui/pagination";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { MapPin, AlertTriangle } from "lucide-react";
 import { useTable } from "@/hooks/use-table";
+import { useEffect, useMemo, useState } from "react";
 import { useDeviceLogs } from "@/hooks/useApiQueries";
 
 // Dynamic row type for arbitrary property names
 type DynamicRow = Record<string, any>;
 
-// Map view expects these fields only
+// Optional map valve type to reuse LeafletMap rendering contract
 interface MapValve {
   id: string;
   type: "control" | "emergency" | "isolation";
@@ -39,49 +39,23 @@ interface MapPipelineSegment {
   coordinates?: Array<{ lat: number; lng: number; elevation?: number }>;
 }
 
-export const ValvePointsEditor = () => {
+interface MapCatastrophe {
+  id: string;
+  name?: string;
+  severity?: string;
+  status?: string;
+  coordinates?: { lat: number; lng: number };
+}
+
+export const CatastrophePointsEditor = () => {
   const [rows, setRows] = useState<DynamicRow[]>([]);
   const [columns, setColumns] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Pipelines state and error
   const [pipelineRows, setPipelineRows] = useState<DynamicRow[]>([]);
   const [pipelineError, setPipelineError] = useState<string | null>(null);
-
-  // Load valves table from required endpoint
-  useEffect(() => {
-    const controller = new AbortController();
-    async function loadValves() {
-      setLoading(true);
-      setError(null);
-      try {
-        const url = `https://localhost:7215/api/AssetProperties/ByType/valve`;
-        const res = await fetch(url, { signal: controller.signal });
-        if (!res.ok) {
-          throw new Error(`Request failed: ${res.status}`);
-        }
-        const json = await res.json();
-        const arr: DynamicRow[] = Array.isArray(json?.data)
-          ? json.data
-          : Array.isArray(json)
-            ? json
-            : [];
-
-        const normalized = arr.map((item) => ({ ...item }));
-        setRows(normalized);
-        const cols = normalized.length > 0 ? Object.keys(normalized[0]) : [];
-        setColumns(cols);
-      } catch (e: any) {
-        setError(e?.message || "Failed to load data");
-        setRows([]);
-        setColumns([]);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadValves();
-    return () => controller.abort();
-  }, []);
 
   // Load pipelines for map layer from required endpoint
   useEffect(() => {
@@ -108,22 +82,7 @@ export const ValvePointsEditor = () => {
     return () => controller.abort();
   }, []);
 
-  const defaultSortKey = (columns.includes("id") ? "id" : columns[0]) as keyof DynamicRow | undefined;
-  const { tableConfig, sortedAndPaginatedData } = useTable<DynamicRow>(rows, 5, defaultSortKey as any);
-
-  // Derive valves for map layer from dynamic rows
-  const mapValves: MapValve[] = useMemo(() => {
-    return rows.map((r) => {
-      const rawType = String(r["Type"] ?? r["type"] ?? "").toLowerCase();
-      const mappedType: MapValve["type"] = rawType === "emergency" ? "emergency" : rawType === "isolation" ? "isolation" : "control";
-      const status: MapValve["status"] = mappedType === "emergency" ? "closed" : rawType === "safety" ? "maintenance" : "open";
-      const segment = String(r["Linked Segment"] ?? r["segmentId"] ?? r["Segment"] ?? "Unknown");
-      const id = String(r["id"] ?? r["ID"] ?? "");
-      return { id, type: mappedType, status, segmentId: segment };
-    });
-  }, [rows]);
-
-  // Devices from DeviceLog for the selected survey (via hook)
+  // Devices from DeviceLog for the active survey
   const { data: deviceLogsResponse } = useDeviceLogs({ limit: 100 });
   const mapDevices = useMemo(() => {
     const items = Array.isArray(deviceLogsResponse?.data) ? deviceLogsResponse!.data : [];
@@ -160,16 +119,96 @@ export const ValvePointsEditor = () => {
     });
   }, [pipelineRows]);
 
-  const showDevices = mapDevices.length > 0;
-  const showPipelines = mapPipelines.length > 0;
-  const showValves = mapValves.length > 0;
+  useEffect(() => {
+    const controller = new AbortController();
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        // Fetch actual catastrophe records with coordinates
+        const url = `https://localhost:7215/api/catastrophes`;
+        const res = await fetch(url, { signal: controller.signal });
+        if (!res.ok) {
+          throw new Error(`Request failed: ${res.status}`);
+        }
+        const json = await res.json();
+        const arr: DynamicRow[] = Array.isArray(json?.data)
+          ? json.data
+          : Array.isArray(json)
+            ? json
+            : [];
+
+        const normalized = arr.map((item) => ({ ...item }));
+        setRows(normalized);
+        const cols = normalized.length > 0 ? Object.keys(normalized[0]) : [];
+        setColumns(cols);
+      } catch (e: any) {
+        setError(e?.message || "Failed to load data");
+        setRows([]);
+        setColumns([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+    return () => controller.abort();
+  }, []);
+
+  const defaultSortKey = (columns.includes("id") ? "id" : columns[0]) as keyof DynamicRow | undefined;
+  const { tableConfig, sortedAndPaginatedData } = useTable<DynamicRow>(rows, 5, defaultSortKey as any);
+
+  // Derive simple valves for map layer from dynamic rows (best-effort mapping)
+  const mapValves: MapValve[] = useMemo(() => {
+    return rows.map((r, idx) => {
+      const rawType = String(r["Type"] ?? r["type"] ?? r["Category"] ?? "").toLowerCase();
+      const mappedType: MapValve["type"] = rawType.includes("emergency") ? "emergency" : rawType.includes("isolation") ? "isolation" : "control";
+      const status: MapValve["status"] = rawType.includes("critical") ? "closed" : rawType.includes("maintenance") ? "maintenance" : "open";
+      const segment = String(r["Linked Segment"] ?? r["segmentId"] ?? r["Segment"] ?? "Unknown");
+      const id = String(r["id"] ?? r["ID"] ?? `ROW_${idx}`);
+      return { id, type: mappedType, status, segmentId: segment };
+    });
+  }, [rows]);
+
+  // Derive catastrophe points for map markers from dynamic rows
+  const mapCatastrophes: MapCatastrophe[] = useMemo(() => {
+    const toNum = (v: any) => {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : NaN;
+    };
+    return rows.map((r, idx) => {
+      const id = String(r["id"] ?? r["ID"] ?? `CATA_${idx + 1}`);
+      const name = String(r["name"] ?? r["title"] ?? r["Type"] ?? r["type"] ?? id);
+      const severity = String(r["severity"] ?? r["Severity"] ?? r["level"] ?? r["Level"] ?? "");
+      const status = String(r["status"] ?? r["Status"] ?? "REPORTED");
+      let coordinates: { lat: number; lng: number } | undefined;
+
+      const candidates: any[] = [
+        r["coordinates"],
+        r["location"],
+        r["Location"],
+        { lat: r["lat"], lng: r["lng"] },
+        { lat: r["latitude"], lng: r["longitude"] },
+        { lat: r["Latitude"], lng: r["Longitude"] },
+      ];
+      for (const c of candidates) {
+        const lat = toNum(c?.lat);
+        const lng = toNum(c?.lng ?? c?.lon ?? c?.longitude);
+        if (Number.isFinite(lat) && Number.isFinite(lng)) {
+          coordinates = { lat, lng };
+          break;
+        }
+      }
+
+      return { id, name, severity, status, coordinates };
+    });
+  }, [rows]);
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Valve Points Viewer</h1>
-          <p className="text-muted-foreground">View valve metadata and placement on pipeline segments</p>
+          <h1 className="text-3xl font-bold">Catastrophe Points Viewer</h1>
+          <p className="text-muted-foreground">View catastrophe metadata and related pipeline segments</p>
         </div>
       </div>
 
@@ -178,7 +217,7 @@ export const ValvePointsEditor = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MapPin className="h-5 w-5" />
-              Valve Points ({rows.length})
+              Catastrophe Points ({rows.length})
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -207,7 +246,7 @@ export const ValvePointsEditor = () => {
                             onSort={(k) => tableConfig.handleSort(k as keyof DynamicRow)}
                           >
                             {col}
-                          </SortableTableHead>
+                          </SortableTableHead> 
                         ))
                       )}
                     </TableRow>
@@ -246,7 +285,7 @@ export const ValvePointsEditor = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Valve Network Map</CardTitle>
+            <CardTitle>Network Map</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-96">
@@ -254,9 +293,11 @@ export const ValvePointsEditor = () => {
                 devices={mapDevices}
                 pipelines={mapPipelines}
                 valves={mapValves}
-                showDevices={showDevices}
-                showPipelines={showPipelines}
-                showValves={showValves}
+                showDevices={mapDevices.length > 0}
+                showPipelines={mapPipelines.length > 0}
+                showValves={mapValves.length > 0}
+                catastrophes={mapCatastrophes}
+                showCatastrophes={mapCatastrophes.some((c) => c.coordinates && Number.isFinite(c.coordinates.lat) && Number.isFinite(c.coordinates.lng))}
               />
             </div>
           </CardContent>
@@ -265,3 +306,5 @@ export const ValvePointsEditor = () => {
     </div>
   );
 };
+
+export default CatastrophePointsEditor;

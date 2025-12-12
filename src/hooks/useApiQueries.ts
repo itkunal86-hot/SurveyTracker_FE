@@ -18,6 +18,7 @@ import { useSurveyContext } from "@/contexts/SurveyContext";
 export const QUERY_KEYS = {
   devices: "devices",
   deviceLogs: "deviceLogs",
+  deviceAlerts: "deviceAlerts",
   device: "device",
   pipelines: "pipelines",
   pipeline: "pipeline",
@@ -53,7 +54,11 @@ export function useDevices(params?: {
 }) {
   return useQuery({
     queryKey: [QUERY_KEYS.devices, params],
-    queryFn: () => apiClient.getDevices(params),
+    queryFn: async () => {
+      const response = await apiClient.getDevices(params);
+      const items = Array.isArray(response?.data) ? response.data : [];
+      return { ...response, data: items };
+    },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }
@@ -78,6 +83,14 @@ export function useDeviceLogs(params?: { page?: number; limit?: number; status?:
     queryKey: [QUERY_KEYS.deviceLogs, effectiveParams],
     queryFn: () => apiClient.getDeviceLogs(effectiveParams),
     staleTime: 60 * 1000,
+  });
+}
+
+export function useDeviceAlerts(params?: { page?: number; limit?: number }) {
+  return useQuery({
+    queryKey: [QUERY_KEYS.deviceAlerts, params],
+    queryFn: () => apiClient.getDeviceAlerts(params),
+    staleTime: 30 * 1000,
   });
 }
 
@@ -133,9 +146,10 @@ export function usePipelines(params?: {
     queryKey: [QUERY_KEYS.pipelines, params],
     queryFn: async () => {
       const response = await apiClient.getPipelines(params);
+      const items = Array.isArray(response?.data) ? response.data : [];
       return {
         ...response,
-        data: extendPipelines(response.data)
+        data: extendPipelines(items)
       };
     },
     staleTime: 5 * 60 * 1000,
@@ -203,7 +217,11 @@ export function useValves(params?: {
 }) {
   return useQuery({
     queryKey: [QUERY_KEYS.valves, params],
-    queryFn: () => apiClient.getValves(params),
+    queryFn: async () => {
+      const response = await apiClient.getValves(params);
+      const items = Array.isArray(response?.data) ? response.data : [];
+      return { ...response, data: items };
+    },
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -258,7 +276,11 @@ export function useCatastrophes(params?: {
 }) {
   return useQuery({
     queryKey: [QUERY_KEYS.catastrophes, params],
-    queryFn: () => apiClient.getCatastrophes(params),
+    queryFn: async () => {
+      const response = await apiClient.getCatastrophes(params);
+      const items = Array.isArray(response?.data) ? response.data : [];
+      return { ...response, data: items };
+    },
     staleTime: 2 * 60 * 1000, // 2 minutes for more real-time updates
   });
 }
@@ -459,7 +481,11 @@ export function useValveOperations(params?: {
 }) {
   return useQuery({
     queryKey: [QUERY_KEYS.valveOperations, params],
-    queryFn: () => apiClient.getValveOperations(params),
+    queryFn: async () => {
+      const response = await apiClient.getValveOperations(params);
+      const items = Array.isArray(response?.data) ? response.data : [];
+      return { ...response, data: items };
+    },
   });
 }
 
@@ -558,6 +584,15 @@ export function useSurveyCategories(params?: { page?: number; limit?: number; se
   return useQuery({
     queryKey: [QUERY_KEYS.surveyCategories, params],
     queryFn: () => apiClient.getSurveyCategories(params),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+// Pipeline segments from AssetProperties ByType endpoint (external)
+export function usePipelineSegmentsByType(type: string = "pipeline") {
+  return useQuery({
+    queryKey: ["assetPropertiesByType", type],
+    queryFn: () => apiClient.getAssetPropertiesByType(type),
     staleTime: 5 * 60 * 1000,
   });
 }

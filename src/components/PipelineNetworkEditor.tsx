@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +43,7 @@ import {
 
 import { useToast } from "@/hooks/use-toast";
 import { apiClient, PipelineSegment } from "@/lib/api";
+import { useDeviceLogs } from "@/hooks/useApiQueries";
 
 export const PipelineNetworkEditor = () => {
   const [segments, setSegments] = useState<PipelineSegment[]>([]);
@@ -66,13 +67,79 @@ export const PipelineNetworkEditor = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
 
+  type DynamicRow = Record<string, any>;
+  const [propRows, setPropRows] = useState<DynamicRow[]>([]);
+  const [propColumns, setPropColumns] = useState<string[]>([]);
+  const [propLoading, setPropLoading] = useState<boolean>(false);
+  const [propError, setPropError] = useState<string | null>(null);
+
+  const [valveRows, setValveRows] = useState<DynamicRow[]>([]);
+  const [valveError, setValveError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    async function load() {
+      setPropLoading(true);
+      setPropError(null);
+      try {
+        const url = `https://localhost:7215/api/AssetProperties/ByType/pipeline`;
+        const res = await fetch(url, { signal: controller.signal });
+        if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+        const json = await res.json();
+        const arr: DynamicRow[] = Array.isArray(json?.data)
+          ? json.data
+          : Array.isArray(json)
+            ? json
+            : [];
+        const normalized = arr.map((item) => ({ ...item }));
+        setPropRows(normalized);
+        const cols = normalized.length > 0 ? Object.keys(normalized[0]) : [];
+        setPropColumns(cols);
+      } catch (e: any) {
+        setPropError(e?.message || "Failed to load data");
+        setPropRows([]);
+        setPropColumns([]);
+      } finally {
+        setPropLoading(false);
+      }
+    }
+    load();
+    return () => controller.abort();
+  }, []);
+
+  // Load valves from external endpoint for map layer
+  useEffect(() => {
+    const controller = new AbortController();
+    async function loadValves() {
+      setValveError(null);
+      try {
+        const url = `https://localhost:7215/api/AssetProperties/ByType/valve`;
+        const res = await fetch(url, { signal: controller.signal });
+        if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+        const json = await res.json();
+        const arr: DynamicRow[] = Array.isArray(json?.data)
+          ? json.data
+          : Array.isArray(json)
+            ? json
+            : [];
+        setValveRows(arr.map((it) => ({ ...it })));
+      } catch (e: any) {
+        setValveRows([]);
+        setValveError(e?.message || "Failed to load valve data");
+      }
+    }
+    loadValves();
+    return () => controller.abort();
+  }, []);
+
   // Fetch pipeline segments from API
   const fetchSegments = async () => {
     try {
       setLoading(true);
+      //const response = await apiClient.getAssetPropertiesByType("pipeline");
       const response = await apiClient.getPipelines({ limit: 100 });
-      setSegments(response.data);
-    } catch (error) {
+      setSegments(Array.isArray(response?.data) ? response.data : []);
+      } catch (error) {
       console.error("Failed to fetch pipeline segments:", error);
       toast({
         title: "Error",
@@ -89,41 +156,64 @@ export const PipelineNetworkEditor = () => {
     fetchSegments();
   }, []);
 
-  // Demo data for map visualization
-  const demoDevices = [
-    {
-      id: "MON-001",
-      name: "Central Station Monitor",
-      lat: 40.7589,
-      lng: -73.9851,
-      status: "active" as const,
-      lastPing: "15 sec ago",
-    },
-    {
-      id: "MON-002",
-      name: "East Side Distribution Monitor",
-      lat: 40.7614,
-      lng: -73.9776,
-      status: "active" as const,
-      lastPing: "23 sec ago",
-    },
-  ];
+  // Devices for map from DeviceLog endpoint (selected survey)
+  const { data: deviceLogsResponse } = useDeviceLogs({ limit: 100 });
+  const mapDevices = useMemo(() => {
+    const items = Array.isArray(deviceLogsResponse?.data) ? deviceLogsResponse!.data : [];
+    return items.map((device: any) => ({
+      id: device.id,
+      name: device.name,
+      lat: Number(device.coordinates?.lat) || 0,
+      lng: Number(device.coordinates?.lng) || 0,
+      status:
+        String(device.status).toUpperCase() === "ACTIVE"
+          ? ("active" as const)
+          : String(device.status).toUpperCase() === "MAINTENANCE"
+            ? ("maintenance" as const)
+            : String(device.status).toUpperCase() === "ERROR"
+              ? ("error" as const)
+              : ("offline" as const),
+      lastPing: device.lastSeen || "Unknown",
+    }));
+  }, [deviceLogsResponse]);
 
-  const demoPipelinesWithStatus = segments.map((segment) => ({
-    id: segment.id,
-    diameter: segment.specifications?.diameter?.value || 0,
-    depth: segment.installation?.depth?.value || 0,
-    status: segment.status.toLowerCase() as "normal" | "warning" | "critical",
-  }));
+  // Pipelines for map from AssetProperties/ByType/pipeline
+  const mapPipelines = useMemo(() => {
+    return propRows.map((r, idx) => {
+      const id = String(r["id"] ?? r["ID"] ?? r["segmentId"] ?? r["SegmentId"] ?? `PS-${idx + 1}`);
+      const diameterVal = Number(r["diameter"] ?? r["Diameter"] ?? r["pipeDiameter"] ?? r["PipeDiameter"] ?? 200);
+      const depthVal = Number(r["depth"] ?? r["Depth"] ?? r["installationDepth"] ?? r["InstallationDepth"] ?? 1.5);
+      return {
+        id,
+        diameter: Number.isFinite(diameterVal) ? diameterVal : 200,
+        depth: Number.isFinite(depthVal) ? depthVal : 1.5,
+        status: "normal" as const,
+      };
+    });
+  }, [propRows]);
 
-  const demoValves = [
-    {
-      id: "VLV-001",
-      type: "control" as const,
-      status: "open" as const,
-      segmentId: segments[0]?.id || "PS-001",
-    },
-  ];
+  // const hasPipelineGeometry = useMemo(
+  //   () => mapPipelines.some((pipeline) => (pipeline.coordinates?.length ?? 0) >= 2),
+  //   [mapPipelines],
+  // );
+
+  // Valves for map from AssetProperties/ByType/valve (no coordinates provided -> LeafletMap will use defaults)
+  const mapValves = useMemo(() => {
+    return valveRows.map((r) => {
+      const rawType = String(r["Type"] ?? r["type"] ?? "").toLowerCase();
+      const mappedType: "control" | "emergency" | "isolation" | "station" =
+        rawType === "emergency" ? "emergency" : rawType === "isolation" ? "isolation" : "control";
+      const status: "open" | "closed" | "maintenance" | "fault" = mappedType === "emergency" ? "closed" : rawType === "safety" ? "maintenance" : "open";
+      const segmentId = String(r["Linked Segment"] ?? r["segmentId"] ?? r["Segment"] ?? "Unknown");
+      const id = String(r["id"] ?? r["ID"] ?? "");
+      return { id, type: mappedType, status, segmentId } as any;
+    });
+  }, [valveRows]);
+
+  const showDevicesOnMap = mapDevices.length > 0;
+  //const showPipelinesOnMap = hasPipelineGeometry || mapPipelines.length > 0;
+  const showPipelinesOnMap = mapPipelines.length > 0;
+  const showValvesOnMap = mapValves.length > 0;
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -274,7 +364,8 @@ export const PipelineNetworkEditor = () => {
   };
 
   // Use the table hook for sorting and pagination
-  const { tableConfig, sortedAndPaginatedData } = useTable(segments, 5, "id");
+  const defaultSortKey = (propColumns.includes("id") ? "id" : propColumns[0]) as keyof DynamicRow | undefined;
+  const { tableConfig, sortedAndPaginatedData } = useTable<DynamicRow>(propRows, 5, defaultSortKey as any);
 
   const getStatusBadge = (status: string) => {
     const statusMap = {
@@ -309,106 +400,50 @@ export const PipelineNetworkEditor = () => {
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
                 <MapPin className="h-5 w-5" />
-                Pipeline Segments ({segments.length})
+                Valve Points ({propRows.length})
               </CardTitle>
             </div>
           </CardHeader>
           <CardContent className="p-0">
             <div className="p-6 pb-0">
-              {loading ? (
+              
+              {propLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin" />
-                  <span className="ml-2">Loading pipeline segments...</span>
+                  <span className="ml-2">Loading asset properties...</span>
                 </div>
               ) : (
                 <Table>
                   <TableHeader>
-                     <TableRow>
-                       <SortableTableHead
-                         sortKey="name"
-                         currentSortKey={tableConfig.sortConfig.key as string}
-                         sortDirection={tableConfig.sortConfig.direction}
-                         onSort={tableConfig.handleSort}
-                       >
-                         Name
-                       </SortableTableHead>
-                       <SortableTableHead
-                         sortKey="diameter"
-                         currentSortKey={tableConfig.sortConfig.key as string}
-                         sortDirection={tableConfig.sortConfig.direction}
-                         onSort={tableConfig.handleSort}
-                       >
-                         Diameter
-                       </SortableTableHead>
-                       <SortableTableHead
-                         sortKey="material"
-                         currentSortKey={tableConfig.sortConfig.key as string}
-                         sortDirection={tableConfig.sortConfig.direction}
-                         onSort={tableConfig.handleSort}
-                       >
-                         Material
-                       </SortableTableHead>
-                       <SortableTableHead
-                         sortKey="length"
-                         currentSortKey={tableConfig.sortConfig.key as string}
-                         sortDirection={tableConfig.sortConfig.direction}
-                         onSort={tableConfig.handleSort}
-                       >
-                         Length
-                       </SortableTableHead>
-                       <SortableTableHead
-                         sortKey="installationYear"
-                         currentSortKey={tableConfig.sortConfig.key as string}
-                         sortDirection={tableConfig.sortConfig.direction}
-                         onSort={tableConfig.handleSort}
-                       >
-                         Installation Year
-                       </SortableTableHead>
-                       <SortableTableHead
-                         sortKey="operatingPressure"
-                         currentSortKey={tableConfig.sortConfig.key as string}
-                         sortDirection={tableConfig.sortConfig.direction}
-                         onSort={tableConfig.handleSort}
-                       >
-                         Operating Pressure
-                       </SortableTableHead>
-                       <SortableTableHead
-                         sortKey="consumerCategory"
-                         currentSortKey={tableConfig.sortConfig.key as string}
-                         sortDirection={tableConfig.sortConfig.direction}
-                         onSort={tableConfig.handleSort}
-                       >
-                         Consumer Category
-                       </SortableTableHead>
-                       <SortableTableHead
-                         sortKey="status"
-                         currentSortKey={tableConfig.sortConfig.key as string}
-                         sortDirection={tableConfig.sortConfig.direction}
-                         onSort={tableConfig.handleSort}
-                       >
-                         Status
-                       </SortableTableHead>
-                     </TableRow>
+                    <TableRow>
+                      {propColumns.length === 0 ? (
+                        <TableHead>No data</TableHead>
+                      ) : (
+                        propColumns.map((col) => (
+                          <SortableTableHead
+                            key={col}
+                            sortKey={col}
+                            currentSortKey={tableConfig.sortConfig.key as unknown as string}
+                            sortDirection={tableConfig.sortConfig.direction}
+                            onSort={(k) => tableConfig.handleSort(k as keyof DynamicRow)}
+                          >
+                            {col}
+                          </SortableTableHead>
+                        ))
+                      )}
+                    </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {sortedAndPaginatedData.map((segment) => (
-                       <TableRow key={segment.id}>
-                         <TableCell className="font-medium">
-                           {segment.name}
-                         </TableCell>
-                         <TableCell>
-                           {segment.specifications?.diameter?.value || 'N/A'} {segment.specifications?.diameter?.unit || ''}
-                         </TableCell>
-                         <TableCell>{segment.specifications?.material || 'N/A'}</TableCell>
-                         <TableCell>
-                           {segment.specifications?.length?.value || 'N/A'} {segment.specifications?.length?.unit || ''}
-                         </TableCell>
-                         <TableCell>{segment.installation?.installationYear || 'N/A'}</TableCell>
-                         <TableCell>
-                           {segment.operatingPressure?.nominal || 'N/A'} {segment.operatingPressure?.unit || ''}
-                         </TableCell>
-                         <TableCell>{segment.consumerCategory?.type || 'N/A'}</TableCell>
-                         <TableCell>{getStatusBadge(segment.status)}</TableCell>
+                    {sortedAndPaginatedData.map((row, idx) => (
+                      <TableRow key={String((row as any).id ?? idx)}>
+                        {propColumns.map((col) => {
+                          const value = (row as any)[col];
+                          return (
+                            <TableCell key={col}>
+                              {value === null || value === undefined || value === "" ? "-" : String(value)}
+                            </TableCell>
+                          );
+                        })}
                       </TableRow>
                     ))}
                   </TableBody>
@@ -417,7 +452,7 @@ export const PipelineNetworkEditor = () => {
             </div>
 
             {/* Pagination */}
-            {!loading && (
+            {!propLoading && (
               <Pagination
                 config={tableConfig.paginationConfig}
                 onPageChange={tableConfig.setCurrentPage}
@@ -442,12 +477,12 @@ export const PipelineNetworkEditor = () => {
           <CardContent>
             <div className="h-96">
               <LeafletMap
-                devices={demoDevices}
-                pipelines={demoPipelinesWithStatus}
-                valves={demoValves}
-                showDevices={true}
-                showPipelines={true}
-                showValves={true}
+                devices={mapDevices}
+                pipelines={mapPipelines}
+                valves={mapValves}
+                showDevices={showDevicesOnMap}
+                showPipelines={showPipelinesOnMap}
+                showValves={showValvesOnMap}
               />
             </div>
           </CardContent>

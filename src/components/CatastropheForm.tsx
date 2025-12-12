@@ -13,12 +13,14 @@ import {
 } from "@/components/ui/select";
 import { MapPin, Save, X, AlertCircle } from "lucide-react";
 import { Catastrophe } from "./CatastropheManagement";
-import { useCatastropheTypes, usePipelines } from "@/hooks/useApiQueries";
+import { useCatastropheTypes, usePipelineSegmentsByType } from "@/hooks/useApiQueries";
+import { toast } from "sonner";
 
 interface CatastropheFormProps {
   catastrophe?: Catastrophe | null;
   onSave: (catastrophe: Omit<Catastrophe, "id">) => void;
   onCancel: () => void;
+  selectedLocation?: { lat: number; lng: number } | null;
 }
 
 // Fallback data in case API is not available
@@ -36,6 +38,7 @@ export const CatastropheForm = ({
   catastrophe,
   onSave,
   onCancel,
+  selectedLocation,
 }: CatastropheFormProps) => {
   // API hooks
   const {
@@ -44,10 +47,10 @@ export const CatastropheForm = ({
     error: typesError,
   } = useCatastropheTypes();
   const {
-    data: pipelinesResponse,
-    isLoading: loadingPipelines,
-    error: pipelinesError,
-  } = usePipelines({ limit: 100 });
+    data: pipelineSegmentsResponse,
+    isLoading: loadingPipelineSegments,
+    error: pipelineSegmentsError,
+  } = usePipelineSegmentsByType("pipeline");
 
   // Transform API data or use fallbacks
   const catastropheTypes =
@@ -56,11 +59,20 @@ export const CatastropheForm = ({
       label: type.label,
     })) || FALLBACK_CATASTROPHE_TYPES;
 
-  const segments =
-    pipelinesResponse?.data?.map((pipeline) => ({
-      value: pipeline.id,
-      label: `${pipeline.name} - ${pipeline.material} (${pipeline.diameter}mm)`,
-    })) || [];
+  const segments = Array.isArray(pipelineSegmentsResponse?.data)
+    ? pipelineSegmentsResponse.data.map((row: any, idx: number) => {
+        const id = String(row?.id ?? row?.ID ?? row?.Id ?? `ROW_${idx}`);
+        const linked = String(
+          row?.["Linked Segment"] ?? row?.linkedSegment ?? row?.LinkedSegment ?? row?.name ?? row?.Name ?? id,
+        );
+        const type = row?.Type ?? row?.type;
+        const diameterRaw = row?.Diameter ?? row?.diameter;
+        const diameter = typeof diameterRaw === "number" ? diameterRaw : (typeof diameterRaw === "string" ? Number(diameterRaw) : undefined);
+        const typePart = type != null && String(type) !== "" ? ` - ${String(type)}` : "";
+        const diameterPart = diameter != null && !Number.isNaN(diameter) ? ` (${Number(diameter)}mm)` : "";
+        return { value: id, label: `${linked}${typePart}${diameterPart}` };
+      })
+    : [];
 
   const [formData, setFormData] = useState({
     segmentId: catastrophe?.segmentId || "",
@@ -111,19 +123,37 @@ export const CatastropheForm = ({
     }
   };
 
-  const handleLocationClick = () => {
-    // Simulate map click - in real app would open map modal
-    const sampleLocations = [
-      { lat: 40.7128, lng: -74.006, address: "Downtown Area" },
-      { lat: 40.7589, lng: -73.9851, address: "Midtown District" },
-      { lat: 40.7831, lng: -73.9712, address: "Uptown Zone" },
-    ];
+  const handleLocationClick = async () => {
+    if (!selectedLocation) {
+      toast.warning("Please click a location on the map first.");
+      return;
+    }
 
-    const randomLocation =
-      sampleLocations[Math.floor(Math.random() * sampleLocations.length)];
+    const { lat, lng } = selectedLocation;
+
+    let address = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&zoom=16`,
+        {
+          headers: {
+            "Accept": "application/json",
+          },
+        },
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.display_name) {
+          address = data.display_name as string;
+        }
+      }
+    } catch {
+      // Ignore network errors, fallback to lat,lng string
+    }
+
     setFormData((prev) => ({
       ...prev,
-      location: randomLocation,
+      location: { lat, lng, address },
     }));
   };
 
@@ -137,7 +167,7 @@ export const CatastropheForm = ({
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Error States */}
-          {(typesError || pipelinesError) && (
+          {(typesError || pipelineSegmentsError) && (
             <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mb-4">
               <div className="flex items-center space-x-2 text-destructive">
                 <AlertCircle className="w-4 h-4" />
@@ -165,12 +195,12 @@ export const CatastropheForm = ({
                 onValueChange={(value) =>
                   setFormData((prev) => ({ ...prev, segmentId: value }))
                 }
-                disabled={loadingPipelines}
+                disabled={loadingPipelineSegments}
               >
                 <SelectTrigger>
                   <SelectValue
                     placeholder={
-                      loadingPipelines
+                      loadingPipelineSegments
                         ? "Loading segments..."
                         : "Select pipeline segment"
                     }
@@ -182,7 +212,7 @@ export const CatastropheForm = ({
                       {segment.label}
                     </SelectItem>
                   ))}
-                  {segments.length === 0 && !loadingPipelines && (
+                  {segments.length === 0 && !loadingPipelineSegments && (
                     <SelectItem value="unknown" disabled>
                       No pipeline segments available
                     </SelectItem>

@@ -10,8 +10,11 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
     proxy: {
       "/api": {
-        target: "http://localhost:3001",
+
+        target: "https://altgeo-api.hirenq.com",
+
         changeOrigin: true,
+        secure: true,
       },
     },
   },

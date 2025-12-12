@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -13,16 +13,17 @@ import {
 } from "@/components/ui/table";
 import { SortableTableHead } from "@/components/ui/sortable-table-head";
 import { Pagination } from "@/components/ui/pagination";
+import { Link } from "react-router-dom";
 import { useTable } from "@/hooks/use-table";
-import { 
-  RefreshCw, 
-  MapPin, 
-  AlertTriangle, 
-  Settings, 
-  Plus,
+import {
+  RefreshCw,
+  MapPin,
+  AlertTriangle,
+  Settings,
   Activity,
   Gauge,
-  Layers
+  Layers,
+  ArrowLeft
 } from "lucide-react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -271,8 +272,13 @@ const EnhancedMap = ({
   );
 };
 
-export const PipelineOperations = () => {
-  const [activeTab, setActiveTab] = useState("pipelines");
+type PipelineOperationsProps = {
+  titleOverride?: string;
+  defaultTab?: "pipelines" | "valves" | "catastrophes" | "operations";
+};
+
+export const PipelineOperations = ({ titleOverride, defaultTab = "pipelines" }: PipelineOperationsProps) => {
+  const [activeTab, setActiveTab] = useState(defaultTab);
   const [highlightedItemId, setHighlightedItemId] = useState<string | undefined>();
   const [highlightedItemType, setHighlightedItemType] = useState<'pipeline' | 'valve' | 'catastrophe' | 'operation' | undefined>();
 
@@ -285,7 +291,7 @@ export const PipelineOperations = () => {
 
   // Transform data for components
   const mapDevices = useMemo(() => {
-    if (!devicesResponse?.data) return [];
+    if (!Array.isArray(devicesResponse?.data)) return [];
     return devicesResponse.data.map((device) => ({
       id: device.id,
       name: device.name,
@@ -297,18 +303,18 @@ export const PipelineOperations = () => {
   }, [devicesResponse]);
 
   const mapPipelines = useMemo(() => {
-    if (!pipelinesResponse?.data) return [];
+    if (!Array.isArray(pipelinesResponse?.data)) return [];
     return pipelinesResponse.data.map((pipeline) => ({
       id: pipeline.id,
       diameter: pipeline.specifications?.diameter?.value || 200,
       depth: pipeline.installation?.depth?.value || 1.5,
-      status: pipeline.status === "OPERATIONAL" ? "normal" : 
+      status: pipeline.status === "OPERATIONAL" ? "normal" :
               pipeline.status === "MAINTENANCE" ? "warning" : "critical",
     }));
   }, [pipelinesResponse]);
 
   const mapValves = useMemo(() => {
-    if (!valvesResponse?.data) return [];
+    if (!Array.isArray(valvesResponse?.data)) return [];
     return valvesResponse.data.map((valve) => ({
       id: valve.id,
       type: valve.type === "GATE" ? "control" : valve.type === "RELIEF" ? "emergency" : "isolation",
@@ -318,7 +324,7 @@ export const PipelineOperations = () => {
   }, [valvesResponse]);
 
   const catastrophes = useMemo(() => {
-    if (!catastrophesResponse?.data) return [];
+    if (!Array.isArray(catastrophesResponse?.data)) return [];
     return catastrophesResponse.data.map((cat) => ({
       id: cat.id,
       segmentId: cat.pipelineId || "Unknown",
@@ -333,7 +339,7 @@ export const PipelineOperations = () => {
   }, [catastrophesResponse]);
 
   const valveOperations = useMemo(() => {
-    if (!valveOperationsResponse?.data) return [];
+    if (!Array.isArray(valveOperationsResponse?.data)) return [];
     return valveOperationsResponse.data.map((op) => ({
       id: op.id,
       valveId: op.valveId,
@@ -346,8 +352,8 @@ export const PipelineOperations = () => {
   }, [valveOperationsResponse]);
 
   // Table configurations
-  const pipelineTable = useTable(pipelinesResponse?.data || [], 10, "id");
-  const valveTable = useTable(valvesResponse?.data || [], 10, "id");
+  const pipelineTable = useTable(Array.isArray(pipelinesResponse?.data) ? pipelinesResponse.data : [], 10, "id");
+  const valveTable = useTable(Array.isArray(valvesResponse?.data) ? valvesResponse.data : [], 10, "id");
   const catastropheTable = useTable(catastrophes, 10, "id");
   const operationTable = useTable(valveOperations, 10, "id");
 
@@ -395,12 +401,20 @@ export const PipelineOperations = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Activity className="h-6 w-6 text-primary" />
-          <h1 className="text-2xl font-bold">Pipeline Operations Dashboard</h1>
+          <h1 className="text-2xl font-bold">{titleOverride ?? "Pipeline Operations Dashboard"}</h1>
         </div>
-        <Button onClick={handleRefreshAll} disabled={isLoading} variant="outline">
-          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
-          {isLoading ? "Loading..." : "Refresh All"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="ghost">
+            <Link to="/">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Dashboard
+            </Link>
+          </Button>
+          <Button onClick={handleRefreshAll} disabled={isLoading} variant="outline">
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
+            {isLoading ? "Loading..." : "Refresh All"}
+          </Button>
+        </div>
       </div>
 
       {/* Statistics Cards */}

@@ -131,7 +131,7 @@ export const getAssetSymbology = (): AssetSymbology => ({
 });
 
 // Mock data for Mumbai gas infrastructure network
-export const mockInfrastructureDevices: InfrastructureDevice[] = [
+export const mockInfrastructureDevicesold: InfrastructureDevice[] = [
   {
     id: "TRIMBLE_001",
     name: "Central Survey Station",
@@ -183,6 +183,34 @@ export const mockInfrastructureDevices: InfrastructureDevice[] = [
   },
 ];
 
+export const mockInfrastructureDevices: InfrastructureDevice[] = [
+  {
+    id: "TRIMBLE_001",
+    name: "Central Survey Station",
+    type: "TRIMBLE_SPS986",
+    status: "ACTIVE",
+    coordinates: { lat: 19.076, lng: 72.8777, elevation: 11 },
+    surveyor: "Survey Team A",
+    batteryLevel: 85,
+    lastSeen: new Date().toISOString(),
+    accuracy: 0.01,
+    installDate: "2024-01-15",
+    purpose: "Primary geodetic control point",
+  },
+  {
+    id: "MON_ST_001",
+    name: "Pressure Monitoring Station Alpha",
+    type: "MONITORING_STATION",
+    status: "ACTIVE",
+    coordinates: { lat: 19.0728, lng: 72.8826, elevation: 8 },
+    batteryLevel: 92,
+    lastSeen: new Date(Date.now() - 300000).toISOString(),
+    accuracy: 0.1,
+    installDate: "2023-11-20",
+    purpose: "Real-time pressure monitoring",
+  },
+  
+];
 export const mockInfrastructurePipelines: InfrastructurePipeline[] = [
   {
     id: "UG_MAIN_001",
