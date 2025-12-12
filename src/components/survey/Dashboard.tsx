@@ -1,13 +1,83 @@
+import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Activity, Battery, MapPin, Users, Wifi, WifiOff, Smartphone, HardDrive } from "lucide-react";
+import { Activity, Battery, MapPin, Users, Wifi, Smartphone, HardDrive } from "lucide-react";
 import { LocationHeatmapAnalytics } from "@/components/analytics/LocationHeatmapAnalytics";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import { useState } from "react";
+import { useDeviceAlerts } from "@/hooks/useApiQueries";
 
 export const SurveyDashboard = () => {
   const [selectedLocation, setSelectedLocation] = useState("all");
+  const [stats, setStats] = useState({
+    totalDevices: 0,
+    activeDevices: 0,
+    inactiveDevices: 0,
+    surveyors: 0
+  });
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  // ✅ Fetch smId (Survey ID) from localStorage
+  // const smId = localStorage.getItem("activeSurveyId");
+  // ✅ Track active survey ID as state (reactive)
+  const [smId, setSmId] = useState(localStorage.getItem("activeSurveyId"));
+
+// ✅ Listen for changes to localStorage (from other tabs or in-app updates)
+useEffect(() => {
+  const handleStorageChange = (event: StorageEvent) => {
+    if (event.key === "activeSurveyId") {
+      setSmId(event.newValue);
+    }
+  };
+
+  window.addEventListener("storage", handleStorageChange);
+
+  // Optional: also support same-tab changes
+  const checkLocalChange = () => {
+    const currentId = localStorage.getItem("activeSurveyId");
+    setSmId(currentId);
+  };
+  const interval = setInterval(checkLocalChange, 1000); // check every second
+
+  return () => {
+    window.removeEventListener("storage", handleStorageChange);
+    clearInterval(interval);
+  };
+}, []);
+
+// ✅ Fetch summary data from API whenever smId changes
+useEffect(() => {
+  const fetchStats = async () => {
+    if (!smId) {
+      console.warn("No activeSurveyId found in localStorage");
+      return;
+    }
+
+    try {
+      setLoadingStats(true);
+      const response = await fetch(`https://localhost:7215/api/DeviceAssignments/summary/${smId}`);
+      if (!response.ok) throw new Error("Failed to fetch summary data");
+      const data = await response.json();
+
+      setStats({
+        totalDevices: data.totalDevices ?? 0,
+        activeDevices: data.activeDevices ?? 0,
+        inactiveDevices: data.inactiveDevices ?? 0,
+        surveyors: data.surveyors ?? 0
+      });
+    } catch (error) {
+      console.error("Error fetching device summary:", error);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  fetchStats();
+}, [smId]);
+
+// export const SurveyDashboard = () => {
+//   const [selectedLocation, setSelectedLocation] = useState("all");
 
   // Location/Zone filter options
   const locationOptions = [
@@ -20,13 +90,13 @@ export const SurveyDashboard = () => {
   ];
 
   // Mock data - replace with actual API calls
-  const stats = {
-    totalInstruments: 156,
-    activeInstruments: 142,
-    inactiveInstruments: 14,
-    inGodown: 23,
-    withSurveyors: 133
-  };
+  // const stats = {
+  //   totalInstruments: 156,
+  //   activeInstruments: 142,
+  //   inactiveInstruments: 14,
+  //   inGodown: 23,
+  //   withSurveyors: 133
+  // };
 
   // Usage data for the last 7 days
   const usageData = [
@@ -39,62 +109,9 @@ export const SurveyDashboard = () => {
     { day: 'Sun', surveys: 23, instruments: 65, efficiency: 71 },
   ];
 
-  const alerts = [
-    {
-      id: 1,
-      instrument: "INS-001",
-      deviceType: "DA2",
-      issue: "DA2 Battery < 15%",
-      level: "critical",
-      batteryLevel: 14,
-      healthStatus: "Poor"
-    },
-    {
-      id: 2,
-      instrument: "INS-001",
-      deviceType: "Android",
-      issue: "Android Controller Battery < 25%",
-      level: "warning",
-      batteryLevel: 23,
-      healthStatus: "Fair"
-    },
-    {
-      id: 3,
-      instrument: "INS-045",
-      deviceType: "DA2",
-      issue: "DA2 Health Critical",
-      level: "critical",
-      batteryLevel: 45,
-      healthStatus: "Critical"
-    },
-    {
-      id: 4,
-      instrument: "INS-045",
-      deviceType: "Android",
-      issue: "Android Controller Overheating",
-      level: "warning",
-      batteryLevel: 78,
-      healthStatus: "Warning"
-    },
-    {
-      id: 5,
-      instrument: "INS-078",
-      deviceType: "DA2",
-      issue: "DA2 Battery < 10%",
-      level: "critical",
-      batteryLevel: 8,
-      healthStatus: "Critical"
-    },
-    {
-      id: 6,
-      instrument: "INS-078",
-      deviceType: "Android",
-      issue: "Android Controller Memory Low",
-      level: "warning",
-      batteryLevel: 56,
-      healthStatus: "Fair"
-    },
-  ];
+  // Alerts from API
+  const { data: alertsResp, isLoading: alertsLoading } = useDeviceAlerts({ limit: 100 });
+  const alerts = Array.isArray(alertsResp?.data) ? alertsResp!.data : [];
 
   return (
     <div className="p-6 space-y-6">
@@ -131,7 +148,8 @@ export const SurveyDashboard = () => {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalInstruments}</div>
+            {/* <div className="text-2xl font-bold">{stats.totalInstruments}</div> */}
+            <div className="text-2xl font-bold">{stats.totalDevices}</div>
           </CardContent>
         </Card>
 
@@ -141,7 +159,8 @@ export const SurveyDashboard = () => {
             <div className="h-2 w-2 bg-green-500 rounded-full"></div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.activeInstruments}</div>
+            {/* <div className="text-2xl font-bold text-green-600">{stats.activeInstruments}</div> */}
+            <div className="text-2xl font-bold text-green-600">{stats.activeDevices}</div>
           </CardContent>
         </Card>
 
@@ -151,7 +170,8 @@ export const SurveyDashboard = () => {
             <div className="h-2 w-2 bg-red-500 rounded-full"></div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{stats.inactiveInstruments}</div>
+            {/* <div className="text-2xl font-bold text-red-600">{stats.inactiveInstruments}</div> */}
+            <div className="text-2xl font-bold text-red-600">{stats.inactiveDevices}</div>
           </CardContent>
         </Card>
 
@@ -161,7 +181,7 @@ export const SurveyDashboard = () => {
             <MapPin className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.inGodown}</div>
+            {/* <div className="text-2xl font-bold">{stats.inGodown}</div> */}
           </CardContent>
         </Card>
 
@@ -171,7 +191,8 @@ export const SurveyDashboard = () => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.withSurveyors}</div>
+            {/* <div className="text-2xl font-bold">{stats.withSurveyors}</div> */}
+            <div className="text-2xl font-bold">{stats.surveyors}</div>
           </CardContent>
         </Card>
       </div>
@@ -192,48 +213,52 @@ export const SurveyDashboard = () => {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               Alerts
-              <Badge variant="destructive">{alerts.length}</Badge>
+              <Badge variant="destructive">{alertsLoading ? "..." : alerts.length}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {alerts.map((alert) => (
-                <div key={alert.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    {alert.deviceType === 'DA2' ? (
-                      <HardDrive className="w-4 h-4 text-blue-500" />
-                    ) : (
-                      <Smartphone className="w-4 h-4 text-green-500" />
-                    )}
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2">
-                        <p className="font-medium">{alert.instrument}</p>
-                        <Badge variant="outline" className="text-xs">
-                          {alert.deviceType}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">{alert.issue}</p>
-                      <div className="flex items-center space-x-4 mt-1">
-                        <div className="flex items-center space-x-1">
-                          <Battery className="w-3 h-3" />
-                          <span className={`text-xs ${alert.batteryLevel < 20 ? 'text-red-500' : alert.batteryLevel < 50 ? 'text-yellow-500' : 'text-green-500'}`}>
-                            {alert.batteryLevel}%
-                          </span>
+              {alertsLoading ? (
+                <div className="text-sm text-muted-foreground">Loading alerts...</div>
+              ) : (
+                alerts.map((alert: any) => (
+                  <div key={alert.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      {alert.deviceType === 'DA2' ? (
+                        <HardDrive className="w-4 h-4 text-blue-500" />
+                      ) : (
+                        <Smartphone className="w-4 h-4 text-green-500" />
+                      )}
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2">
+                          <p className="font-medium">{alert.instrument}</p>
+                          <Badge variant="outline" className="text-xs">
+                            {alert.deviceType}
+                          </Badge>
                         </div>
-                        <div className="flex items-center space-x-1">
-                          <Activity className="w-3 h-3" />
-                          <span className={`text-xs ${alert.healthStatus === 'Critical' ? 'text-red-500' : alert.healthStatus === 'Warning' || alert.healthStatus === 'Fair' ? 'text-yellow-500' : 'text-green-500'}`}>
-                            {alert.healthStatus}
-                          </span>
+                        <p className="text-sm text-muted-foreground">{alert.message}</p>
+                        <div className="flex items-center space-x-4 mt-1">
+                          <div className="flex items-center space-x-1">
+                            <Battery className="w-3 h-3" />
+                            <span className={`text-xs ${Number(alert.batteryLevel ?? 0) < 20 ? 'text-red-500' : Number(alert.batteryLevel ?? 0) < 50 ? 'text-yellow-500' : 'text-green-500'}`}>
+                              {Number(alert.batteryLevel ?? 0)}%
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Activity className="w-3 h-3" />
+                            <span className={`text-xs ${alert.healthStatus === 'Critical' ? 'text-red-500' : alert.healthStatus === 'Warning' || alert.healthStatus === 'Fair' ? 'text-yellow-500' : 'text-green-500'}`}>
+                              {alert.healthStatus ?? ''}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
+                    <Badge variant={(String(alert.severity || '').toLowerCase() === 'critical') ? 'destructive' : 'secondary'}>
+                      {String(alert.severity || '').toLowerCase() || 'info'}
+                    </Badge>
                   </div>
-                  <Badge variant={alert.level === 'critical' ? 'destructive' : 'secondary'}>
-                    {alert.level}
-                  </Badge>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </CardContent>
         </Card>

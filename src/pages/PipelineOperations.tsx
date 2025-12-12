@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,6 @@ import {
   MapPin,
   AlertTriangle,
   Settings,
-  Plus,
   Activity,
   Gauge,
   Layers,
@@ -273,8 +272,13 @@ const EnhancedMap = ({
   );
 };
 
-export const PipelineOperations = () => {
-  const [activeTab, setActiveTab] = useState("pipelines");
+type PipelineOperationsProps = {
+  titleOverride?: string;
+  defaultTab?: "pipelines" | "valves" | "catastrophes" | "operations";
+};
+
+export const PipelineOperations = ({ titleOverride, defaultTab = "pipelines" }: PipelineOperationsProps) => {
+  const [activeTab, setActiveTab] = useState(defaultTab);
   const [highlightedItemId, setHighlightedItemId] = useState<string | undefined>();
   const [highlightedItemType, setHighlightedItemType] = useState<'pipeline' | 'valve' | 'catastrophe' | 'operation' | undefined>();
 
@@ -397,7 +401,7 @@ export const PipelineOperations = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Activity className="h-6 w-6 text-primary" />
-          <h1 className="text-2xl font-bold">Pipeline Operations Dashboard</h1>
+          <h1 className="text-2xl font-bold">{titleOverride ?? "Pipeline Operations Dashboard"}</h1>
         </div>
         <div className="flex items-center gap-2">
           <Button asChild variant="ghost">

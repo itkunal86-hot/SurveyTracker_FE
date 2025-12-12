@@ -16,12 +16,22 @@ import {
 
 
 const RAW_API_URL = (import.meta.env.VITE_API_URL ?? "").toString().trim() || "https://altgeo-api.hirenq.com";
+
 const CLEANED_API_URL = RAW_API_URL.replace(/^['"]|['"]$/g, "");
-const API_BASE_URL = CLEANED_API_URL
-  ? (CLEANED_API_URL.replace(/\/$/, "").endsWith("/api")
-      ? CLEANED_API_URL.replace(/\/$/, "")
-      : `${CLEANED_API_URL.replace(/\/$/, "")}/api`)
-  : "/api";
+
+function normalizeApiBase(url: string): string {
+  const input = (url || "").trim();
+  if (!input) return "/api";
+  const noTrailing = input.replace(/\/+$/g, "");
+  const apiIdx = noTrailing.indexOf("/api");
+  if (apiIdx >= 0) {
+    // Keep everything through the first '/api'
+    return noTrailing.substring(0, apiIdx + 4);
+  }
+  return `${noTrailing}/api`;
+}
+
+const API_BASE_URL = normalizeApiBase(CLEANED_API_URL);
 
 const REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS) || 15000;
 
@@ -120,17 +130,32 @@ export interface DeviceCreateUpdate {
   modelName?: string;
 }
 
+export interface DeviceAlert {
+  id: string;
+  type: string;
+  instrument: string;
+  deviceType: string;
+  message: string;
+  severity: "critical" | "warning" | "info" | string;
+  zone?: string;
+  surveyor?: string;
+  timestamp: string;
+  batteryLevel?: number;
+  healthStatus?: "Critical" | "Warning" | "Fair" | "Good" | string;
+  resolved?: boolean;
+}
+
 export interface PipelineSegment {
   id: string;
   name: string;
   status: "OPERATIONAL" | "MAINTENANCE" | "DAMAGED" | "INACTIVE";
-  
+
   // Comprehensive spatial feature attributes
   specifications: PipeSpecifications;
   operatingPressure: OperatingPressure;
   installation: InstallationDetails;
   consumerCategory?: ConsumerCategory;
-  
+
   // Geolocation with detailed points
   coordinates: GeolocationPoint[]; // Start, end, and intermediate points
   elevationProfile?: {
@@ -141,7 +166,7 @@ export interface PipelineSegment {
     }>;
     gradient?: number; // Overall gradient percentage
   };
-  
+
   // Maintenance and inspection data
   lastInspection?: string;
   nextInspection?: string;
@@ -152,18 +177,18 @@ export interface PipelineSegment {
     cost?: number;
     contractor?: string;
   }>;
-  
+
   // Performance metrics
   flowRate?: {
     current: number;
     maximum: number;
     unit: "LPS" | "GPM" | "M3H";
   };
-  
+
   // Associated assets
   connectedValves?: string[]; // Array of valve IDs
   connectedDevices?: string[]; // Array of device IDs
-  
+
   // Documentation
   drawings?: Array<{
     type: "AS_BUILT" | "DESIGN" | "INSPECTION" | "REPAIR";
@@ -171,7 +196,7 @@ export interface PipelineSegment {
     url: string;
     uploadDate: string;
   }>;
-  
+
   // Compliance and certifications
   standards?: string[]; // e.g., ["API 5L", "ASME B31.8", "ISO 9001"]
   certifications?: Array<{
@@ -199,12 +224,12 @@ export interface Valve {
 export interface Catastrophe {
   id: string;
   type:
-    | "LEAK"
-    | "BURST"
-    | "BLOCKAGE"
-    | "CORROSION"
-    | "SUBSIDENCE"
-    | "THIRD_PARTY_DAMAGE";
+  | "LEAK"
+  | "BURST"
+  | "BLOCKAGE"
+  | "CORROSION"
+  | "SUBSIDENCE"
+  | "THIRD_PARTY_DAMAGE";
   severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
   status: "REPORTED" | "INVESTIGATING" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";
   coordinates: Coordinates;
@@ -216,6 +241,9 @@ export interface Catastrophe {
   estimatedCost?: number;
   actualCost?: number;
   pipelineId?: string;
+  reportedDate?: Date;
+  location?: string;
+  segment?: string;
 }
 
 export interface AssetType {
@@ -471,36 +499,36 @@ class ApiClient {
   ];
   private mockAssetProperties: AssetProperty[] = [
     { id: "AP_001", name: "Diameter", dataType: 1, isRequired: true, order: 1, options: null, valueUnit: "mm", assetTypeId: "AT_001", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-    { id: "AP_002", name: "Valve Type", dataType: 2, isRequired: true, order: 2, options: JSON.stringify(["Gate","Ball","Butterfly"]), valueUnit: null, assetTypeId: "AT_001", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+    { id: "AP_002", name: "Valve Type", dataType: 2, isRequired: true, order: 2, options: JSON.stringify(["Gate", "Ball", "Butterfly"]), valueUnit: null, assetTypeId: "AT_001", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
   ];
 
   private filterMockData<T>(data: T[], params?: any): T[] {
     let filtered = [...data];
-    
+
     if (params?.status) {
       filtered = filtered.filter((item: any) => item.status === params.status);
     }
-    
+
     if (params?.type) {
       filtered = filtered.filter((item: any) => item.type === params.type);
     }
-    
+
     if (params?.material) {
       filtered = filtered.filter((item: any) => item.material === params.material);
     }
-    
+
     if (params?.severity) {
       filtered = filtered.filter((item: any) => item.severity === params.severity);
     }
-    
+
     if (params?.deviceId) {
       filtered = filtered.filter((item: any) => item.deviceId === params.deviceId);
     }
-    
+
     if (params?.surveyor) {
       filtered = filtered.filter((item: any) => item.surveyor === params.surveyor);
     }
-    
+
     return filtered;
   }
 
@@ -753,6 +781,94 @@ class ApiClient {
     }
   }
 
+  // Alerts endpoints
+  private mapDeviceAlert(it: any): DeviceAlert {
+    const fallbackId = (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function")
+      ? crypto.randomUUID()
+      : `${Date.now()}`;
+
+    const id = String(it.id ?? it.ID ?? it.alertId ?? it.AlertId ?? fallbackId);
+    const type = String(it.type ?? it.Type ?? it.alertType ?? it.AlertType ?? "");
+    const instrument = String(it.instrument ?? it.Instrument ?? it.instrumentId ?? it.InstrumentId ?? it.deviceName ?? it.DeviceName ?? "");
+    const deviceType = String(it.deviceType ?? it.DeviceType ?? it.type ?? it.Type ?? "");
+    const message = String(it.message ?? it.Message ?? it.description ?? it.Description ?? "");
+
+    const sevRaw = String(it.severity ?? it.Severity ?? it.level ?? it.Level ?? "").toLowerCase();
+    const severity: DeviceAlert["severity"] = ["critical", "warning", "info"].includes(sevRaw) ? (sevRaw as any) : (sevRaw || "info");
+
+    const zone = it.zone ?? it.Zone ?? it.area ?? it.Area ?? undefined;
+    const surveyor = it.surveyor ?? it.Surveyor ?? it.user ?? it.User ?? undefined;
+
+    const ts = it.timestamp ?? it.Timestamp ?? it.time ?? it.Time ?? it.createdAt ?? it.CreatedAt ?? new Date().toISOString();
+    const timestamp = String(ts);
+
+    const batteryRaw = it.batteryLevel ?? it.BatteryLevel ?? it.battery ?? it.Battery;
+    const batteryLevel = typeof batteryRaw === "number" ? batteryRaw : (typeof batteryRaw === "string" ? Number(batteryRaw.replace(/%/g, "")) : undefined);
+
+    const hsRaw = it.healthStatus ?? it.HealthStatus ?? it.health ?? it.Health;
+    const healthStatus = hsRaw != null ? String(hsRaw) : undefined;
+
+    const resolvedVal = it.resolved ?? it.Resolved ?? it.isResolved ?? it.IsResolved;
+    const resolved = typeof resolvedVal === "boolean" ? resolvedVal : (String(resolvedVal ?? "").toLowerCase() === "true");
+
+    return { id, type, instrument, deviceType, message, severity, zone, surveyor, timestamp, batteryLevel, healthStatus, resolved };
+  }
+
+  async getDeviceAlerts(params?: { page?: number; limit?: number }): Promise<PaginatedResponse<DeviceAlert>> {
+    const sp = new URLSearchParams();
+    if (params?.page) sp.append("page", String(params.page));
+    if (params?.limit) sp.append("limit", String(params.limit));
+    const q = sp.toString();
+
+    const fetchAndMap = async (raw: any) => {
+      const timestamp = raw?.timestamp || new Date().toISOString();
+      const rawItems = Array.isArray(raw?.data?.items)
+        ? raw.data.items
+        : Array.isArray(raw?.data?.data)
+          ? raw.data.data
+          : Array.isArray(raw?.data)
+            ? raw.data
+            : Array.isArray(raw)
+              ? raw
+              : [];
+      const mapped: DeviceAlert[] = rawItems.map((it: any) => this.mapDeviceAlert(it));
+      const pagination = raw?.data?.pagination || raw?.pagination || {
+        page: params?.page ?? 1,
+        limit: params?.limit ?? mapped.length,
+        total: mapped.length,
+        totalPages: 1,
+      };
+      return { success: true, data: mapped, message: raw?.message, timestamp, pagination } as PaginatedResponse<DeviceAlert>;
+    };
+
+    try {
+      const raw: any = await this.request<any>(`/Device/alerts${q ? `?${q}` : ""}`);
+      return await fetchAndMap(raw);
+    } catch (primaryError) {
+      try {
+        const localBase = (typeof window !== "undefined" && window.location?.origin)
+          ? `${window.location.origin}/api`
+          : "/api";
+        const resp = await fetch(`${localBase}/proxy/device-alerts${q ? `?${q}` : ""}`, {
+          method: "GET",
+          headers: { Accept: "application/json" },
+        });
+        const text = await resp.text();
+        let rawProxy: any;
+        try { rawProxy = JSON.parse(text); } catch { rawProxy = text; }
+        return await fetchAndMap(rawProxy);
+      } catch (error) {
+        return {
+          success: true,
+          data: [],
+          message: "",
+          timestamp: new Date().toISOString(),
+          pagination: { page: params?.page ?? 1, limit: params?.limit ?? 0, total: 0, totalPages: 0 },
+        } as PaginatedResponse<DeviceAlert>;
+      }
+    }
+  }
+
   // Device endpoints
   async getDevices(params?: {
     page?: number;
@@ -880,52 +996,147 @@ class ApiClient {
     }
   }
 
+  // async createDevice(
+  //   device: DeviceCreateUpdate,
+  // ): Promise<ApiResponse<Device>> {
+  //  const sessionData = sessionStorage.getItem("currentUser"); // 👈 replace with your actual key name
+  //   if (sessionData) {
+  //     const parsed = JSON.parse(sessionData);
+  //    // console.log("udId:", parsed.userData.udId); // 👉 1
+
+  //   // Build body with only allowed fields
+  //   const body: any = {
+  //     name: device.name,
+  //     type: device.type,
+  //     status: device.status,
+  //     performedBy: parsed.userData.udId ,
+  //     ...(device.modelName !== undefined ? { modelName: device.modelName } : {}),
+  //   };
+
+  //   try {
+  //     return await this.request<ApiResponse<Device>>("/Device", {
+  //       method: "POST",
+  //       body: JSON.stringify(body),
+  //     });
+  //   } catch (primaryError) {
+  //     return await this.request<ApiResponse<Device>>("/devices", {
+  //       method: "POST",
+  //       body: JSON.stringify(body),
+  //     });
+  //   }
+  // }
+  // }
+
   async createDevice(
     device: DeviceCreateUpdate,
   ): Promise<ApiResponse<Device>> {
-    // Build body with only allowed fields
-    const body: any = {
-      name: device.name,
-      type: device.type,
-      status: device.status,
-      ...(device.modelName !== undefined ? { modelName: device.modelName } : {}),
-    };
+    const sessionData = sessionStorage.getItem("currentUser"); // 👈 replace with your actual key name
+    let body: any = {};
+
+    if (sessionData) {
+      const parsed = JSON.parse(sessionData);
+
+      // Build body with only allowed fields
+      body = {
+        name: device.name,
+        type: device.type,
+        status: device.status,
+        performedBy: parsed.userData.udId,
+        ...(device.modelName !== undefined ? { modelName: device.modelName } : {}),
+      };
+    }
 
     try {
-      return await this.request<ApiResponse<Device>>("/Device", {
+      const response = await this.request<any>("/Device", {
         method: "POST",
         body: JSON.stringify(body),
       });
-    } catch (primaryError) {
-      return await this.request<ApiResponse<Device>>("/devices", {
-        method: "POST",
-        body: JSON.stringify(body),
-      });
+
+      return {
+        success: (response?.status_code ?? 200) >= 200 && (response?.status_code ?? 200) < 300,
+        message: response.message ?? "Device created successfully",
+        data: response.data ?? null,
+        timestamp: response.timestamp ?? new Date().toISOString(),
+      };
+    } catch (primaryrror) {
+
+      return {
+        success: false,
+        message: "Failed to create device",
+        data: null,
+        timestamp: new Date().toISOString(),
+      };
+
     }
   }
+
+
+  // async updateDevice(
+  //   id: string,
+  //   device: Partial<DeviceCreateUpdate>,
+  // ): Promise<ApiResponse<Device>> {
+  //   // Build body with only allowed fields
+  //   const body: any = {
+  //     ...(device.name !== undefined ? { name: device.name } : {}),
+  //     ...(device.type !== undefined ? { type: device.type } : {}),
+  //     ...(device.status !== undefined ? { status: device.status } : {}),
+  //     ...(device.modelName !== undefined ? { modelName: device.modelName } : {}),
+  //   };
+
+  //   try {
+  //     return await this.request<ApiResponse<Device>>(`/Device/${id}`, {
+  //       method: "PUT",
+  //       body: JSON.stringify(body),
+  //     });
+  //   } catch (primaryError) {
+  //     return await this.request<ApiResponse<Device>>(`/devices/${id}`, {
+  //       method: "PUT",
+  //       body: JSON.stringify(body),
+  //     });
+  //   }
+  // }
 
   async updateDevice(
     id: string,
     device: Partial<DeviceCreateUpdate>,
   ): Promise<ApiResponse<Device>> {
+    // Get performedBy from session
+    const sessionData = sessionStorage.getItem("currentUser");
+    let performedBy: number | null = null;
+
+    if (sessionData) {
+      const parsed = JSON.parse(sessionData);
+      performedBy = parsed?.userData?.udId ?? null;
+    }
+
     // Build body with only allowed fields
     const body: any = {
       ...(device.name !== undefined ? { name: device.name } : {}),
       ...(device.type !== undefined ? { type: device.type } : {}),
       ...(device.status !== undefined ? { status: device.status } : {}),
       ...(device.modelName !== undefined ? { modelName: device.modelName } : {}),
+      ...(performedBy !== null ? { performedBy } : {}),
     };
 
     try {
-      return await this.request<ApiResponse<Device>>(`/Device/${id}`, {
+      const response = await this.request<any>(`/Device/${id}`, {
         method: "PUT",
         body: JSON.stringify(body),
       });
-    } catch (primaryError) {
-      return await this.request<ApiResponse<Device>>(`/devices/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(body),
-      });
+
+      return {
+        success: (response?.status_code ?? 200) >= 200 && (response?.status_code ?? 200) < 300,
+        message: response.message ?? "Device updated successfully",
+        data: response.data ?? null,
+        timestamp: response.timestamp ?? new Date().toISOString(),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: "Failed to update device",
+        data: null,
+        timestamp: new Date().toISOString(),
+      };
     }
   }
 
@@ -1075,6 +1286,27 @@ class ApiClient {
     });
   }
 
+  // AssetProperties ByType endpoint (e.g., /AssetProperties/ByType/pipeline)
+  async getAssetPropertiesByType(type: string): Promise<ApiResponse<any[]>> {
+    try {
+      const raw: any = await this.request<any>(`/AssetProperties/ByType/${encodeURIComponent(type)}`);
+      const items = Array.isArray(raw?.data) ? raw.data : Array.isArray(raw) ? raw : [];
+      return {
+        success: true,
+        data: items,
+        message: raw?.message ?? raw?.status_message ?? "",
+        timestamp: raw?.timestamp ?? new Date().toISOString(),
+      };
+    } catch (_) {
+      return {
+        success: true,
+        data: [],
+        message: "",
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
   // Survey Categories endpoints
   async getSurveyCategories(params?: { page?: number; limit?: number; search?: string; }): Promise<PaginatedResponse<SurveyCategoryType>> {
     const sp = new URLSearchParams();
@@ -1203,7 +1435,8 @@ class ApiClient {
 
   async getCatastrophe(id: string): Promise<ApiResponse<Catastrophe>> {
     try {
-      return await this.request<ApiResponse<Catastrophe>>(`/catastrophes/${id}`);
+      debugger
+      return await this.request<ApiResponse<Catastrophe>>(`/surveyEntries/${id}`);
     } catch (error) {
       // Fallback to mock data
       const catastrophe = mockCatastrophes.find(c => c.id === id);
@@ -1217,9 +1450,12 @@ class ApiClient {
   async createCatastrophe(
     catastrophe: Omit<Catastrophe, "id" | "reportedAt">,
   ): Promise<ApiResponse<Catastrophe>> {
-    return this.request<ApiResponse<Catastrophe>>("/catastrophes", {
+    const { coordinates, severity, status, pipelineId, ...filteredData } = catastrophe;
+
+    console.log(filteredData);
+    return this.request<ApiResponse<Catastrophe>>("/surveyEntries", {
       method: "POST",
-      body: JSON.stringify(catastrophe),
+      body: JSON.stringify(filteredData),
     });
   }
 
@@ -1304,7 +1540,7 @@ class ApiClient {
       surveyId,
       surveyName: surveyName ?? undefined,
       fromDate: from ? String(from) : new Date().toISOString(),
-      toDate: to ? String(to) : new Date(Date.now() + 7*24*60*60*1000).toISOString(),
+      toDate: to ? String(to) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
       isActive,
       createdAt: String(createdAt),
     } as DeviceAssignment;
@@ -1501,7 +1737,7 @@ class ApiClient {
     const statusRaw = (raw.status ?? raw.Status ?? raw.smStatus ?? raw.SM_STATUS ?? "ACTIVE").toString();
     const status = statusRaw.toUpperCase() === "CLOSED" ? "CLOSED" : "ACTIVE";
 
-    const createdBy = String(raw.createdBy ?? raw.CreatedBy ??  raw.createdByName ?? "");
+    const createdBy = String(raw.createdBy ?? raw.CreatedBy ?? raw.createdByName ?? "");
     const createdAt = String(raw.createdAt ?? raw.CreatedAt ?? raw.timestamp ?? new Date().toISOString());
     const updatedAt = String(raw.updatedAt ?? raw.UpdatedAt ?? createdAt);
 
@@ -1673,77 +1909,175 @@ class ApiClient {
     return createMockApiResponse(item);
   }
 
-  async createSurveyMaster(payload: Partial<AdminSurvey>): Promise<ApiResponse<AdminSurvey>> {
-    const body: any = {
-      SmName: payload.name,
-      ScId: payload.categoryId,
-      SmStartDate: payload.startDate,
-      SmEndDate: payload.endDate,
-      SmStatus: payload.status,
-    };
-    const tryPaths = [`/SurveyMaster`];
+  // async createSurveyMaster(payload: Partial<AdminSurvey>): Promise<ApiResponse<AdminSurvey>> {
+  //   const body: any = {
+  //     SmName: payload.name,
+  //     ScId: payload.categoryId,
+  //     SmStartDate: payload.startDate,
+  //     SmEndDate: payload.endDate,
+  //     SmStatus: payload.status,
+  //   };
+  //   const tryPaths = [`/SurveyMaster`];
 
-    for (const path of tryPaths) {
-      try {
-        const raw = await this.request<any>(path, { method: "POST", body: JSON.stringify(body) });
-        const item = this.mapSurveyMaster(raw?.data ?? raw);
-        return { success: true, data: item, timestamp: new Date().toISOString(), message: raw?.message };
-      } catch (_) {
-        // try next
-      }
+  //   for (const path of tryPaths) {
+  //     try {
+  //       const raw = await this.request<any>(path, { method: "POST", body: JSON.stringify(body) });
+  //       const item = this.mapSurveyMaster(raw?.data ?? raw);
+  //       return { success: true, data: item, timestamp: new Date().toISOString(), message: raw?.message };
+  //     } catch (_) {
+  //       // try next
+  //     }
+  //   }
+
+  //   const now = new Date().toISOString();
+  //   const item: AdminSurvey = {
+  //     id: `SUR_${Date.now()}`,
+  //     name: String(payload.name || "New Survey"),
+  //     categoryId: String(payload.categoryId || ""),
+  //     categoryName: undefined,
+  //     startDate: String(payload.startDate || now.slice(0, 10)),
+  //     endDate: String(payload.endDate || now.slice(0, 10)),
+  //     status: (payload.status as any) || "ACTIVE",
+  //     createdBy: "System",
+  //     createdAt: now,
+  //     updatedAt: now,
+  //   } as AdminSurvey;
+  //   return createMockApiResponse(item);
+  // }
+
+  //************************ */
+
+  async createSurveyMaster(survey: Partial<AdminSurvey>): Promise<ApiResponse<AdminSurvey>> 
+  {
+    const sessionData = sessionStorage.getItem("currentUser"); // 👈 update if your key is different
+    let body: any = {};
+
+    if (sessionData) {
+    const parsed = JSON.parse(sessionData);
+
+    // Build body with only allowed fields
+    body = {
+      SmName: survey.name,
+      ScId: survey.categoryId,
+      SmStartDate: survey.startDate,
+      SmEndDate: survey.endDate,
+      SmStatus: survey.status,
+      performedBy: parsed.userData.udId, // 👈 add performedBy
+    };
     }
 
-    const now = new Date().toISOString();
-    const item: AdminSurvey = {
-      id: `SUR_${Date.now()}`,
-      name: String(payload.name || "New Survey"),
-      categoryId: String(payload.categoryId || ""),
-      categoryName: undefined,
-      startDate: String(payload.startDate || now.slice(0, 10)),
-      endDate: String(payload.endDate || now.slice(0, 10)),
-      status: (payload.status as any) || "ACTIVE",
-      createdBy: "System",
-      createdAt: now,
-      updatedAt: now,
-    } as AdminSurvey;
-    return createMockApiResponse(item);
+    try {
+    const response = await this.request<any>("/SurveyMaster", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+
+    return {
+      success:
+        (response?.status_code ?? 200) >= 200 &&
+        (response?.status_code ?? 200) < 300,
+      message: response.message ?? "Survey created successfully",
+      data: this.mapSurveyMaster(response?.data ?? response),
+      timestamp: response.timestamp ?? new Date().toISOString(),
+    };
+    } catch (error) {
+    return {
+      success: false,
+      message: "Failed to create survey",
+      data: null,
+      timestamp: new Date().toISOString(),
+    };
+    }
   }
 
-  async updateSurveyMaster(id: string, payload: Partial<AdminSurvey>): Promise<ApiResponse<AdminSurvey>> {
-    const body: any = {
-      ...(payload.name !== undefined ? { SmName: payload.name } : {}),
-      ...(payload.categoryId !== undefined ? { ScId: payload.categoryId } : {}),
-      ...(payload.startDate !== undefined ? { SmStartDate: payload.startDate } : {}),
-      ...(payload.endDate !== undefined ? { SmEndDate: payload.endDate } : {}),
-      ...(payload.status !== undefined ? { SmStatus: payload.status } : {}),
-    };
+  //************************ */
 
-    const tryPaths = [`/SurveyMaster/${id}`];
-    for (const path of tryPaths) {
-      try {
-        const raw = await this.request<any>(path, { method: "PUT", body: JSON.stringify(body) });
-        const item = this.mapSurveyMaster(raw?.data ?? raw);
-        return { success: true, data: item, timestamp: new Date().toISOString(), message: raw?.message };
-      } catch (_) {
-        // try next
-      }
+  // async updateSurveyMaster(id: string, payload: Partial<AdminSurvey>): Promise<ApiResponse<AdminSurvey>> {
+  //   const body: any = {
+  //     ...(payload.name !== undefined ? { SmName: payload.name } : {}),
+  //     ...(payload.categoryId !== undefined ? { ScId: payload.categoryId } : {}),
+  //     ...(payload.startDate !== undefined ? { SmStartDate: payload.startDate } : {}),
+  //     ...(payload.endDate !== undefined ? { SmEndDate: payload.endDate } : {}),
+  //     ...(payload.status !== undefined ? { SmStatus: payload.status } : {}),
+  //   };
+
+  //   const tryPaths = [`/SurveyMaster/${id}`];
+  //   for (const path of tryPaths) {
+  //     try {
+  //       const raw = await this.request<any>(path, { method: "PUT", body: JSON.stringify(body) });
+  //       const item = this.mapSurveyMaster(raw?.data ?? raw);
+  //       return { success: true, data: item, timestamp: new Date().toISOString(), message: raw?.message };
+  //     } catch (_) {
+  //       // try next
+  //     }
+  //   }
+
+  //   const now = new Date().toISOString();
+  //   const item: AdminSurvey = {
+  //     id,
+  //     name: String(payload.name || `Survey ${id}`),
+  //     categoryId: String(payload.categoryId || ""),
+  //     categoryName: undefined,
+  //     startDate: String(payload.startDate || now.slice(0, 10)),
+  //     endDate: String(payload.endDate || now.slice(0, 10)),
+  //     status: (payload.status as any) || "ACTIVE",
+  //     createdBy: "System",
+  //     createdAt: now,
+  //     updatedAt: now,
+  //   } as AdminSurvey;
+  //   return createMockApiResponse(item);
+  // }
+
+  //***************************** */
+  async updateSurveyMaster(
+  id: string,
+  payload: Partial<AdminSurvey>
+  ): Promise<ApiResponse<AdminSurvey>> {
+    // Get performedBy from session
+    const sessionData = sessionStorage.getItem("currentUser");
+    let performedBy: number | null = null;
+
+    if (sessionData) {
+    const parsed = JSON.parse(sessionData);
+    performedBy = parsed?.userData?.udId ?? null;
     }
 
-    const now = new Date().toISOString();
-    const item: AdminSurvey = {
-      id,
-      name: String(payload.name || `Survey ${id}`),
-      categoryId: String(payload.categoryId || ""),
-      categoryName: undefined,
-      startDate: String(payload.startDate || now.slice(0, 10)),
-      endDate: String(payload.endDate || now.slice(0, 10)),
-      status: (payload.status as any) || "ACTIVE",
-      createdBy: "System",
-      createdAt: now,
-      updatedAt: now,
-    } as AdminSurvey;
-    return createMockApiResponse(item);
+    // Build body with only allowed fields
+    const body: any = {
+    ...(payload.name !== undefined ? { SmName: payload.name } : {}),
+    ...(payload.categoryId !== undefined ? { ScId: payload.categoryId } : {}),
+    ...(payload.startDate !== undefined ? { SmStartDate: payload.startDate } : {}),
+    ...(payload.endDate !== undefined ? { SmEndDate: payload.endDate } : {}),
+    ...(payload.status !== undefined ? { SmStatus: payload.status } : {}),
+    ...(performedBy !== null ? { performedBy } : {}),
+    };
+
+    try {
+    const response = await this.request<any>(`/SurveyMaster/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    });
+
+    return {
+      success:
+        (response?.status_code ?? 200) >= 200 &&
+        (response?.status_code ?? 200) < 300,
+      message: response.message ?? "Survey updated successfully",
+      data: this.mapSurveyMaster(response?.data ?? response),
+      timestamp: response.timestamp ?? new Date().toISOString(),
+    };
+    } catch (error) {
+    return {
+      success: false,
+      message: "Failed to update survey",
+      data: null,
+      timestamp: new Date().toISOString(),
+    };
+    }
   }
+
+
+  //***************************** */
 
   async deleteSurveyMaster(id: string): Promise<ApiResponse<void>> {
     const tryPaths = [`/SurveyMaster/${id}`];
@@ -1783,7 +2117,7 @@ class ApiClient {
           id: "OP-001",
           valveId: "VALVE_001",
           operation: "CLOSE",
-          status: "COMPLETED", 
+          status: "COMPLETED",
           timestamp: new Date(2024, 0, 15, 14, 30, 0).toISOString(),
           operator: "John Smith",
           reason: "Emergency closure due to gas leak",
@@ -1791,7 +2125,7 @@ class ApiClient {
         },
         {
           id: "OP-002",
-          valveId: "VALVE_002", 
+          valveId: "VALVE_002",
           operation: "CLOSE",
           status: "COMPLETED",
           timestamp: new Date(2024, 0, 10, 9, 15, 0).toISOString(),
@@ -1800,7 +2134,7 @@ class ApiClient {
           notes: "Isolation for pressure drop investigation",
         },
       ];
-      
+
       let filteredOperations = mockOperations;
       if (params?.valveId) {
         filteredOperations = filteredOperations.filter(op => op.valveId === params.valveId);
@@ -1848,7 +2182,7 @@ class ApiClient {
     operation: Partial<ValveOperation>,
   ): Promise<ApiResponse<ValveOperation>> {
     return this.request<ApiResponse<ValveOperation>>(`/valve-operations/${id}`, {
-      method: "PUT", 
+      method: "PUT",
       body: JSON.stringify(operation),
     });
   }
@@ -2022,23 +2356,74 @@ class ApiClient {
     }
   }
 
-  async updateUser(id: string, userData: UserUpdateRequest): Promise<UserRegistrationResponse> {
-    try {
-      return await this.request<UserRegistrationResponse>(`/User/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(userData),
-      });
-    } catch (error) {
-      console.error("User update failed, using mock response:", error);
+  // async updateUser(id: string, userData: UserUpdateRequest): Promise<UserRegistrationResponse> {
+  //   try {
+  //     return await this.request<UserRegistrationResponse>(`/User/${id}`, {
+  //       method: "PUT",
+  //       body: JSON.stringify(userData),
+  //     });
+  //   } catch (error) {
+  //     console.error("User update failed, using mock response:", error);
 
-      return {
-        status_code: 200,
-        status_message: "success",
-        message: "User updated successfully (mock)",
-        data: id,
-      };
-    }
+  //     return {
+  //       status_code: 200,
+  //       status_message: "success",
+  //       message: "User updated successfully (mock)",
+  //       data: id,
+  //     };
+  //   }
+  // }
+
+  //***************************************/
+  async updateUser(
+  id: string,
+  user: UserUpdateRequest
+  ): Promise<ApiResponse<UserRegistrationResponse>> {
+  // Get performedBy from session
+  const sessionData = sessionStorage.getItem("currentUser");
+  let performedBy: number | null = null;
+
+  if (sessionData) {
+    const parsed = JSON.parse(sessionData);
+    performedBy = parsed?.userData?.udId ?? null;
   }
+
+  // Build body with only allowed fields
+  const body: any = {
+    ...(user.email !== undefined ? { email: user.email } : {}),
+    ...(user.firstName !== undefined ? { firstName: user.firstName } : {}),
+    ...(user.lastName !== undefined ? { lastName: user.lastName } : {}),
+    ...(user.role !== undefined ? { role: user.role } : {}),
+    ...(user.company !== undefined ? { company: user.company } : {}),
+    ...(user.isActive !== undefined ? { isActive: user.isActive } : {}),
+    ...(performedBy !== null ? { performedBy } : {}),
+  };
+
+  try {
+    const response = await this.request<any>(`/User/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    });
+
+    return {
+      success: (response?.status_code ?? 200) >= 200 && (response?.status_code ?? 200) < 300,
+      message: response.message ?? "User updated successfully",
+      data: response.data ?? null,
+      timestamp: response.timestamp ?? new Date().toISOString(),
+    };
+  } catch (error) {
+    console.error("User update failed:", error);
+
+    return {
+      success: false,
+      message: "Failed to update user",
+      data: null,
+      timestamp: new Date().toISOString(),
+    };
+  }
+  }
+
+  //***************************************/
 
   async deleteUser(id: string): Promise<UserRegistrationResponse> {
     try {
@@ -2158,7 +2543,7 @@ class ApiClient {
         if (s === "OFFLINE" || s === "DISCONNECTED") return "INACTIVE";
         if (s === "MAINTENANCE" || s === "SERVICE") return "MAINTENANCE";
         if (s === "ERROR" || s === "FAULT") return "ERROR";
-        const allowed = new Set(["ACTIVE","INACTIVE","MAINTENANCE","ERROR"]);
+        const allowed = new Set(["ACTIVE", "INACTIVE", "MAINTENANCE", "ERROR"]);
         return (allowed.has(s) ? (s as Device["status"]) : "ACTIVE");
       };
 
@@ -2256,6 +2641,55 @@ class ApiClient {
     }
   }
 
+  // Survey entries summary by device and date
+  async getAssetPropertyEntriesByDevice(params: { deviceId: string | number; entryDate: string | Date }): Promise<{ snapshots: any[]; raw: any; }> {
+    const { deviceId, entryDate } = params;
+
+    const formatDate = (d: string | Date): string => {
+      if (typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+      const dt = typeof d === "string" ? new Date(d) : d;
+      if (Number.isNaN(dt.getTime())) return new Date().toISOString().slice(0, 10);
+      const y = dt.getFullYear();
+      const m = String(dt.getMonth() + 1).padStart(2, "0");
+      const da = String(dt.getDate()).padStart(2, "0");
+      return `${y}-${m}-${da}`;
+    };
+
+    const sp = new URLSearchParams();
+    sp.append("deviceId", String(deviceId));
+    sp.append("entryDate", formatDate(entryDate));
+
+    try {
+      const raw: any = await this.request<any>(`/AssetProperties/summary/EntriesByDevice?${sp.toString()}`);
+
+      const candidates: any[] = [
+        raw?.data?.snapshots,
+        raw?.data?.snapshot,
+        raw?.data?.items,
+        raw?.data?.entries,
+        raw?.snapshots,
+        raw?.snapshot,
+        raw?.items,
+        raw?.entries,
+        Array.isArray(raw?.data) ? raw.data : undefined,
+        Array.isArray(raw) ? raw : undefined,
+      ].filter(Boolean);
+
+      let snapshots: any[] = [];
+      for (const c of candidates) {
+        if (Array.isArray(c)) {
+          snapshots = c;
+          break;
+        }
+      }
+
+      snapshots = (snapshots || []).map((s) => (s && typeof s === "object" ? s : { value: s }));
+
+      return { snapshots, raw };
+    } catch (error) {
+      return { snapshots: [], raw: null };
+    }
+  }
 }
 
 // Compatibility helpers for backward compatibility with existing components
@@ -2294,8 +2728,8 @@ export function toLegacyPipelineSegment(pipeline: PipelineSegment): LegacyPipeli
 export function fromLegacyPipelineSegment(legacy: Partial<LegacyPipelineSegment>): Partial<PipelineSegment> {
   const coordinates: GeolocationPoint[] = legacy.coordinates?.map((coord, index) => ({
     ...coord,
-    pointType: index === 0 ? "START" : 
-               index === (legacy.coordinates?.length || 1) - 1 ? "END" : "NODE"
+    pointType: index === 0 ? "START" :
+      index === (legacy.coordinates?.length || 1) - 1 ? "END" : "NODE"
   })) || [];
 
   return {

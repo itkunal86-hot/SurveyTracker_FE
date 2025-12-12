@@ -19,6 +19,7 @@ import { surveyCategoryRoutes } from "./routes/survey-categories";
 import { assetTypeRoutes } from "./routes/asset-types";
 import { assetPropertyRoutes } from "./routes/asset-properties";
 import { deviceLogProxyRoutes } from "./routes/device-log-proxy";
+import { deviceAlertsProxyRoutes } from "./routes/device-alerts-proxy";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -139,6 +140,7 @@ app.use("/api/survey-categories", surveyCategoryRoutes);
 app.use("/api/asset-types", assetTypeRoutes);
 app.use("/api/asset-properties", assetPropertyRoutes);
 app.use("/api/proxy/device-log", deviceLogProxyRoutes);
+app.use("/api/proxy/device-alerts", deviceAlertsProxyRoutes);
 
 // 404 handler
 app.use("*", (req, res) => {

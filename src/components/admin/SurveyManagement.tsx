@@ -57,33 +57,90 @@ export default function SurveyManagement() {
     return Object.keys(newErrors).length === 0;
   };
 
+  // const handleSubmit = async () => {
+  //   if (!validateForm()) return;
+  //   try {
+  //     if (editingSurvey) {
+  //       await updateSurvey.mutateAsync({ id: editingSurvey.id, payload: { ...formData } });
+  //       toast({ title: "Survey updated" });
+  //     } else {
+  //       await createSurvey.mutateAsync({ ...formData });
+  //       toast({ title: "Survey created" });
+  //     }
+  //     resetForm();
+  //   } catch (error) {
+  //     setErrors({ name: (error as Error).message || "Failed to save survey" });
+  //   }
+  // };
+
+  // const handleEdit = (survey: Survey) => {
+  //   setEditingSurvey(survey);
+  //   setFormData({
+  //     name: survey.name,
+  //     categoryId: survey.categoryId,
+  //     startDate: survey.startDate,
+  //     endDate: survey.endDate,
+  //     status: survey.status,
+  //   });
+  //   setIsDialogOpen(true);
+  // };
+
+
+  //****************************** */
+
   const handleSubmit = async () => {
-    if (!validateForm()) return;
-    try {
-      if (editingSurvey) {
-        await updateSurvey.mutateAsync({ id: editingSurvey.id, payload: { ...formData } });
-        toast({ title: "Survey updated" });
-      } else {
-        await createSurvey.mutateAsync({ ...formData });
-        toast({ title: "Survey created" });
-      }
+  if (!validateForm()) return;
+
+  const payload = {
+    name: formData.name.trim(),
+    categoryId: formData.categoryId,
+    startDate: formData.startDate,
+    endDate: formData.endDate,
+    status: formData.status,
+  };
+
+  let response;
+  try {
+    if (editingSurvey) {
+      response = await updateSurvey.mutateAsync({ id: editingSurvey.id, payload });
+    } else {
+      response = await createSurvey.mutateAsync(payload);
+    }
+
+    if (response?.success) {
+      toast({
+        title:
+          response.message ||
+          (editingSurvey ? "Survey updated successfully" : "Survey created successfully"),
+      });
       resetForm();
-    } catch (error) {
-      setErrors({ name: (error as Error).message || "Failed to save survey" });
+    } else {
+      toast({
+        title:
+          response?.message ||
+          (editingSurvey ? "Failed to update survey" : "Failed to create survey"),
+      });
+    }
+    } catch (error: any) {
+      toast({
+       title: error.message || "An unexpected error occurred",
+      });
     }
   };
 
   const handleEdit = (survey: Survey) => {
     setEditingSurvey(survey);
     setFormData({
-      name: survey.name,
-      categoryId: survey.categoryId,
-      startDate: survey.startDate,
-      endDate: survey.endDate,
-      status: survey.status,
+    name: survey.name,
+    categoryId: survey.categoryId,
+    startDate: survey.startDate,
+    endDate: survey.endDate,
+    status: survey.status,
     });
     setIsDialogOpen(true);
   };
+
+  //****************************** */
 
   const handleCloseSurvey = (id: string) => {
     if (confirm("Are you sure you want to close this survey? This action cannot be undone.")) {

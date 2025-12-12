@@ -18,6 +18,7 @@ import { useSurveyContext } from "@/contexts/SurveyContext";
 export const QUERY_KEYS = {
   devices: "devices",
   deviceLogs: "deviceLogs",
+  deviceAlerts: "deviceAlerts",
   device: "device",
   pipelines: "pipelines",
   pipeline: "pipeline",
@@ -82,6 +83,14 @@ export function useDeviceLogs(params?: { page?: number; limit?: number; status?:
     queryKey: [QUERY_KEYS.deviceLogs, effectiveParams],
     queryFn: () => apiClient.getDeviceLogs(effectiveParams),
     staleTime: 60 * 1000,
+  });
+}
+
+export function useDeviceAlerts(params?: { page?: number; limit?: number }) {
+  return useQuery({
+    queryKey: [QUERY_KEYS.deviceAlerts, params],
+    queryFn: () => apiClient.getDeviceAlerts(params),
+    staleTime: 30 * 1000,
   });
 }
 
@@ -575,6 +584,15 @@ export function useSurveyCategories(params?: { page?: number; limit?: number; se
   return useQuery({
     queryKey: [QUERY_KEYS.surveyCategories, params],
     queryFn: () => apiClient.getSurveyCategories(params),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+// Pipeline segments from AssetProperties ByType endpoint (external)
+export function usePipelineSegmentsByType(type: string = "pipeline") {
+  return useQuery({
+    queryKey: ["assetPropertiesByType", type],
+    queryFn: () => apiClient.getAssetPropertiesByType(type),
     staleTime: 5 * 60 * 1000,
   });
 }

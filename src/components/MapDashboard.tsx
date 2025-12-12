@@ -20,18 +20,17 @@ import {
 } from "lucide-react";
 import { useDeviceLogs, usePipelines, useValves } from "@/hooks/useApiQueries";
 import {
-  mockInfrastructureDevices,
   mockInfrastructurePipelines,
   mockInfrastructureValves,
   mockControlStations,
   getAssetColorByStatus,
   getPipelineColorByType,
   getValveColorByClass,
-  type InfrastructureDevice,
   type InfrastructurePipeline,
   type InfrastructureValve,
   type ControlStation,
 } from "@/lib/mockAssetData";
+import { useSurveyContext } from "@/contexts/SurveyContext";
 
 // Legacy interfaces for backward compatibility with LeafletMap
 interface DeviceLocation {
@@ -77,13 +76,16 @@ export const MapDashboard = () => {
   const [showAboveGround, setShowAboveGround] = useState(true);
   const [showServiceLines, setShowServiceLines] = useState(true);
 
+  // Get current survey context
+  const { currentSurvey } = useSurveyContext();
+
   // API hooks
   const {
     data: devicesResponse,
     isLoading: loadingDevices,
     error: devicesError,
     refetch: refetchDevices,
-  } = useDeviceLogs({ limit: 100 });
+  } = useDeviceLogs({ limit: 100, surveyId: currentSurvey?.id });
   const {
     data: pipelinesResponse,
     isLoading: loadingPipelines,
@@ -97,22 +99,22 @@ export const MapDashboard = () => {
     refetch: refetchValves,
   } = useValves({ limit: 100 });
 
-  // Transform infrastructure data to format compatible with existing LeafletMap
+  // Transform device log data to format compatible with existing LeafletMap
   const transformedDevices: DeviceLocation[] = useMemo(() => {
-    return mockInfrastructureDevices.map((device) => ({
+    const devices = Array.isArray(devicesResponse?.data) ? devicesResponse.data : [];
+    return devices.map((device) => ({
       id: device.id,
       name: device.name,
-      lat: device.coordinates.lat,
-      lng: device.coordinates.lng,
-      status: device.status === "ACTIVE" ? "active" : 
+      lat: device.coordinates?.lat ?? 0,
+      lng: device.coordinates?.lng ?? 0,
+      status: device.status === "ACTIVE" ? "active" :
               device.status === "INACTIVE" ? "offline" :
               device.status === "MAINTENANCE" ? "maintenance" : "error",
       lastPing: device.lastSeen ? new Date(device.lastSeen).toLocaleString() : "Just now",
       type: device.type,
-      purpose: device.purpose,
       batteryLevel: device.batteryLevel,
     }));
-  }, []);
+  }, [devicesResponse?.data]);
 
   const transformedPipelines: PipelineSegment[] = useMemo(() => {
     return mockInfrastructurePipelines

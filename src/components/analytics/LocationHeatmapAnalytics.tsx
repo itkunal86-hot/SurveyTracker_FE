@@ -43,18 +43,18 @@ import {
   Cell,
 } from "recharts";
 import {
-  mockInfrastructureDevices,
   mockInfrastructurePipelines,
   mockInfrastructureValves,
   mockControlStations,
   getAssetColorByStatus,
   getPipelineColorByType,
   getValveColorByClass,
-  InfrastructureDevice,
   InfrastructurePipeline,
   InfrastructureValve,
   ControlStation,
 } from "@/lib/mockAssetData";
+import { useDeviceLogs } from "@/hooks/useApiQueries";
+import { useSurveyContext } from "@/contexts/SurveyContext";
 
 interface HeatmapFilters {
   showDevices: boolean;
@@ -67,13 +67,13 @@ interface HeatmapFilters {
 }
 
 // Generate usage data based on infrastructure assets
-const generateUsageData = () => {
+const generateUsageData = (devices: any[] = []) => {
   const hourlyData = Array.from({ length: 24 }, (_, i) => {
     const hour = i.toString().padStart(2, '0') + ':00';
     const baseUsage = Math.sin((i - 6) * Math.PI / 12) * 50 + 100;
     const peakHours = i >= 8 && i <= 18;
     const usage = Math.max(0, baseUsage + (peakHours ? Math.random() * 30 : Math.random() * 15));
-    
+
     return {
       hour,
       usage: Math.round(usage),
@@ -94,7 +94,7 @@ const generateUsageData = () => {
     type: pipeline.type,
   }));
 
-  const deviceUtilization = mockInfrastructureDevices.map(device => ({
+  const deviceUtilization = devices.map((device: any) => ({
     id: device.id,
     name: device.name,
     utilization: device.batteryLevel || Math.round(Math.random() * 100),
@@ -132,7 +132,7 @@ const generateHeatmapDensity = (assets: any[], latBounds: [number, number], lngB
       const lng = lngBounds[0] + (lngBounds[1] - lngBounds[0]) * (j / gridSize);
       
       // Count assets within a radius
-      const radius = 0.01; // ~1km
+      const radius = 0.1; // ~1km
       const count = assets.filter(asset => {
         const distance = Math.sqrt(
           Math.pow(asset.coordinates.lat - lat, 2) + 
@@ -184,7 +184,7 @@ const HeatmapLeafletMap = ({ filteredAssets, heatmapDensity, filters }: HeatmapL
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
 
-    const map = L.map(mapRef.current).setView([19.0760, 72.8777], 13); // Mumbai coordinates
+    const map = L.map(mapRef.current).setView([40.7589, -73.9851], 13); // New york coordinates
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: "© OpenStreetMap contributors",
@@ -211,28 +211,25 @@ const HeatmapLeafletMap = ({ filteredAssets, heatmapDensity, filters }: HeatmapL
   useEffect(() => {
     if (!layersRef.current) return;
 
-    const { assets: assetLayer, heatmap: heatmapLayer, pipelines: pipelineLayer } = layersRef.current;
+    //const { assets: assetLayer, heatmap: heatmapLayer, pipelines: pipelineLayer } = layersRef.current;
+    const { heatmap: heatmapLayer } = layersRef.current;
 
     // Clear existing layers
-    assetLayer.clearLayers();
+    //assetLayer.clearLayers();
     heatmapLayer.clearLayers();
-    pipelineLayer.clearLayers();
+    //pipelineLayer.clearLayers();
 
-    // Add heatmap density circles
-    heatmapDensity.forEach((point) => {
-      const radius = 20 + point.density * 30; // Scale radius based on density
-      const color = point.intensity > 0.7 ? '#ef4444' :
-                   point.intensity > 0.4 ? '#f97316' : '#eab308';
-
-      const circle = L.circle([point.lat, point.lng], {
-        radius: radius,
-        color: color,
-        fillColor: color,
-        fillOpacity: 0.3,
-        weight: 1,
+    // Add circles only for the visible assets, not for the entire grid
+    filteredAssets.forEach((asset) => {
+      const circle = L.circle([asset.coordinates.lat, asset.coordinates.lng], {
+        radius: 100,
+        color: '#f97316',
+        fillColor: '#f97316',
+        fillOpacity: 0.4,
+        weight: 2,
       });
 
-      circle.bindTooltip(`Density: ${point.density} assets`, {
+      circle.bindTooltip(`${asset.name}`, {
         permanent: false,
         direction: 'top'
       });
@@ -261,34 +258,10 @@ const HeatmapLeafletMap = ({ filteredAssets, heatmapDensity, filters }: HeatmapL
             </div>
           `);
 
-          pipelineLayer.addLayer(polyline);
+          //pipelineLayer.addLayer(polyline);
         }
       });
     }
-
-    // Add asset markers
-    filteredAssets.forEach((asset) => {
-      const marker = L.circleMarker([asset.coordinates.lat, asset.coordinates.lng], {
-        radius: 8,
-        fillColor: getAssetColorByStatus(asset.status, asset.assetType),
-        color: "white",
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 0.8,
-      });
-
-      marker.bindPopup(`
-        <div style="font-family: system-ui; padding: 4px;">
-          <strong>${asset.name}</strong><br/>
-          <span style="color: #666;">Type: ${asset.assetType}</span><br/>
-          <span style="color: #666;">Status: ${asset.status}</span><br/>
-          ${asset.pressure ? `<span style="color: #666;">Pressure: ${asset.pressure} Bar</span><br/>` : ''}
-          ${asset.batteryLevel ? `<span style="color: #666;">Battery: ${asset.batteryLevel}%</span><br/>` : ''}
-        </div>
-      `);
-
-      assetLayer.addLayer(marker);
-    });
 
   }, [filteredAssets, heatmapDensity, filters]);
 
@@ -311,50 +284,66 @@ export const LocationHeatmapAnalytics = () => {
     showControlStations: true,
     timeRange: "24h",
     statusFilter: "all",
-    assetType: "all",
+    assetType: "device",
   });
 
-  const usageData = useMemo(() => generateUsageData(), []);
-  
+  // Get current survey context
+  const { currentSurvey } = useSurveyContext();
+
+  // Fetch device logs from API
+  const {
+    data: devicesResponse,
+    isLoading: loadingDevices,
+    error: devicesError,
+    refetch: refetchDevices,
+  } = useDeviceLogs({ limit: 100, surveyId: currentSurvey?.id });
+
+  const devices = Array.isArray(devicesResponse?.data) ? devicesResponse.data : [];
+  console.log(devices)
+  const usageData = useMemo(() => generateUsageData(devices), [devices]);
+
   const filteredAssets = useMemo(() => {
     let assets: any[] = [];
-    
     if (filters.showDevices) {
-      assets.push(...mockInfrastructureDevices.map(d => ({ ...d, assetType: 'device' })));
+      assets.push(...devices.map((d: any) => ({
+        ...d,
+        coordinates: d.coordinates || { lat: 0, lng: 0 },
+        assetType: 'device'
+      })));
     }
-    if (filters.showValves) {
-      assets.push(...mockInfrastructureValves.map(v => ({ ...v, assetType: 'valve' })));
-    }
-    if (filters.showControlStations) {
-      assets.push(...mockControlStations.map(c => ({ ...c, assetType: 'controlStation' })));
-    }
-    
+    // if (filters.showValves) {
+    //   assets.push(...mockInfrastructureValves.map(v => ({ ...v, assetType: 'valve' })));
+    // }
+    // if (filters.showControlStations) {
+    //   assets.push(...mockControlStations.map(c => ({ ...c, assetType: 'controlStation' })));
+    // }
+
     // Apply status filter
-    if (filters.statusFilter !== "all") {
-      assets = assets.filter(asset => asset.status === filters.statusFilter);
-    }
-    
-    // Apply asset type filter
-    if (filters.assetType !== "all") {
-      assets = assets.filter(asset => asset.assetType === filters.assetType);
-    }
-    
+    // if (filters.statusFilter !== "all") {
+    //   assets = assets.filter(asset => asset.status === filters.statusFilter);
+    // }
+
+    // // Apply asset type filter
+    // if (filters.assetType !== "all") {
+    //   assets = assets.filter(asset => asset.assetType === filters.assetType);
+    // }
+
     return assets;
-  }, [filters]);
+  }, [devices, filters]);
 
   const heatmapDensity = useMemo(() => {
-    const latBounds: [number, number] = [19.065, 19.090];
-    const lngBounds: [number, number] = [72.870, 72.895];
+    const latBounds: [number, number] = [40.7589, 40.7000];
+    const lngBounds: [number, number] = [-73.9851, -74.0651];
     return generateHeatmapDensity(filteredAssets, latBounds, lngBounds);
   }, [filteredAssets]);
 
   const summaryStats = useMemo(() => {
-    const totalDevices = mockInfrastructureDevices.length;
-    const activeDevices = mockInfrastructureDevices.filter(d => d.status === 'ACTIVE').length;
+    const totalDevices = devices.length;
+    const activeDevices = devices.filter((d: any) => d.status === 'ACTIVE').length;
     const totalValves = mockInfrastructureValves.length;
     const operationalPipelines = mockInfrastructurePipelines.filter(p => p.status === 'OPERATIONAL').length;
     const totalPipelines = mockInfrastructurePipelines.length;
-    
+
     return {
       totalAssets: totalDevices + totalValves + totalPipelines + mockControlStations.length,
       activeDevices: `${activeDevices}/${totalDevices}`,
@@ -363,7 +352,7 @@ export const LocationHeatmapAnalytics = () => {
       avgPressure: Math.round(usageData.hourlyData.reduce((sum, d) => sum + d.pressure, 0) / usageData.hourlyData.length),
       peakFlow: Math.max(...usageData.hourlyData.map(d => d.flowRate)),
     };
-  }, [usageData]);
+  }, [devices, usageData]);
 
   return (
     <div className="p-6 space-y-6">
@@ -472,8 +461,6 @@ export const LocationHeatmapAnalytics = () => {
       <Tabs defaultValue="heatmap" className="space-y-6">
         <TabsList>
           <TabsTrigger value="heatmap">Location Heatmap</TabsTrigger>
-          <TabsTrigger value="usage">Usage Analytics</TabsTrigger>
-          <TabsTrigger value="performance">Performance Metrics</TabsTrigger>
         </TabsList>
 
         <TabsContent value="heatmap" className="space-y-6">
@@ -488,7 +475,7 @@ export const LocationHeatmapAnalytics = () => {
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Asset Type Filters */}
-                <div className="space-y-4">
+                <div className="space-y-4 hidden">
                   <h4 className="font-medium">Asset Layers</h4>
                   
                   <div className="flex items-center justify-between">
@@ -590,166 +577,7 @@ export const LocationHeatmapAnalytics = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="usage" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Hourly Usage Pattern */}
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>24-Hour Usage Pattern</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <AreaChart data={usageData.hourlyData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="hour" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Area 
-                      type="monotone" 
-                      dataKey="usage" 
-                      stroke="#8884d8" 
-                      fill="#8884d8" 
-                      fillOpacity={0.6}
-                      name="Usage (Units)"
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="flowRate" 
-                      stroke="#82ca9d" 
-                      fill="#82ca9d" 
-                      fillOpacity={0.4}
-                      name="Flow Rate (L/s)"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
 
-            {/* Pipeline Usage Distribution */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Pipeline Usage Distribution</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={usageData.pipelineUsage}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="usage" fill="#8884d8" name="Usage (L/min)" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            {/* Device Utilization */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Device Utilization</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={usageData.deviceUtilization}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, utilization }) => `${name.split(' ')[0]}: ${utilization}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="utilization"
-                    >
-                      {usageData.deviceUtilization.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="performance" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Pressure vs Flow Correlation */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Pressure vs Flow Rate</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <ScatterChart data={usageData.hourlyData}>
-                    <CartesianGrid />
-                    <XAxis type="number" dataKey="pressure" name="Pressure" unit=" Bar" />
-                    <YAxis type="number" dataKey="flowRate" name="Flow Rate" unit=" L/s" />
-                    <Tooltip cursor={{ strokeDasharray: '3 3' }} />
-                    <Scatter name="Pressure vs Flow" data={usageData.hourlyData} fill="#8884d8" />
-                  </ScatterChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            {/* Control Station Performance */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Control Station Performance</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={usageData.pressureDistribution}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="efficiency" fill="#82ca9d" name="Efficiency %" />
-                    <Bar dataKey="pressure" fill="#8884d8" name="Pressure (Bar)" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            {/* Temperature and Pressure Trends */}
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Temperature and Pressure Trends</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={usageData.hourlyData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="hour" />
-                    <YAxis yAxisId="left" />
-                    <YAxis yAxisId="right" orientation="right" />
-                    <Tooltip />
-                    <Legend />
-                    <Line 
-                      yAxisId="left"
-                      type="monotone" 
-                      dataKey="pressure" 
-                      stroke="#8884d8" 
-                      strokeWidth={2}
-                      name="Pressure (Bar)"
-                    />
-                    <Line 
-                      yAxisId="right"
-                      type="monotone" 
-                      dataKey="temperature" 
-                      stroke="#82ca9d" 
-                      strokeWidth={2}
-                      name="Temperature (°C)"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
       </Tabs>
     </div>
   );
