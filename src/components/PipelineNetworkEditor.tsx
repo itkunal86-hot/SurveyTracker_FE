@@ -42,7 +42,7 @@ import {
 } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
-import { apiClient, PipelineSegment } from "@/lib/api";
+import { API_BASE_PATH, apiClient, PipelineSegment } from "@/lib/api";
 import { useDeviceLogs } from "@/hooks/useApiQueries";
 
 export const PipelineNetworkEditor = () => {
@@ -82,7 +82,8 @@ export const PipelineNetworkEditor = () => {
       setPropLoading(true);
       setPropError(null);
       try {
-        const url = `https://localhost:7215/api/AssetProperties/ByType/pipeline`;
+        const url = `${API_BASE_PATH}/AssetProperties/ByType/pipeline`;
+        //const url = `https://localhost:7215/api/AssetProperties/ByType/pipeline`;
         const res = await fetch(url, { signal: controller.signal });
         if (!res.ok) throw new Error(`Request failed: ${res.status}`);
         const json = await res.json();
@@ -113,7 +114,8 @@ export const PipelineNetworkEditor = () => {
     async function loadValves() {
       setValveError(null);
       try {
-        const url = `https://localhost:7215/api/AssetProperties/ByType/valve`;
+        const url = `${API_BASE_PATH}/AssetProperties/ByType/valve`;
+        //const url = `https://localhost:7215/api/AssetProperties/ByType/valve`;
         const res = await fetch(url, { signal: controller.signal });
         if (!res.ok) throw new Error(`Request failed: ${res.status}`);
         const json = await res.json();

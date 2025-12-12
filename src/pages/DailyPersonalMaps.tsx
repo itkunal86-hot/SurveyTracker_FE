@@ -38,7 +38,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { apiClient } from "@/lib/api";
+import { API_BASE_PATH, apiClient } from "@/lib/api";
 import { useSurveyContext } from "@/contexts/SurveyContext";
 
 interface Device {
@@ -582,8 +582,8 @@ const handleExportXML = async () => {
     const formattedDate = dateObj.toLocaleDateString("en-CA"); // e.g., 2025-10-01
 
     // ✅ Use XML format in the URL
-    const exportUrl = `https://localhost:7215/api/AssetProperties/summary/ExportSnapshots?deviceId=${deviceId}&entryDate=${formattedDate}&format=xml`;
-
+    //const exportUrl = `https://localhost:7215/api/AssetProperties/summary/ExportSnapshots?deviceId=${deviceId}&entryDate=${formattedDate}&format=xml`;
+    const exportUrl = `${API_BASE_PATH}/AssetProperties/summary/ExportSnapshots?deviceId=${deviceId}&entryDate=${formattedDate}&format=xml`;
     const response = await fetch(exportUrl, {
       method: "GET",
       headers: { "Accept": "application/xml" },

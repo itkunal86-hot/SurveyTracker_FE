@@ -7,6 +7,7 @@ import { LocationHeatmapAnalytics } from "@/components/analytics/LocationHeatmap
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import { useState } from "react";
 import { useDeviceAlerts } from "@/hooks/useApiQueries";
+import { API_BASE_PATH } from "@/lib/api";
 
 export const SurveyDashboard = () => {
   const [selectedLocation, setSelectedLocation] = useState("all");
@@ -56,7 +57,8 @@ useEffect(() => {
 
     try {
       setLoadingStats(true);
-      const response = await fetch(`https://localhost:7215/api/DeviceAssignments/summary/${smId}`);
+      const response = await fetch(`${API_BASE_PATH}/DeviceAssignments/summary/${smId}`);
+      //const response = await fetch(`https://localhost:7215/api/DeviceAssignments/summary/${smId}`);
       if (!response.ok) throw new Error("Failed to fetch summary data");
       const data = await response.json();
 

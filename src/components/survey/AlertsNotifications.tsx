@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertTriangle, Battery, Wifi, WifiOff, Check, Download, Clock, Smartphone, HardDrive, Activity } from "lucide-react";
 import { useDeviceAlerts } from "@/hooks/useApiQueries";
+import { API_BASE_PATH } from "@/lib/api";
 
 export const AlertsNotifications = () => {
   const [alertTypeFilter, setAlertTypeFilter] = useState("all");
@@ -102,8 +103,8 @@ const handleExportAlerts = async () => {
     console.log("Exporting alerts to CSV...");
 
     // Use your .NET API directly
-    const apiUrl = "https://localhost:7215/api/Device/alerts/export";
-
+    //const apiUrl = "https://localhost:7215/api/Device/alerts/export";
+    const apiUrl = `${API_BASE_PATH}/Device/alerts/export`;
     const response = await fetch(apiUrl, {
       method: "GET",
       headers: {
