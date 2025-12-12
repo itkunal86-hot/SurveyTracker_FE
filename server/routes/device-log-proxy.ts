@@ -4,13 +4,12 @@ import https from "https";
 export const deviceLogProxyRoutes = express.Router();
 
 const API_BASE_URL =
-    (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.trim()) || "https://localhost:7215/api";
+    (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.trim()) || "https://altgeo-api.hirenq.com";
 const REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS) || 15000;
 
 // GET /api/proxy/device-log -> forwards to https://localhost:7215/api/DeviceLog
 deviceLogProxyRoutes.get("/", async (req, res) => {
   try {
-
     const upstreamRoot =
       process.env.UPSTREAM_API_URL ||
       process.env.API_BASE_URL ||

@@ -15,7 +15,8 @@ import {
 } from "./mockData";
 
 
-const RAW_API_URL = (import.meta.env.VITE_API_URL ?? "").toString().trim() || "https://localhost:7215/";
+const RAW_API_URL = (import.meta.env.VITE_API_URL ?? "").toString().trim() || "https://altgeo-api.hirenq.com";
+
 const CLEANED_API_URL = RAW_API_URL.replace(/^['"]|['"]$/g, "");
 
 function normalizeApiBase(url: string): string {
@@ -1782,6 +1783,7 @@ class ApiClient {
     ];
 
     for (const path of tryPaths) {
+      debugger;
       try {
         const raw: any = await this.request<any>(path);
         const timestamp = raw?.timestamp || new Date().toISOString();
