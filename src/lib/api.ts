@@ -15,7 +15,7 @@ import {
 } from "./mockData";
 
 
-const RAW_API_URL = (import.meta.env.VITE_API_URL ?? "").toString().trim() || "https://altgeo-api.hirenq.com";
+const RAW_API_URL = (import.meta.env.VITE_API_URL ?? "").toString().trim();
 
 const CLEANED_API_URL = RAW_API_URL.replace(/^['"]|['"]$/g, "");
 
