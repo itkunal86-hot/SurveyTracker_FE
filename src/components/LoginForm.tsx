@@ -221,15 +221,7 @@ export const LoginForm = ({ onLogin }: LoginFormProps) => {
               </div>
             </form>
 
-            {!isForgotPassword && (
-              <div className="mt-6 p-4 bg-muted rounded-lg text-sm text-muted-foreground">
-                <p className="font-medium mb-2">Demo Credentials:</p>
-                <p>Admin: john.smith@company.com / password123</p>
-                <p>Manager: sarah.johnson@company.com / password123</p>
-                <p>Survey Manager: mike.wilson@company.com / password123</p>
-                <p className="text-xs mt-2 opacity-70">Note: Any password works in demo mode</p>
-              </div>
-            )}
+            
           </CardContent>
         </Card>
       </div>
