@@ -639,7 +639,7 @@ class ApiClient {
 
   async updateAssetType(id: string, payload: Partial<AssetType>): Promise<ApiResponse<AssetType>> {
     try {
-      return await this.request<ApiResponse<AssetType>>(`/AssetTypes/updateassettype${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(payload) });
+      return await this.request<ApiResponse<AssetType>>(`/AssetTypes/updateassettype?id=${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(payload) });
     } catch (primaryError) {
       try {
         return await this.request<ApiResponse<AssetType>>(`/asset-types/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(payload) });
@@ -651,7 +651,7 @@ class ApiClient {
 
   async deleteAssetType(id: string): Promise<ApiResponse<void>> {
     try {
-      return await this.request<ApiResponse<void>>(`/AssetTypes/deleteassettype${encodeURIComponent(id)}`, { method: "DELETE" });
+      return await this.request<ApiResponse<void>>(`/AssetTypes/deleteassettype?id=${encodeURIComponent(id)}`, { method: "DELETE" });
     } catch (primaryError) {
       try {
         return await this.request<ApiResponse<void>>(`/asset-types/${encodeURIComponent(id)}`, { method: "DELETE" });
@@ -765,7 +765,7 @@ class ApiClient {
 
   async updateAssetProperty(id: string, payload: Partial<AssetProperty>): Promise<ApiResponse<AssetProperty>> {
     try {
-      return await this.request<ApiResponse<AssetProperty>>(`/AssetProperties/updateassetproperty${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(payload) });
+      return await this.request<ApiResponse<AssetProperty>>(`/AssetProperties/updateassetproperty?id=${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(payload) });
     } catch (error) {
       const idx = this.mockAssetProperties.findIndex(p => p.id === id);
       if (idx === -1) throw error;
@@ -776,7 +776,7 @@ class ApiClient {
 
   async deleteAssetProperty(id: string): Promise<ApiResponse<void>> {
     try {
-      return await this.request<ApiResponse<void>>(`/AssetProperties/deleteassetproperty${encodeURIComponent(id)}`, { method: "DELETE" });
+      return await this.request<ApiResponse<void>>(`/AssetProperties/deleteassetproperty?id=${encodeURIComponent(id)}`, { method: "DELETE" });
     } catch (error) {
       this.mockAssetProperties = this.mockAssetProperties.filter(p => p.id !== id);
       return createMockApiResponse(undefined as unknown as void);
@@ -1198,7 +1198,7 @@ class ApiClient {
   }
 
   async deleteDevice(id: string): Promise<ApiResponse<void>> {
-    return this.request<ApiResponse<void>>(`/devices/${encodeURIComponent(id)}`, {
+    return this.request<ApiResponse<void>>(`/devices/deletedevice?id=${encodeURIComponent(id)}`, {
       method: "DELETE",
     });
   }
@@ -1226,7 +1226,7 @@ class ApiClient {
 
       const query = searchParams.toString();
       return await this.request<PaginatedResponse<PipelineSegment>>(
-        `/pipelines${query ? `?${query}` : ""}`,
+        `/pipelines/getpipelines${query ? `?${query}` : ""}`,
       );
     } catch (error) {
       // Fallback to mock data
@@ -1238,7 +1238,7 @@ class ApiClient {
 
   async getPipeline(id: string): Promise<ApiResponse<PipelineSegment>> {
     try {
-      return await this.request<ApiResponse<PipelineSegment>>(`/pipelines/${id}`);
+      return await this.request<ApiResponse<PipelineSegment>>(`/pipelines/getpipelinesbyid?id=${encodeURIComponent(id)}`);
     } catch (error) {
       // Fallback to mock data
       const pipeline = mockPipelines.find(p => p.id === id);
@@ -1252,7 +1252,7 @@ class ApiClient {
   async createPipeline(
     pipeline: Omit<PipelineSegment, "id">,
   ): Promise<ApiResponse<PipelineSegment>> {
-    return this.request<ApiResponse<PipelineSegment>>("/pipelines", {
+    return this.request<ApiResponse<PipelineSegment>>("/pipelines/createpipeline", {
       method: "POST",
       body: JSON.stringify(pipeline),
     });
@@ -1262,14 +1262,14 @@ class ApiClient {
     id: string,
     pipeline: Partial<PipelineSegment>,
   ): Promise<ApiResponse<PipelineSegment>> {
-    return this.request<ApiResponse<PipelineSegment>>(`/pipelines/${id}`, {
+    return this.request<ApiResponse<PipelineSegment>>(`/pipelines/updatepipeline?id=${encodeURIComponent(id)}`, {
       method: "PUT",
       body: JSON.stringify(pipeline),
     });
   }
 
   async deletePipeline(id: string): Promise<ApiResponse<void>> {
-    return this.request<ApiResponse<void>>(`/pipelines/${id}`, {
+    return this.request<ApiResponse<void>>(`/pipelines/deletepipeline?id=${encodeURIComponent(id)}`, {
       method: "DELETE",
     });
   }
@@ -1297,7 +1297,7 @@ class ApiClient {
 
       const query = searchParams.toString();
       return await this.request<PaginatedResponse<Valve>>(
-        `/valves${query ? `?${query}` : ""}`,
+        `/valves/getvalves${query ? `?${query}` : ""}`,
       );
     } catch (error) {
       // Fallback to mock data
@@ -1309,7 +1309,7 @@ class ApiClient {
 
   async getValve(id: string): Promise<ApiResponse<Valve>> {
     try {
-      return await this.request<ApiResponse<Valve>>(`/valves/${id}`);
+      return await this.request<ApiResponse<Valve>>(`/valves/getvalvesbyid?id=${encodeURIComponent(id)}`);
     } catch (error) {
       // Fallback to mock data
       const valve = mockValves.find(v => v.id === id);
@@ -1321,7 +1321,7 @@ class ApiClient {
   }
 
   async createValve(valve: Omit<Valve, "id">): Promise<ApiResponse<Valve>> {
-    return this.request<ApiResponse<Valve>>("/valves", {
+    return this.request<ApiResponse<Valve>>("/valves/createvalve", {
       method: "POST",
       body: JSON.stringify(valve),
     });
@@ -1331,14 +1331,14 @@ class ApiClient {
     id: string,
     valve: Partial<Valve>,
   ): Promise<ApiResponse<Valve>> {
-    return this.request<ApiResponse<Valve>>(`/valves/${id}`, {
+    return this.request<ApiResponse<Valve>>(`/valves/updatevalve?id=${encodeURIComponent(id)}`, {
       method: "PUT",
       body: JSON.stringify(valve),
     });
   }
 
   async deleteValve(id: string): Promise<ApiResponse<void>> {
-    return this.request<ApiResponse<void>>(`/valves/${id}`, {
+    return this.request<ApiResponse<void>>(`/valves/deletevalve?id=${encodeURIComponent(id)}`, {
       method: "DELETE",
     });
   }
@@ -1373,9 +1373,9 @@ class ApiClient {
     const q = sp.toString();
 
     const tryPaths = [
-      `/SurveyCategories${q ? `?${q}` : ""}`,
-      `/surveyCategories${q ? `?${q}` : ""}`,
-      `/survey-categories${q ? `?${q}` : ""}`,
+      `/SurveyCategories/getsurveycategories${q ? `?${q}` : ""}`,
+      `/surveyCategories/getsurveycategories${q ? `?${q}` : ""}`,
+      `/survey-categories/getsurveycategories${q ? `?${q}` : ""}`,
     ];
 
     for (const path of tryPaths) {
@@ -1427,7 +1427,7 @@ class ApiClient {
 
   async createSurveyCategory(payload: { name: string; description?: string; }): Promise<ApiResponse<SurveyCategoryType>> {
     try {
-      return await this.request<ApiResponse<SurveyCategoryType>>(`/SurveyCategories`, { method: "POST", body: JSON.stringify(payload) });
+      return await this.request<ApiResponse<SurveyCategoryType>>(`/SurveyCategories/createsurveycategory`, { method: "POST", body: JSON.stringify(payload) });
     } catch (primaryError) {
       try {
         return await this.request<ApiResponse<SurveyCategoryType>>(`/survey-categories`, { method: "POST", body: JSON.stringify(payload) });
@@ -1440,7 +1440,7 @@ class ApiClient {
 
   async updateSurveyCategory(id: string, payload: Partial<SurveyCategoryType>): Promise<ApiResponse<SurveyCategoryType>> {
     try {
-      return await this.request<ApiResponse<SurveyCategoryType>>(`/SurveyCategories/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+      return await this.request<ApiResponse<SurveyCategoryType>>(`/SurveyCategories/updatesurveycategory?id=${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(payload) });
     } catch (primaryError) {
       try {
         return await this.request<ApiResponse<SurveyCategoryType>>(`/survey-categories/${id}`, { method: "PUT", body: JSON.stringify(payload) });
@@ -1453,7 +1453,7 @@ class ApiClient {
 
   async deleteSurveyCategory(id: string): Promise<ApiResponse<void>> {
     try {
-      return await this.request<ApiResponse<void>>(`/SurveyCategories/${id}`, { method: "DELETE" });
+      return await this.request<ApiResponse<void>>(`/SurveyCategories/deletetesurveycategory?id=${encodeURIComponent(id)}`, { method: "DELETE" });
     } catch (primaryError) {
       try {
         return await this.request<ApiResponse<void>>(`/survey-categories/${id}`, { method: "DELETE" });
@@ -1492,8 +1492,7 @@ class ApiClient {
 
   async getCatastrophe(id: string): Promise<ApiResponse<Catastrophe>> {
     try {
-      debugger
-      return await this.request<ApiResponse<Catastrophe>>(`/surveyEntries/${id}`);
+      return await this.request<ApiResponse<Catastrophe>>(`/surveyEntries/getsurveyentriesbyid?id=${encodeURIComponent(id)}`);
     } catch (error) {
       // Fallback to mock data
       const catastrophe = mockCatastrophes.find(c => c.id === id);
@@ -1510,7 +1509,7 @@ class ApiClient {
     const { coordinates, severity, status, pipelineId, ...filteredData } = catastrophe;
 
     console.log(filteredData);
-    return this.request<ApiResponse<Catastrophe>>("/surveyEntries", {
+    return this.request<ApiResponse<Catastrophe>>("/surveyEntries/createcatastrophe", {
       method: "POST",
       body: JSON.stringify(filteredData),
     });
@@ -1520,7 +1519,7 @@ class ApiClient {
     id: string,
     catastrophe: Partial<Catastrophe>,
   ): Promise<ApiResponse<Catastrophe>> {
-    return this.request<ApiResponse<Catastrophe>>(`/catastrophes/${id}`, {
+    return this.request<ApiResponse<Catastrophe>>(`/catastrophes/updatecatastrophe?id=${encodeURIComponent(id)}`, {
       method: "PUT",
       body: JSON.stringify(catastrophe),
     });
@@ -1552,7 +1551,7 @@ class ApiClient {
 
       const query = searchParams.toString();
       return await this.request<PaginatedResponse<SurveyData>>(
-        `/surveys${query ? `?${query}` : ""}`,
+        `/surveys/getsurvey${query ? `?${query}` : ""}`,
       );
     } catch (error) {
       // Fallback to mock data
@@ -1563,7 +1562,7 @@ class ApiClient {
 
   async getSurvey(id: string): Promise<ApiResponse<SurveyData>> {
     try {
-      return await this.request<ApiResponse<SurveyData>>(`/surveys/${id}`);
+      return await this.request<ApiResponse<SurveyData>>(`/surveys/getsurveybyid?id=${encodeURIComponent(id)}`);
     } catch (error) {
       // Fallback to mock data
       const survey = mockSurveys.find(s => s.id === id);
@@ -1642,7 +1641,7 @@ class ApiClient {
 
   async getDeviceAssignment(id: string): Promise<ApiResponse<DeviceAssignment>> {
     try {
-      const raw = await this.request<any>(`/DeviceAssignments/getdeviceassignmentsbyid${encodeURIComponent(id)}`);
+      const raw = await this.request<any>(`/DeviceAssignments/getdeviceassignmentsbyid?id=${encodeURIComponent(id)}`);
       const item = this.mapDeviceAssignment(raw?.data ?? raw);
       return { success: true, data: item, message: raw?.message, timestamp: raw?.timestamp || new Date().toISOString() };
     } catch (primaryError) {
@@ -1721,7 +1720,7 @@ class ApiClient {
       ...(assignedByNum !== undefined ? { assignedBy: assignedByNum } : {}),
     };
     try {
-      const raw = await this.request<any>(`/DeviceAssignments/updatedeviceassignments${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(body) });
+      const raw = await this.request<any>(`/DeviceAssignments/updatedeviceassignments?id=${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(body) });
       const item = this.mapDeviceAssignment(raw?.data ?? raw);
       return { success: true, data: item, message: raw?.message, timestamp: raw?.timestamp || new Date().toISOString() };
     } catch (primaryError: any) {
@@ -1735,7 +1734,7 @@ class ApiClient {
 
   async deleteDeviceAssignment(id: string): Promise<ApiResponse<void>> {
     try {
-      return await this.request<ApiResponse<void>>(`/DeviceAssignments/deletedeviceassignments${encodeURIComponent(id)}`, { method: "DELETE" });
+      return await this.request<ApiResponse<void>>(`/DeviceAssignments/deletedeviceassignments?id=${encodeURIComponent(id)}`, { method: "DELETE" });
     } catch (primaryError) {
       return await this.request<ApiResponse<void>>(`/device-assignments/${id}`, { method: "DELETE" });
     }
@@ -1837,11 +1836,10 @@ class ApiClient {
     const q = sp.toString();
 
     const tryPaths = [
-      `/SurveyMaster${q ? `?${q}` : ""}`,
+      `/SurveyMaster/getsurvey${q ? `?${q}` : ""}`,
     ];
 
     for (const path of tryPaths) {
-      debugger;
       try {
         const raw: any = await this.request<any>(path);
         const timestamp = raw?.timestamp || new Date().toISOString();
@@ -1938,7 +1936,7 @@ class ApiClient {
 
   async getSurveyMaster(id: string): Promise<ApiResponse<AdminSurvey>> {
     const tryPaths = [
-      `/SurveyMaster/${id}`,
+      `/SurveyMaster/getsurveybyid?id=${encodeURIComponent(id)}`,
     ];
 
     for (const path of tryPaths) {
@@ -2024,7 +2022,7 @@ class ApiClient {
     }
 
     try {
-      const response = await this.request<any>("/SurveyMaster", {
+      const response = await this.request<any>("/SurveyMaster/createsurvey", {
         method: "POST",
         body: JSON.stringify(body),
       });
@@ -2110,7 +2108,7 @@ class ApiClient {
     };
 
     try {
-      const response = await this.request<any>(`/SurveyMaster/${id}`, {
+      const response = await this.request<any>(`/SurveyMaster/updatesurvey?id=${encodeURIComponent(id)}`, {
         method: "PUT",
         body: JSON.stringify(body),
       });
@@ -2137,7 +2135,7 @@ class ApiClient {
   //***************************** */
 
   async deleteSurveyMaster(id: string): Promise<ApiResponse<void>> {
-    const tryPaths = [`/SurveyMaster/${id}`];
+    const tryPaths = [`/SurveyMaster/deletesurvey?id=${encodeURIComponent(id)}`];
     for (const path of tryPaths) {
       try {
         return await this.request<ApiResponse<void>>(path, { method: "DELETE" });
@@ -2401,7 +2399,7 @@ class ApiClient {
 
   async getUser(id: string): Promise<UserRegistrationResponse> {
     try {
-      return await this.request<UserRegistrationResponse>(`/User/getuser${encodeURIComponent(id)}`);
+      return await this.request<UserRegistrationResponse>(`/User/getuser?id=${encodeURIComponent(id)}`);
     } catch (error) {
       // Fallback to mock data
       return {
@@ -2457,7 +2455,7 @@ class ApiClient {
     };
 
     try {
-      const response = await this.request<any>(`/User/updateuser${encodeURIComponent(id)}`, {
+      const response = await this.request<any>(`/User/updateuser?id=${encodeURIComponent(id)}`, {
         method: "PUT",
         body: JSON.stringify(body),
       });
@@ -2484,7 +2482,7 @@ class ApiClient {
 
   async deleteUser(id: string): Promise<UserRegistrationResponse> {
     try {
-      return await this.request<UserRegistrationResponse>(`/User/deleteuser${encodeURIComponent(id)}`, {
+      return await this.request<UserRegistrationResponse>(`/User/deleteuser?id=${encodeURIComponent(id)}`, {
         method: "DELETE",
       });
     } catch (error) {
