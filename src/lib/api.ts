@@ -17,6 +17,10 @@ import {
 
 const RAW_API_URL = (import.meta.env.VITE_API_URL ?? "").toString().trim();
 
+console.log("ENV URL:", import.meta.env.VITE_API_URL);
+console.log("ALL ENV:", import.meta.env);
+
+
 const CLEANED_API_URL = RAW_API_URL.replace(/^['"]|['"]$/g, "");
 
 function normalizeApiBase(url: string): string {
@@ -543,7 +547,7 @@ class ApiClient {
       const q = sp.toString();
 
       // Prefer external API naming and normalize its shape
-      const raw: any = await this.request<any>(`/AssetTypes${q ? `?${q}` : ""}`);
+      const raw: any = await this.request<any>(`/AssetTypes/getassettype${q ? `?${q}` : ""}`);
 
       const timestamp = raw?.timestamp || new Date().toISOString();
 
@@ -625,7 +629,7 @@ class ApiClient {
 
   async createAssetType(payload: Omit<AssetType, "id" | "createdAt" | "updatedAt">): Promise<ApiResponse<AssetType>> {
     try {
-      return await this.request<ApiResponse<AssetType>>(`/AssetTypes`, { method: "POST", body: JSON.stringify(payload) });
+      return await this.request<ApiResponse<AssetType>>(`/AssetTypes/createassettype`, { method: "POST", body: JSON.stringify(payload) });
     } catch (primaryError) {
       try {
         return await this.request<ApiResponse<AssetType>>(`/asset-types`, { method: "POST", body: JSON.stringify(payload) });
@@ -637,10 +641,10 @@ class ApiClient {
 
   async updateAssetType(id: string, payload: Partial<AssetType>): Promise<ApiResponse<AssetType>> {
     try {
-      return await this.request<ApiResponse<AssetType>>(`/AssetTypes/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+      return await this.request<ApiResponse<AssetType>>(`/AssetTypes/updateassettype?id=${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(payload) });
     } catch (primaryError) {
       try {
-        return await this.request<ApiResponse<AssetType>>(`/asset-types/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+        return await this.request<ApiResponse<AssetType>>(`/asset-types/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(payload) });
       } catch (secondaryError) {
         throw secondaryError;
       }
@@ -649,10 +653,10 @@ class ApiClient {
 
   async deleteAssetType(id: string): Promise<ApiResponse<void>> {
     try {
-      return await this.request<ApiResponse<void>>(`/AssetTypes/${id}`, { method: "DELETE" });
+      return await this.request<ApiResponse<void>>(`/AssetTypes/deleteassettype?id=${encodeURIComponent(id)}`, { method: "DELETE" });
     } catch (primaryError) {
       try {
-        return await this.request<ApiResponse<void>>(`/asset-types/${id}`, { method: "DELETE" });
+        return await this.request<ApiResponse<void>>(`/asset-types/${encodeURIComponent(id)}`, { method: "DELETE" });
       } catch (secondaryError) {
         throw secondaryError;
       }
@@ -738,7 +742,7 @@ class ApiClient {
         if (params?.limit) sp.append("limit", String(params.limit));
         if (params?.assetTypeId) sp.append("assetTypeId", params.assetTypeId);
         if (params?.search) sp.append("search", params.search);
-        return await this.request<PaginatedResponse<AssetProperty>>(`/AssetProperties?${sp.toString()}`);
+        return await this.request<PaginatedResponse<AssetProperty>>(`/AssetProperties/getassetproperties?${sp.toString()}`);
       } catch (error) {
         let data = [...this.mockAssetProperties];
         if (params?.assetTypeId) data = data.filter(p => p.assetTypeId === params.assetTypeId);
@@ -753,7 +757,7 @@ class ApiClient {
 
   async createAssetProperty(payload: Omit<AssetProperty, "id" | "createdAt" | "updatedAt">): Promise<ApiResponse<AssetProperty>> {
     try {
-      return await this.request<ApiResponse<AssetProperty>>(`/AssetProperties`, { method: "POST", body: JSON.stringify(payload) });
+      return await this.request<ApiResponse<AssetProperty>>(`/AssetProperties/createassetproperty`, { method: "POST", body: JSON.stringify(payload) });
     } catch (error) {
       const item: AssetProperty = { ...payload, id: `AP_${Date.now()}`, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as AssetProperty;
       this.mockAssetProperties.push(item);
@@ -763,7 +767,7 @@ class ApiClient {
 
   async updateAssetProperty(id: string, payload: Partial<AssetProperty>): Promise<ApiResponse<AssetProperty>> {
     try {
-      return await this.request<ApiResponse<AssetProperty>>(`/AssetProperties/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+      return await this.request<ApiResponse<AssetProperty>>(`/AssetProperties/updateassetproperty?id=${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(payload) });
     } catch (error) {
       const idx = this.mockAssetProperties.findIndex(p => p.id === id);
       if (idx === -1) throw error;
@@ -774,7 +778,7 @@ class ApiClient {
 
   async deleteAssetProperty(id: string): Promise<ApiResponse<void>> {
     try {
-      return await this.request<ApiResponse<void>>(`/AssetProperties/${id}`, { method: "DELETE" });
+      return await this.request<ApiResponse<void>>(`/AssetProperties/deleteassetproperty?id=${encodeURIComponent(id)}`, { method: "DELETE" });
     } catch (error) {
       this.mockAssetProperties = this.mockAssetProperties.filter(p => p.id !== id);
       return createMockApiResponse(undefined as unknown as void);
@@ -894,7 +898,7 @@ class ApiClient {
       // Prefer uppercase /Device per backend convention, fallback to lowercase /devices
       const raw: any = await (async () => {
         try {
-          return await this.request<any>(`/Device${query ? `?${query}` : ""}`);
+          return await this.request<any>(`/Device/getdevice${query ? `?${query}` : ""}`);
         } catch (primaryError) {
           return await this.request<any>(`/devices${query ? `?${query}` : ""}`);
         }
@@ -975,7 +979,12 @@ class ApiClient {
   async getDevice(id: string): Promise<ApiResponse<Device>> {
     try {
       try {
-        return await this.request<ApiResponse<Device>>(`/Device/${id}`);
+        const searchParams = new URLSearchParams();
+        if (id) searchParams.append("id", id);
+        const query = searchParams.toString();
+        //return await this.request<ApiResponse<Device>>(`/Device/${id}`);
+        //return await this.request<any>(`/Device/getdevice${query ? `?${query}` : ""}`);
+        return await this.request<ApiResponse<Device>>(`/Device/getdevicebyid${query ? `?${query}` : ""}`);
       } catch (primaryError) {
         try {
           return await this.request<ApiResponse<Device>>(`/devices/${id}`);
@@ -1047,7 +1056,7 @@ class ApiClient {
     }
 
     try {
-      const response = await this.request<any>("/Device", {
+      const response = await this.request<any>("/Device/createdevice", {
         method: "POST",
         body: JSON.stringify(body),
       });
@@ -1096,10 +1105,54 @@ class ApiClient {
   //   }
   // }
 
+  // async updateDevice(
+  //   id: string,
+  //   device: Partial<DeviceCreateUpdate>,
+  // ): Promise<ApiResponse<Device>> {
+  //   // Get performedBy from session
+  //   const sessionData = sessionStorage.getItem("currentUser");
+  //   let performedBy: number | null = null;
+
+  //   if (sessionData) {
+  //     const parsed = JSON.parse(sessionData);
+  //     performedBy = parsed?.userData?.udId ?? null;
+  //   }
+
+  //   // Build body with only allowed fields
+  //   const body: any = {
+  //     ...(device.name !== undefined ? { name: device.name } : {}),
+  //     ...(device.type !== undefined ? { type: device.type } : {}),
+  //     ...(device.status !== undefined ? { status: device.status } : {}),
+  //     ...(device.modelName !== undefined ? { modelName: device.modelName } : {}),
+  //     ...(performedBy !== null ? { performedBy } : {}),
+  //   };
+
+  //   try {
+  //     const response = await this.request<any>(`/Device/${id}`, {
+  //       method: "PUT",
+  //       body: JSON.stringify(body),
+  //     });
+
+  //     return {
+  //       success: (response?.status_code ?? 200) >= 200 && (response?.status_code ?? 200) < 300,
+  //       message: response.message ?? "Device updated successfully",
+  //       data: response.data ?? null,
+  //       timestamp: response.timestamp ?? new Date().toISOString(),
+  //     };
+  //   } catch (error) {
+  //     return {
+  //       success: false,
+  //       message: "Failed to update device",
+  //       data: null,
+  //       timestamp: new Date().toISOString(),
+  //     };
+  //   }
+  // }
   async updateDevice(
     id: string,
     device: Partial<DeviceCreateUpdate>,
   ): Promise<ApiResponse<Device>> {
+
     // Get performedBy from session
     const sessionData = sessionStorage.getItem("currentUser");
     let performedBy: number | null = null;
@@ -1109,31 +1162,37 @@ class ApiClient {
       performedBy = parsed?.userData?.udId ?? null;
     }
 
-    // Build body with only allowed fields
+    // Build request body
     const body: any = {
-      ...(device.name !== undefined ? { name: device.name } : {}),
-      ...(device.type !== undefined ? { type: device.type } : {}),
-      ...(device.status !== undefined ? { status: device.status } : {}),
-      ...(device.modelName !== undefined ? { modelName: device.modelName } : {}),
-      ...(performedBy !== null ? { performedBy } : {}),
+      ...(device.name !== undefined && { name: device.name }),
+      ...(device.type !== undefined && { type: device.type }),
+      ...(device.status !== undefined && { status: device.status }),
+      ...(device.modelName !== undefined && { modelName: device.modelName }),
+      ...(performedBy !== null && { performedBy }),
     };
 
     try {
-      const response = await this.request<any>(`/Device/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(body),
-      });
+      const response = await this.request<any>(
+        `/Device/updatedevice?id=${encodeURIComponent(id)}`,
+        {
+          method: "PUT",
+          body: JSON.stringify(body),
+        }
+      );
 
       return {
-        success: (response?.status_code ?? 200) >= 200 && (response?.status_code ?? 200) < 300,
-        message: response.message ?? "Device updated successfully",
-        data: response.data ?? null,
-        timestamp: response.timestamp ?? new Date().toISOString(),
+        success:
+          (response?.status_code ?? 200) >= 200 &&
+          (response?.status_code ?? 200) < 300,
+        message: response?.message ?? "Device updated successfully",
+        data: response?.data ?? null,
+        timestamp: response?.timestamp ?? new Date().toISOString(),
       };
-    } catch (error) {
+
+    } catch (error: any) {
       return {
         success: false,
-        message: "Failed to update device",
+        message: error?.message ?? "Failed to update device",
         data: null,
         timestamp: new Date().toISOString(),
       };
@@ -1141,7 +1200,7 @@ class ApiClient {
   }
 
   async deleteDevice(id: string): Promise<ApiResponse<void>> {
-    return this.request<ApiResponse<void>>(`/devices/${id}`, {
+    return this.request<ApiResponse<void>>(`/devices/deletedevice?id=${encodeURIComponent(id)}`, {
       method: "DELETE",
     });
   }
@@ -1169,7 +1228,7 @@ class ApiClient {
 
       const query = searchParams.toString();
       return await this.request<PaginatedResponse<PipelineSegment>>(
-        `/pipelines${query ? `?${query}` : ""}`,
+        `/pipelines/getpipelines${query ? `?${query}` : ""}`,
       );
     } catch (error) {
       // Fallback to mock data
@@ -1181,7 +1240,7 @@ class ApiClient {
 
   async getPipeline(id: string): Promise<ApiResponse<PipelineSegment>> {
     try {
-      return await this.request<ApiResponse<PipelineSegment>>(`/pipelines/${id}`);
+      return await this.request<ApiResponse<PipelineSegment>>(`/pipelines/getpipelinesbyid?id=${encodeURIComponent(id)}`);
     } catch (error) {
       // Fallback to mock data
       const pipeline = mockPipelines.find(p => p.id === id);
@@ -1195,7 +1254,7 @@ class ApiClient {
   async createPipeline(
     pipeline: Omit<PipelineSegment, "id">,
   ): Promise<ApiResponse<PipelineSegment>> {
-    return this.request<ApiResponse<PipelineSegment>>("/pipelines", {
+    return this.request<ApiResponse<PipelineSegment>>("/pipelines/createpipeline", {
       method: "POST",
       body: JSON.stringify(pipeline),
     });
@@ -1205,14 +1264,14 @@ class ApiClient {
     id: string,
     pipeline: Partial<PipelineSegment>,
   ): Promise<ApiResponse<PipelineSegment>> {
-    return this.request<ApiResponse<PipelineSegment>>(`/pipelines/${id}`, {
+    return this.request<ApiResponse<PipelineSegment>>(`/pipelines/updatepipeline?id=${encodeURIComponent(id)}`, {
       method: "PUT",
       body: JSON.stringify(pipeline),
     });
   }
 
   async deletePipeline(id: string): Promise<ApiResponse<void>> {
-    return this.request<ApiResponse<void>>(`/pipelines/${id}`, {
+    return this.request<ApiResponse<void>>(`/pipelines/deletepipeline?id=${encodeURIComponent(id)}`, {
       method: "DELETE",
     });
   }
@@ -1240,7 +1299,7 @@ class ApiClient {
 
       const query = searchParams.toString();
       return await this.request<PaginatedResponse<Valve>>(
-        `/valves${query ? `?${query}` : ""}`,
+        `/valves/getvalves${query ? `?${query}` : ""}`,
       );
     } catch (error) {
       // Fallback to mock data
@@ -1252,7 +1311,7 @@ class ApiClient {
 
   async getValve(id: string): Promise<ApiResponse<Valve>> {
     try {
-      return await this.request<ApiResponse<Valve>>(`/valves/${id}`);
+      return await this.request<ApiResponse<Valve>>(`/valves/getvalvesbyid?id=${encodeURIComponent(id)}`);
     } catch (error) {
       // Fallback to mock data
       const valve = mockValves.find(v => v.id === id);
@@ -1264,7 +1323,7 @@ class ApiClient {
   }
 
   async createValve(valve: Omit<Valve, "id">): Promise<ApiResponse<Valve>> {
-    return this.request<ApiResponse<Valve>>("/valves", {
+    return this.request<ApiResponse<Valve>>("/valves/createvalve", {
       method: "POST",
       body: JSON.stringify(valve),
     });
@@ -1274,14 +1333,14 @@ class ApiClient {
     id: string,
     valve: Partial<Valve>,
   ): Promise<ApiResponse<Valve>> {
-    return this.request<ApiResponse<Valve>>(`/valves/${id}`, {
+    return this.request<ApiResponse<Valve>>(`/valves/updatevalve?id=${encodeURIComponent(id)}`, {
       method: "PUT",
       body: JSON.stringify(valve),
     });
   }
 
   async deleteValve(id: string): Promise<ApiResponse<void>> {
-    return this.request<ApiResponse<void>>(`/valves/${id}`, {
+    return this.request<ApiResponse<void>>(`/valves/deletevalve?id=${encodeURIComponent(id)}`, {
       method: "DELETE",
     });
   }
@@ -1316,9 +1375,9 @@ class ApiClient {
     const q = sp.toString();
 
     const tryPaths = [
-      `/SurveyCategories${q ? `?${q}` : ""}`,
-      `/surveyCategories${q ? `?${q}` : ""}`,
-      `/survey-categories${q ? `?${q}` : ""}`,
+      `/SurveyCategories/getsurveycategories${q ? `?${q}` : ""}`,
+      `/surveyCategories/getsurveycategories${q ? `?${q}` : ""}`,
+      `/survey-categories/getsurveycategories${q ? `?${q}` : ""}`,
     ];
 
     for (const path of tryPaths) {
@@ -1370,7 +1429,7 @@ class ApiClient {
 
   async createSurveyCategory(payload: { name: string; description?: string; }): Promise<ApiResponse<SurveyCategoryType>> {
     try {
-      return await this.request<ApiResponse<SurveyCategoryType>>(`/SurveyCategories`, { method: "POST", body: JSON.stringify(payload) });
+      return await this.request<ApiResponse<SurveyCategoryType>>(`/SurveyCategories/createsurveycategory`, { method: "POST", body: JSON.stringify(payload) });
     } catch (primaryError) {
       try {
         return await this.request<ApiResponse<SurveyCategoryType>>(`/survey-categories`, { method: "POST", body: JSON.stringify(payload) });
@@ -1383,7 +1442,7 @@ class ApiClient {
 
   async updateSurveyCategory(id: string, payload: Partial<SurveyCategoryType>): Promise<ApiResponse<SurveyCategoryType>> {
     try {
-      return await this.request<ApiResponse<SurveyCategoryType>>(`/SurveyCategories/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+      return await this.request<ApiResponse<SurveyCategoryType>>(`/SurveyCategories/updatesurveycategory?id=${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(payload) });
     } catch (primaryError) {
       try {
         return await this.request<ApiResponse<SurveyCategoryType>>(`/survey-categories/${id}`, { method: "PUT", body: JSON.stringify(payload) });
@@ -1396,7 +1455,7 @@ class ApiClient {
 
   async deleteSurveyCategory(id: string): Promise<ApiResponse<void>> {
     try {
-      return await this.request<ApiResponse<void>>(`/SurveyCategories/${id}`, { method: "DELETE" });
+      return await this.request<ApiResponse<void>>(`/SurveyCategories/deletetesurveycategory?id=${encodeURIComponent(id)}`, { method: "DELETE" });
     } catch (primaryError) {
       try {
         return await this.request<ApiResponse<void>>(`/survey-categories/${id}`, { method: "DELETE" });
@@ -1435,8 +1494,7 @@ class ApiClient {
 
   async getCatastrophe(id: string): Promise<ApiResponse<Catastrophe>> {
     try {
-      debugger
-      return await this.request<ApiResponse<Catastrophe>>(`/surveyEntries/${id}`);
+      return await this.request<ApiResponse<Catastrophe>>(`/surveyEntries/getsurveyentriesbyid?id=${encodeURIComponent(id)}`);
     } catch (error) {
       // Fallback to mock data
       const catastrophe = mockCatastrophes.find(c => c.id === id);
@@ -1453,7 +1511,7 @@ class ApiClient {
     const { coordinates, severity, status, pipelineId, ...filteredData } = catastrophe;
 
     console.log(filteredData);
-    return this.request<ApiResponse<Catastrophe>>("/surveyEntries", {
+    return this.request<ApiResponse<Catastrophe>>("/surveyEntries/createcatastrophe", {
       method: "POST",
       body: JSON.stringify(filteredData),
     });
@@ -1463,7 +1521,7 @@ class ApiClient {
     id: string,
     catastrophe: Partial<Catastrophe>,
   ): Promise<ApiResponse<Catastrophe>> {
-    return this.request<ApiResponse<Catastrophe>>(`/catastrophes/${id}`, {
+    return this.request<ApiResponse<Catastrophe>>(`/catastrophes/updatecatastrophe?id=${encodeURIComponent(id)}`, {
       method: "PUT",
       body: JSON.stringify(catastrophe),
     });
@@ -1495,7 +1553,7 @@ class ApiClient {
 
       const query = searchParams.toString();
       return await this.request<PaginatedResponse<SurveyData>>(
-        `/surveys${query ? `?${query}` : ""}`,
+        `/surveys/getsurvey${query ? `?${query}` : ""}`,
       );
     } catch (error) {
       // Fallback to mock data
@@ -1506,7 +1564,7 @@ class ApiClient {
 
   async getSurvey(id: string): Promise<ApiResponse<SurveyData>> {
     try {
-      return await this.request<ApiResponse<SurveyData>>(`/surveys/${id}`);
+      return await this.request<ApiResponse<SurveyData>>(`/surveys/getsurveybyid?id=${encodeURIComponent(id)}`);
     } catch (error) {
       // Fallback to mock data
       const survey = mockSurveys.find(s => s.id === id);
@@ -1556,7 +1614,7 @@ class ApiClient {
     const q = sp.toString();
 
     try {
-      const raw: any = await this.request<any>(`/DeviceAssignments${q ? `?${q}` : ""}`);
+      const raw: any = await this.request<any>(`/DeviceAssignments/getdeviceassignments${q ? `?${q}` : ""}`);
       const items = Array.isArray(raw?.data?.items) ? raw.data.items : Array.isArray(raw?.data?.data) ? raw.data.data : Array.isArray(raw?.data) ? raw.data : Array.isArray(raw) ? raw : [];
       const mapped = items.map((it: any) => this.mapDeviceAssignment(it));
       const pagination = raw?.data?.pagination || raw?.pagination || {
@@ -1577,14 +1635,15 @@ class ApiClient {
         return await this.request<PaginatedResponse<DeviceAssignment>>(`/device-assignments${q ? `?${q}` : ""}`);
       } catch (secondaryError) {
         // Fallback to empty when API unavailable
-        return createMockPaginatedResponse<DeviceAssignment>([], params);
+        //return createMockPaginatedResponse<DeviceAssignment>([], params);
+        return null;
       }
     }
   }
 
   async getDeviceAssignment(id: string): Promise<ApiResponse<DeviceAssignment>> {
     try {
-      const raw = await this.request<any>(`/DeviceAssignments/${id}`);
+      const raw = await this.request<any>(`/DeviceAssignments/getdeviceassignmentsbyid?id=${encodeURIComponent(id)}`);
       const item = this.mapDeviceAssignment(raw?.data ?? raw);
       return { success: true, data: item, message: raw?.message, timestamp: raw?.timestamp || new Date().toISOString() };
     } catch (primaryError) {
@@ -1622,7 +1681,7 @@ class ApiClient {
     };
 
     try {
-      const raw = await this.request<any>(`/DeviceAssignments`, {
+      const raw = await this.request<any>(`/DeviceAssignments/createdeviceassignments`, {
         method: "POST",
         body: JSON.stringify(body),
       });
@@ -1663,7 +1722,7 @@ class ApiClient {
       ...(assignedByNum !== undefined ? { assignedBy: assignedByNum } : {}),
     };
     try {
-      const raw = await this.request<any>(`/DeviceAssignments/${id}`, { method: "PUT", body: JSON.stringify(body) });
+      const raw = await this.request<any>(`/DeviceAssignments/updatedeviceassignments?id=${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(body) });
       const item = this.mapDeviceAssignment(raw?.data ?? raw);
       return { success: true, data: item, message: raw?.message, timestamp: raw?.timestamp || new Date().toISOString() };
     } catch (primaryError: any) {
@@ -1677,7 +1736,7 @@ class ApiClient {
 
   async deleteDeviceAssignment(id: string): Promise<ApiResponse<void>> {
     try {
-      return await this.request<ApiResponse<void>>(`/DeviceAssignments/${id}`, { method: "DELETE" });
+      return await this.request<ApiResponse<void>>(`/DeviceAssignments/deletedeviceassignments?id=${encodeURIComponent(id)}`, { method: "DELETE" });
     } catch (primaryError) {
       return await this.request<ApiResponse<void>>(`/device-assignments/${id}`, { method: "DELETE" });
     }
@@ -1779,11 +1838,10 @@ class ApiClient {
     const q = sp.toString();
 
     const tryPaths = [
-      `/SurveyMaster${q ? `?${q}` : ""}`,
+      `/SurveyMaster/getsurvey${q ? `?${q}` : ""}`,
     ];
 
     for (const path of tryPaths) {
-      debugger;
       try {
         const raw: any = await this.request<any>(path);
         const timestamp = raw?.timestamp || new Date().toISOString();
@@ -1880,7 +1938,7 @@ class ApiClient {
 
   async getSurveyMaster(id: string): Promise<ApiResponse<AdminSurvey>> {
     const tryPaths = [
-      `/SurveyMaster/${id}`,
+      `/SurveyMaster/getsurveybyid?id=${encodeURIComponent(id)}`,
     ];
 
     for (const path of tryPaths) {
@@ -1947,46 +2005,45 @@ class ApiClient {
 
   //************************ */
 
-  async createSurveyMaster(survey: Partial<AdminSurvey>): Promise<ApiResponse<AdminSurvey>> 
-  {
+  async createSurveyMaster(survey: Partial<AdminSurvey>): Promise<ApiResponse<AdminSurvey>> {
     const sessionData = sessionStorage.getItem("currentUser"); // 👈 update if your key is different
     let body: any = {};
 
     if (sessionData) {
-    const parsed = JSON.parse(sessionData);
+      const parsed = JSON.parse(sessionData);
 
-    // Build body with only allowed fields
-    body = {
-      SmName: survey.name,
-      ScId: survey.categoryId,
-      SmStartDate: survey.startDate,
-      SmEndDate: survey.endDate,
-      SmStatus: survey.status,
-      performedBy: parsed.userData.udId, // 👈 add performedBy
-    };
+      // Build body with only allowed fields
+      body = {
+        SmName: survey.name,
+        ScId: survey.categoryId,
+        SmStartDate: survey.startDate,
+        SmEndDate: survey.endDate,
+        SmStatus: survey.status,
+        performedBy: parsed.userData.udId, // 👈 add performedBy
+      };
     }
 
     try {
-    const response = await this.request<any>("/SurveyMaster", {
-      method: "POST",
-      body: JSON.stringify(body),
-    });
+      const response = await this.request<any>("/SurveyMaster/createsurvey", {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
 
-    return {
-      success:
-        (response?.status_code ?? 200) >= 200 &&
-        (response?.status_code ?? 200) < 300,
-      message: response.message ?? "Survey created successfully",
-      data: this.mapSurveyMaster(response?.data ?? response),
-      timestamp: response.timestamp ?? new Date().toISOString(),
-    };
+      return {
+        success:
+          (response?.status_code ?? 200) >= 200 &&
+          (response?.status_code ?? 200) < 300,
+        message: response.message ?? "Survey created successfully",
+        data: this.mapSurveyMaster(response?.data ?? response),
+        timestamp: response.timestamp ?? new Date().toISOString(),
+      };
     } catch (error) {
-    return {
-      success: false,
-      message: "Failed to create survey",
-      data: null,
-      timestamp: new Date().toISOString(),
-    };
+      return {
+        success: false,
+        message: "Failed to create survey",
+        data: null,
+        timestamp: new Date().toISOString(),
+      };
     }
   }
 
@@ -2030,49 +2087,49 @@ class ApiClient {
 
   //***************************** */
   async updateSurveyMaster(
-  id: string,
-  payload: Partial<AdminSurvey>
+    id: string,
+    payload: Partial<AdminSurvey>
   ): Promise<ApiResponse<AdminSurvey>> {
     // Get performedBy from session
     const sessionData = sessionStorage.getItem("currentUser");
     let performedBy: number | null = null;
 
     if (sessionData) {
-    const parsed = JSON.parse(sessionData);
-    performedBy = parsed?.userData?.udId ?? null;
+      const parsed = JSON.parse(sessionData);
+      performedBy = parsed?.userData?.udId ?? null;
     }
 
     // Build body with only allowed fields
     const body: any = {
-    ...(payload.name !== undefined ? { SmName: payload.name } : {}),
-    ...(payload.categoryId !== undefined ? { ScId: payload.categoryId } : {}),
-    ...(payload.startDate !== undefined ? { SmStartDate: payload.startDate } : {}),
-    ...(payload.endDate !== undefined ? { SmEndDate: payload.endDate } : {}),
-    ...(payload.status !== undefined ? { SmStatus: payload.status } : {}),
-    ...(performedBy !== null ? { performedBy } : {}),
+      ...(payload.name !== undefined ? { SmName: payload.name } : {}),
+      ...(payload.categoryId !== undefined ? { ScId: payload.categoryId } : {}),
+      ...(payload.startDate !== undefined ? { SmStartDate: payload.startDate } : {}),
+      ...(payload.endDate !== undefined ? { SmEndDate: payload.endDate } : {}),
+      ...(payload.status !== undefined ? { SmStatus: payload.status } : {}),
+      ...(performedBy !== null ? { performedBy } : {}),
     };
 
     try {
-    const response = await this.request<any>(`/SurveyMaster/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(body),
-    });
+      const response = await this.request<any>(`/SurveyMaster/updatesurvey?id=${encodeURIComponent(id)}`, {
+        method: "PUT",
+        body: JSON.stringify(body),
+      });
 
-    return {
-      success:
-        (response?.status_code ?? 200) >= 200 &&
-        (response?.status_code ?? 200) < 300,
-      message: response.message ?? "Survey updated successfully",
-      data: this.mapSurveyMaster(response?.data ?? response),
-      timestamp: response.timestamp ?? new Date().toISOString(),
-    };
+      return {
+        success:
+          (response?.status_code ?? 200) >= 200 &&
+          (response?.status_code ?? 200) < 300,
+        message: response.message ?? "Survey updated successfully",
+        data: this.mapSurveyMaster(response?.data ?? response),
+        timestamp: response.timestamp ?? new Date().toISOString(),
+      };
     } catch (error) {
-    return {
-      success: false,
-      message: "Failed to update survey",
-      data: null,
-      timestamp: new Date().toISOString(),
-    };
+      return {
+        success: false,
+        message: "Failed to update survey",
+        data: null,
+        timestamp: new Date().toISOString(),
+      };
     }
   }
 
@@ -2080,7 +2137,7 @@ class ApiClient {
   //***************************** */
 
   async deleteSurveyMaster(id: string): Promise<ApiResponse<void>> {
-    const tryPaths = [`/SurveyMaster/${id}`];
+    const tryPaths = [`/SurveyMaster/deletesurvey?id=${encodeURIComponent(id)}`];
     for (const path of tryPaths) {
       try {
         return await this.request<ApiResponse<void>>(path, { method: "DELETE" });
@@ -2344,7 +2401,7 @@ class ApiClient {
 
   async getUser(id: string): Promise<UserRegistrationResponse> {
     try {
-      return await this.request<UserRegistrationResponse>(`/User/${id}`);
+      return await this.request<UserRegistrationResponse>(`/User/getuser?id=${encodeURIComponent(id)}`);
     } catch (error) {
       // Fallback to mock data
       return {
@@ -2376,58 +2433,58 @@ class ApiClient {
 
   //***************************************/
   async updateUser(
-  id: string,
-  user: UserUpdateRequest
+    id: string,
+    user: UserUpdateRequest
   ): Promise<ApiResponse<UserRegistrationResponse>> {
-  // Get performedBy from session
-  const sessionData = sessionStorage.getItem("currentUser");
-  let performedBy: number | null = null;
+    // Get performedBy from session
+    const sessionData = sessionStorage.getItem("currentUser");
+    let performedBy: number | null = null;
 
-  if (sessionData) {
-    const parsed = JSON.parse(sessionData);
-    performedBy = parsed?.userData?.udId ?? null;
-  }
+    if (sessionData) {
+      const parsed = JSON.parse(sessionData);
+      performedBy = parsed?.userData?.udId ?? null;
+    }
 
-  // Build body with only allowed fields
-  const body: any = {
-    ...(user.email !== undefined ? { email: user.email } : {}),
-    ...(user.firstName !== undefined ? { firstName: user.firstName } : {}),
-    ...(user.lastName !== undefined ? { lastName: user.lastName } : {}),
-    ...(user.role !== undefined ? { role: user.role } : {}),
-    ...(user.company !== undefined ? { company: user.company } : {}),
-    ...(user.isActive !== undefined ? { isActive: user.isActive } : {}),
-    ...(performedBy !== null ? { performedBy } : {}),
-  };
-
-  try {
-    const response = await this.request<any>(`/User/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(body),
-    });
-
-    return {
-      success: (response?.status_code ?? 200) >= 200 && (response?.status_code ?? 200) < 300,
-      message: response.message ?? "User updated successfully",
-      data: response.data ?? null,
-      timestamp: response.timestamp ?? new Date().toISOString(),
+    // Build body with only allowed fields
+    const body: any = {
+      ...(user.email !== undefined ? { email: user.email } : {}),
+      ...(user.firstName !== undefined ? { firstName: user.firstName } : {}),
+      ...(user.lastName !== undefined ? { lastName: user.lastName } : {}),
+      ...(user.role !== undefined ? { role: user.role } : {}),
+      ...(user.company !== undefined ? { company: user.company } : {}),
+      ...(user.isActive !== undefined ? { isActive: user.isActive } : {}),
+      ...(performedBy !== null ? { performedBy } : {}),
     };
-  } catch (error) {
-    console.error("User update failed:", error);
 
-    return {
-      success: false,
-      message: "Failed to update user",
-      data: null,
-      timestamp: new Date().toISOString(),
-    };
-  }
+    try {
+      const response = await this.request<any>(`/User/updateuser?id=${encodeURIComponent(id)}`, {
+        method: "PUT",
+        body: JSON.stringify(body),
+      });
+
+      return {
+        success: (response?.status_code ?? 200) >= 200 && (response?.status_code ?? 200) < 300,
+        message: response.message ?? "User updated successfully",
+        data: response.data ?? null,
+        timestamp: response.timestamp ?? new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error("User update failed:", error);
+
+      return {
+        success: false,
+        message: "Failed to update user",
+        data: null,
+        timestamp: new Date().toISOString(),
+      };
+    }
   }
 
   //***************************************/
 
   async deleteUser(id: string): Promise<UserRegistrationResponse> {
     try {
-      return await this.request<UserRegistrationResponse>(`/User/${id}`, {
+      return await this.request<UserRegistrationResponse>(`/User/deleteuser?id=${encodeURIComponent(id)}`, {
         method: "DELETE",
       });
     } catch (error) {
@@ -2445,7 +2502,7 @@ class ApiClient {
   // Configuration endpoints
   async getConfig(): Promise<ApiResponse<any>> {
     try {
-      return await this.request<ApiResponse<any>>("/config");
+      return await this.request<ApiResponse<any>>("/config/getconfigs");
     } catch (error) {
       // Fallback to mock data
       return createMockApiResponse(mockConfig);
@@ -2620,7 +2677,7 @@ class ApiClient {
 
     // Try direct endpoint first; if unavailable, fallback to proxy route in our dev server
     try {
-      const raw: any = await this.request<any>(`/DeviceLog${q ? `?${q}` : ""}`);
+      const raw: any = await this.request<any>(`/DeviceLog/getdevicelog${q ? `?${q}` : ""}`);
       return await fetchAndMap(raw);
     } catch (primaryError) {
       try {
@@ -2636,7 +2693,8 @@ class ApiClient {
         try { rawProxy = JSON.parse(text); } catch { rawProxy = text; }
         return await fetchAndMap(rawProxy);
       } catch (error) {
-        return createMockPaginatedResponse<Device>([], params);
+        //return createMockPaginatedResponse<Device>([], params);
+        return null
       }
     }
   }
