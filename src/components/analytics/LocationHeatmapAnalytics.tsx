@@ -270,7 +270,7 @@ const HeatmapLeafletMap = ({ filteredAssets, heatmapDensity, filters }: HeatmapL
       <div ref={mapRef} className="w-full h-96 rounded-lg" />
       <div className="absolute bottom-4 left-4 z-[10002] bg-white/90 backdrop-blur-sm rounded p-3 text-sm">
         <div className="font-medium">Visible Assets: {filteredAssets.length}</div>
-        <div className="text-muted-foreground">Mumbai Gas Network</div>
+        {currentSurvey && <div className="text-muted-foreground">{currentSurvey.name}</div>}
       </div>
     </div>
   );
