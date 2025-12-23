@@ -18,7 +18,6 @@ const DISABLE_API_HEALTH = (import.meta as any)?.env?.VITE_DISABLE_API_HEALTH ==
 const RAW_API_URL = (import.meta as any)?.env?.VITE_API_URL ? String((import.meta as any).env.VITE_API_URL).trim() : "";
 const CLEANED_API_URL = RAW_API_URL.replace(/^['"]|['"]$/g, "");
 // API base for data endpoints
-debugger;
 const API_ROOT = CLEANED_API_URL
   ? (CLEANED_API_URL.replace(/\/$/, "").endsWith("/api")
       ? CLEANED_API_URL.replace(/\/$/, "")

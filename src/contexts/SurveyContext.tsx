@@ -90,8 +90,7 @@ export const SurveyProvider: React.FC<SurveyProviderProps> = ({ children }) => {
       setIsLoading(true);
       try {
         const controller = new AbortController();
-        //const url = `https://localhost:7215/api/SurveyMaster?status=ACTIVE`;
-        const url = `${API_BASE_PATH}/SurveyMaster?status=ACTIVE`;
+        const url = `${API_BASE_PATH}/SurveyMaster/getactivesurvey?status=ACTIVE`;
         const resp = await fetch(url, { method: "GET", signal: controller.signal });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const json = await resp.json();

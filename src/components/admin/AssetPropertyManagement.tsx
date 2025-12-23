@@ -347,13 +347,15 @@ export default function AssetPropertyManagement() {
   // ✅ UPDATED FILTER: also filter by asset type NAME (Valve, Pump, etc.)
   const filtered = useMemo(() => {
     const term = searchTerm.toLowerCase();
+    if(items.length > 0){
     return items
-      .filter(i => i.name.toLowerCase().includes(term))
+      .filter(i => i.name?.toLowerCase().includes(term))
       .filter(i => {
         if (!selectedAssetType) return true; // show all if not selected
         const assetTypeName = assetTypes.find(a => a.id === i.assetTypeId)?.name;
         return assetTypeName?.toLowerCase() === selectedAssetType.toLowerCase();
       });
+    }
   }, [items, searchTerm, selectedAssetType, assetTypes]);
 
   const resetForm = () => {
@@ -522,7 +524,7 @@ export default function AssetPropertyManagement() {
           </div>
         </div>
 
-        {filtered.length === 0 ? (
+        {filtered?.length === 0 ? (
           <Alert>
             <AlertDescription>
               {searchTerm ? "No properties found for your search." : "No properties found. Create your first property to get started."}
@@ -545,7 +547,7 @@ export default function AssetPropertyManagement() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((item) => (
+                {filtered?.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell className="font-medium flex items-center gap-2">
                       {item.name}
@@ -569,7 +571,7 @@ export default function AssetPropertyManagement() {
           </div>
         )}
         <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>Showing {filtered.length} of {items.length} properties</span>
+          <span>Showing {filtered?.length} of {items.length} properties</span>
           <span>Admin Only Access</span>
         </div>
       </CardContent>

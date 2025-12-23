@@ -674,7 +674,7 @@ class ApiClient {
       if (params?.search) sp.append("search", params.search);
 
       // Prefer external API naming and normalize its shape
-      const raw: any = await this.request<any>(`/AssetProperties${sp.toString() ? `?${sp.toString()}` : ""}`);
+      const raw: any = await this.request<any>(`/AssetProperties/getassetproperties${sp.toString() ? `?${sp.toString()}` : ""}`);
 
       const timestamp = raw?.timestamp || new Date().toISOString();
 
@@ -2367,7 +2367,7 @@ class ApiClient {
 
       const query = searchParams.toString();
       return await this.request<UserListResponse>(
-        `/User${query ? `?${query}` : ""}`,
+        `/User/getuser${query ? `?${query}` : ""}`,
       );
     } catch (error) {
       console.warn("Failed to fetch users from API, using mock data");
