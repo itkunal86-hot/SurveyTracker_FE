@@ -16,8 +16,10 @@ import {
 
 
 const RAW_API_URL = (import.meta.env.VITE_API_URL ?? "").toString().trim();
+
 console.log("ENV URL:", import.meta.env.VITE_API_URL);
 console.log("ALL ENV:", import.meta.env);
+
 
 const CLEANED_API_URL = RAW_API_URL.replace(/^['"]|['"]$/g, "");
 
