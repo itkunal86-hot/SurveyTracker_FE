@@ -180,22 +180,26 @@ const clusterPoints = (
   if (!assets.length) return [];
 
   // Calculate cluster radius based on zoom level (in degrees)
-  // Higher zoom = smaller cluster radius
+  // Higher zoom = smaller cluster radius (more cluster separation)
+  // Thresholds are tuned to aggressively separate clusters when zooming in
   const clusterRadiusByZoom: { [key: number]: number } = {
-    5: 0.5,
-    6: 0.4,
-    7: 0.3,
-    8: 0.25,
-    9: 0.2,
-    10: 0.15,
-    11: 0.1,
-    12: 0.08,
-    13: 0.05,
+    // Zoomed out (country/region level) - large clusters
+    5: 0.8,
+    6: 0.7,
+    7: 0.6,
+    8: 0.5,
+    // Mid zoom (city level) - medium clusters
+    9: 0.35,
+    10: 0.25,
+    11: 0.15,
+    12: 0.1,
+    // Zoomed in (neighborhood/street level) - very small clusters or no clustering
+    13: 0.06,
     14: 0.03,
-    15: 0.02,
-    16: 0.01,
-    17: 0.005,
-    18: 0.002,
+    15: 0.01,
+    16: 0.005,
+    17: 0.002,
+    18: 0.0005,
   };
 
   const clusterRadius = clusterRadiusByZoom[zoomLevel] || 0.1;
