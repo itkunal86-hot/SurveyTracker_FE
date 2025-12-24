@@ -171,6 +171,88 @@ interface HeatmapLeafletMapProps {
   filters: HeatmapFilters;
 }
 
+// Clustering algorithm - groups nearby points based on current zoom level
+const clusterPoints = (
+  assets: any[],
+  zoomLevel: number,
+  mapBounds?: L.LatLngBounds
+) => {
+  if (!assets.length) return [];
+
+  // Calculate cluster radius based on zoom level (in degrees)
+  // Higher zoom = smaller cluster radius
+  const clusterRadiusByZoom: { [key: number]: number } = {
+    5: 0.5,
+    6: 0.4,
+    7: 0.3,
+    8: 0.25,
+    9: 0.2,
+    10: 0.15,
+    11: 0.1,
+    12: 0.08,
+    13: 0.05,
+    14: 0.03,
+    15: 0.02,
+    16: 0.01,
+    17: 0.005,
+    18: 0.002,
+  };
+
+  const clusterRadius = clusterRadiusByZoom[zoomLevel] || 0.1;
+
+  const clusters: Array<{
+    id: string;
+    lat: number;
+    lng: number;
+    devices: any[];
+    name: string;
+    isCluster: boolean;
+  }> = [];
+
+  const clustered = new Set<string>();
+
+  assets.forEach((asset, index) => {
+    if (clustered.has(String(index))) return;
+
+    const clusterDevices = [asset];
+    clustered.add(String(index));
+
+    // Find all nearby assets
+    assets.forEach((otherAsset, otherIndex) => {
+      if (index === otherIndex || clustered.has(String(otherIndex))) return;
+
+      const distance = Math.sqrt(
+        Math.pow(asset.coordinates.lat - otherAsset.coordinates.lat, 2) +
+        Math.pow(asset.coordinates.lng - otherAsset.coordinates.lng, 2)
+      );
+
+      if (distance <= clusterRadius) {
+        clusterDevices.push(otherAsset);
+        clustered.add(String(otherIndex));
+      }
+    });
+
+    // Calculate cluster center
+    const avgLat =
+      clusterDevices.reduce((sum, d) => sum + d.coordinates.lat, 0) /
+      clusterDevices.length;
+    const avgLng =
+      clusterDevices.reduce((sum, d) => sum + d.coordinates.lng, 0) /
+      clusterDevices.length;
+
+    clusters.push({
+      id: `cluster-${index}`,
+      lat: avgLat,
+      lng: avgLng,
+      devices: clusterDevices,
+      name: clusterDevices.length === 1 ? clusterDevices[0].name : `${clusterDevices.length} Devices`,
+      isCluster: clusterDevices.length > 1,
+    });
+  });
+
+  return clusters;
+};
+
 const HeatmapLeafletMap = ({ filteredAssets, heatmapDensity, filters }: HeatmapLeafletMapProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -179,6 +261,7 @@ const HeatmapLeafletMap = ({ filteredAssets, heatmapDensity, filters }: HeatmapL
     heatmap: L.LayerGroup;
     pipelines: L.LayerGroup;
   } | null>(null);
+  const currentZoomRef = useRef<number>(13);
 
   // Initialize map
   useEffect(() => {
@@ -201,40 +284,117 @@ const HeatmapLeafletMap = ({ filteredAssets, heatmapDensity, filters }: HeatmapL
 
     layersRef.current = layers;
 
+    // Handle zoom changes
+    const handleZoomChange = () => {
+      currentZoomRef.current = map.getZoom();
+    };
+
+    map.on('zoomend', handleZoomChange);
+
     return () => {
+      map.off('zoomend', handleZoomChange);
       map.remove();
       mapInstanceRef.current = null;
     };
   }, []);
 
-  // Update map data
+  // Update map data based on zoom level
   useEffect(() => {
-    if (!layersRef.current) return;
+    if (!layersRef.current || !mapInstanceRef.current) return;
 
-    //const { assets: assetLayer, heatmap: heatmapLayer, pipelines: pipelineLayer } = layersRef.current;
     const { heatmap: heatmapLayer } = layersRef.current;
 
     // Clear existing layers
-    //assetLayer.clearLayers();
     heatmapLayer.clearLayers();
-    //pipelineLayer.clearLayers();
 
-    // Add circles only for the visible assets, not for the entire grid
-    filteredAssets.forEach((asset) => {
-      const circle = L.circle([asset.coordinates.lat, asset.coordinates.lng], {
-        radius: 100,
-        color: '#f97316',
-        fillColor: '#f97316',
-        fillOpacity: 0.4,
-        weight: 2,
-      });
+    const zoom = currentZoomRef.current;
+    const clusters = clusterPoints(filteredAssets, zoom);
 
-      circle.bindTooltip(`${asset.name}`, {
-        permanent: false,
-        direction: 'top'
-      });
+    // Render clusters
+    clusters.forEach((cluster) => {
+      if (cluster.isCluster) {
+        // Render cluster circle with count
+        const clusterCircle = L.circle([cluster.lat, cluster.lng], {
+          radius: Math.max(500, cluster.devices.length * 300),
+          color: '#ef4444',
+          fillColor: '#fca5a5',
+          fillOpacity: 0.6,
+          weight: 3,
+          dashArray: '5, 5'
+        });
 
-      heatmapLayer.addLayer(circle);
+        const clusterLabel = L.divIcon({
+          html: `<div style="
+            background-color: #ef4444;
+            color: white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 16px;
+            border: 2px solid white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+          ">${cluster.devices.length}</div>`,
+          className: 'cluster-icon',
+          iconSize: [50, 50],
+          iconAnchor: [25, 25],
+        });
+
+        const marker = L.marker([cluster.lat, cluster.lng], {
+          icon: clusterLabel,
+        });
+
+        // Create tooltip with device names
+        const deviceNames = cluster.devices
+          .map((d) => d.name)
+          .join(', ');
+
+        marker.bindTooltip(`<strong>Cluster</strong><br/>${deviceNames}`, {
+          permanent: false,
+          direction: 'top',
+        });
+
+        clusterCircle.bindPopup(`
+          <div style="font-family: system-ui; font-size: 12px; max-width: 300px;">
+            <strong style="font-size: 14px; display: block; margin-bottom: 4px;">${cluster.devices.length} Devices</strong>
+            <div style="max-height: 150px; overflow-y: auto;">
+              ${cluster.devices.map((d) => `<div style="padding: 2px 0; border-bottom: 1px solid #eee;">• ${d.name}</div>`).join('')}
+            </div>
+          </div>
+        `);
+
+        heatmapLayer.addLayer(clusterCircle);
+        heatmapLayer.addLayer(marker);
+      } else {
+        // Render individual device
+        const device = cluster.devices[0];
+        const deviceCircle = L.circle([device.coordinates.lat, device.coordinates.lng], {
+          radius: 100,
+          color: '#f97316',
+          fillColor: '#f97316',
+          fillOpacity: 0.4,
+          weight: 2,
+        });
+
+        deviceCircle.bindTooltip(`${device.name}`, {
+          permanent: false,
+          direction: 'top'
+        });
+
+        deviceCircle.bindPopup(`
+          <div style="font-family: system-ui; padding: 4px; font-size: 12px;">
+            <strong style="font-size: 13px;">${device.name}</strong><br/>
+            <span style="color: #666;">Status: ${device.status || 'N/A'}</span><br/>
+            <span style="color: #666;">Type: ${device.type || 'N/A'}</span><br/>
+            ${device.batteryLevel ? `<span style="color: #666;">Battery: ${device.batteryLevel}%</span><br/>` : ''}
+          </div>
+        `);
+
+        heatmapLayer.addLayer(deviceCircle);
+      }
     });
 
     // Add pipeline segments if enabled
@@ -270,6 +430,7 @@ const HeatmapLeafletMap = ({ filteredAssets, heatmapDensity, filters }: HeatmapL
       <div ref={mapRef} className="w-full h-96 rounded-lg" />
       <div className="absolute bottom-4 left-4 z-[10002] bg-white/90 backdrop-blur-sm rounded p-3 text-sm">
         <div className="font-medium">Visible Assets: {filteredAssets.length}</div>
+        <div className="text-xs text-muted-foreground">Zoom: {currentZoomRef.current}</div>
         {/* {currentSurvey && <div className="text-muted-foreground">{currentSurvey.name}</div>} */}
       </div>
     </div>
