@@ -132,12 +132,12 @@ export const DeviceStatus = () => {
     const csvData = devices
       .map(
         (device) =>
-          `${device.id},${device.name},${device.type},${device.serialNumber || "N/A"},${device.status},${device.lastSeen || "N/A"},${device.location || "N/A"},${device.batteryLevel || "N/A"}%,${typeof device.accuracy === "number" ? device.accuracy : "N/A"}`,
+          `${device.id},${device.name},${device.type},${device.serialNumber || "N/A"},${device.status},${device.lastSeen ? new Date(device.lastSeen).toLocaleString() : "N/A"},"${device.coordinates ? `${device.coordinates.lat.toFixed(4)}, ${device.coordinates.lng.toFixed(4)}` : "N/A"}",${device.batteryLevel || "N/A"}%,${typeof device.accuracy === "number" ? device.accuracy : "N/A"}`,
       )
       .join("\n");
 
     const csvHeader =
-      "Device ID,Name,Type,Serial Number,Status,Last Seen,Location,Battery Level,Accuracy\n";
+      "Device ID,Name,Type,Serial Number,Status,Last Update,Coordinates (Lat/Lng),Battery Level,Accuracy\n";
     const csvContent = csvHeader + csvData;
 
     const blob = new Blob([csvContent], { type: "text/csv" });
@@ -468,15 +468,16 @@ export const DeviceStatus = () => {
                   sortDirection={tableConfig.sortConfig.direction}
                   onSort={tableConfig.handleSort}
                 >
-                  Last Seen
+                  Last Update
                 </SortableTableHead>
                 <SortableTableHead
                   sortKey="location"
                   currentSortKey={tableConfig.sortConfig.key}
                   sortDirection={tableConfig.sortConfig.direction}
                   onSort={tableConfig.handleSort}
+                  sortable={false}
                 >
-                  Location
+                  Location (Coordinates)
                 </SortableTableHead>
                 <SortableTableHead
                   sortKey="batteryLevel"
@@ -573,8 +574,10 @@ export const DeviceStatus = () => {
                       ? new Date(device.lastSeen).toLocaleString()
                       : "Unknown"}
                   </TableCell>
-                  <TableCell className="text-sm">
-                    {device.location || "Unknown"}
+                  <TableCell className="text-sm font-mono">
+                    {device.coordinates
+                      ? `${device.coordinates.lat.toFixed(4)}, ${device.coordinates.lng.toFixed(4)}`
+                      : "Unknown"}
                   </TableCell>
                   <TableCell>
                     <span className={getBatteryColor(device.batteryLevel || 0)}>
