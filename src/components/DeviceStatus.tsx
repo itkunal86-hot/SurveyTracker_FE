@@ -494,7 +494,7 @@ export const DeviceStatus = () => {
                 >
                   Accuracy
                 </SortableTableHead>
-                <TableHead>Actions</TableHead>
+                {/* <TableHead>Actions</TableHead> */}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -535,12 +535,6 @@ export const DeviceStatus = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() =>
-                              handleSurveyorClick(
-                                device.surveyor!,
-                                device.id,
-                              )
-                            }
                             className="h-auto p-0 text-left hover:text-primary"
                           >
                             <div className="flex items-center space-x-2">
@@ -584,11 +578,11 @@ export const DeviceStatus = () => {
                   <TableCell>
                     {typeof device.accuracy === "number" ? device.accuracy.toFixed(2) : "N/A"}
                   </TableCell>
-                  <TableCell>
+                  {/* <TableCell>
                     <Button size="sm" onClick={() => navigate(`/daily-personal-maps?device=${encodeURIComponent(device.id)}`)}>
                       Instrument
                     </Button>
-                  </TableCell>
+                  </TableCell> */}
                 </TableRow>
               ))}
             </TableBody>

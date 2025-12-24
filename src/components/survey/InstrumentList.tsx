@@ -198,16 +198,7 @@ export const InstrumentList = () => {
                     </TableCell>
                     <TableCell>{getHealthBadge(instrument.healthStatus)}</TableCell>
                     <TableCell>{instrument.totalUsage}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm">
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button size="sm" onClick={() => navigate(`/daily-personal-maps?device=${encodeURIComponent(instrument.id)}`)}>
-                          Instrument
-                        </Button>
-                      </div>
-                    </TableCell>
+                    
                   </TableRow>
                 ))}
               </TableBody>
@@ -218,3 +209,4 @@ export const InstrumentList = () => {
     </div>
   );
 };
+
