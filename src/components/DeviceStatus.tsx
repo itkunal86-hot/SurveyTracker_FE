@@ -468,15 +468,16 @@ export const DeviceStatus = () => {
                   sortDirection={tableConfig.sortConfig.direction}
                   onSort={tableConfig.handleSort}
                 >
-                  Last Seen
+                  Last Update
                 </SortableTableHead>
                 <SortableTableHead
                   sortKey="location"
                   currentSortKey={tableConfig.sortConfig.key}
                   sortDirection={tableConfig.sortConfig.direction}
                   onSort={tableConfig.handleSort}
+                  sortable={false}
                 >
-                  Location
+                  Location (Coordinates)
                 </SortableTableHead>
                 <SortableTableHead
                   sortKey="batteryLevel"
