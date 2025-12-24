@@ -179,6 +179,19 @@ const clusterPoints = (
 ) => {
   if (!assets.length) return [];
 
+  // Disable clustering at high zoom levels to show individual points
+  if (zoomLevel >= 15) {
+    // At high zoom levels, return each asset as an individual point (no clustering)
+    return assets.map((asset, index) => ({
+      id: `device-${index}`,
+      lat: asset.coordinates.lat,
+      lng: asset.coordinates.lng,
+      devices: [asset],
+      name: asset.name,
+      isCluster: false,
+    }));
+  }
+
   // Calculate cluster radius based on zoom level (in degrees)
   // Higher zoom = smaller cluster radius (more cluster separation)
   // Thresholds are tuned to aggressively separate clusters when zooming in
@@ -193,13 +206,9 @@ const clusterPoints = (
     10: 0.25,
     11: 0.15,
     12: 0.1,
-    // Zoomed in (neighborhood/street level) - very small clusters or no clustering
+    // Zoomed in (neighborhood/street level) - very small clusters
     13: 0.06,
     14: 0.03,
-    15: 0.01,
-    16: 0.005,
-    17: 0.002,
-    18: 0.0005,
   };
 
   const clusterRadius = clusterRadiusByZoom[zoomLevel] || 0.1;
