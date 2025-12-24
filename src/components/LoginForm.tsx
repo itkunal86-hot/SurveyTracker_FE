@@ -55,7 +55,7 @@ export const LoginForm = ({ onLogin }: LoginFormProps) => {
           case "MANAGER":
             appRole = "manager";
             break;
-          case "SURVEY_MANAGER":
+          case "SURVEY_ANAGER":
             appRole = "survey";
             break;
           default:

@@ -270,7 +270,7 @@ const HeatmapLeafletMap = ({ filteredAssets, heatmapDensity, filters }: HeatmapL
       <div ref={mapRef} className="w-full h-96 rounded-lg" />
       <div className="absolute bottom-4 left-4 z-[10002] bg-white/90 backdrop-blur-sm rounded p-3 text-sm">
         <div className="font-medium">Visible Assets: {filteredAssets.length}</div>
-        {currentSurvey && <div className="text-muted-foreground">{currentSurvey.name}</div>}
+        {/* {currentSurvey && <div className="text-muted-foreground">{currentSurvey.name}</div>} */}
       </div>
     </div>
   );
@@ -299,7 +299,7 @@ export const LocationHeatmapAnalytics = () => {
   } = useDeviceLogs({ limit: 100, surveyId: currentSurvey?.id });
 
   const devices = Array.isArray(devicesResponse?.data) ? devicesResponse.data : [];
-  console.log(devices)
+  //console.log(devices)
   const usageData = useMemo(() => generateUsageData(devices), [devices]);
 
   const filteredAssets = useMemo(() => {

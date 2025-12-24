@@ -303,7 +303,7 @@ export interface UserRegistrationRequest {
   firstName: string;
   lastName: string;
   password: string;
-  role: "MANAGER" | "SURVEY_MANAGER";
+  role: "MANAGER" | "SURVEY MANAGER";
   company: string;
 }
 
@@ -319,7 +319,7 @@ export interface UserData {
   email: string;
   firstName: string;
   lastName: string;
-  role: "ADMIN" | "MANAGER" | "SURVEY_MANAGER";
+  role: "ADMIN" | "MANAGER" | "SURVEY MANAGER";
   company: string;
   isActive: boolean;
   createdAt: string;
@@ -337,7 +337,7 @@ export interface UserUpdateRequest {
   email?: string;
   firstName?: string;
   lastName?: string;
-  role?: "MANAGER" | "SURVEY_MANAGER";
+  role?: "MANAGER" | "SURVEY MANAGER";
   company?: string;
   isActive?: boolean;
 }
@@ -421,7 +421,7 @@ const DEMO_USERS: UserData[] = [
     email: "mike.wilson@company.com",
     firstName: "Mike",
     lastName: "Wilson",
-    role: "SURVEY_MANAGER",
+    role: "SURVEY MANAGER",
     company: "Infrastep",
     isActive: true,
     createdAt: "2024-03-10T09:15:00Z",
@@ -432,7 +432,7 @@ const DEMO_USERS: UserData[] = [
     email: "emily.davis@company.com",
     firstName: "Emily",
     lastName: "Davis",
-    role: "SURVEY_MANAGER",
+    role: "SURVEY MANAGER",
     company: "Infrastep",
     isActive: false,
     createdAt: "2024-01-25T11:20:00Z",
@@ -2463,7 +2463,7 @@ class ApiClient {
       });
 
       return {
-        success: (response?.status_code ?? 200) >= 200 && (response?.status_code ?? 200) < 300,
+        success: (response?.status_code ?? 200) == 200,
         message: response.message ?? "User updated successfully",
         data: response.data ?? null,
         timestamp: response.timestamp ?? new Date().toISOString(),

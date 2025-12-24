@@ -61,7 +61,7 @@ export interface User {
   firstName: string;
   lastName: string;
   email: string;
-  role: 'ADMIN' | 'MANAGER' | 'SURVEY_MANAGER';
+  role: 'ADMIN' | 'MANAGER' | 'SURVEY MANAGER';
   company: string;
   isActive: boolean;
   createdAt: string;

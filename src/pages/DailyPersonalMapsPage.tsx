@@ -11,7 +11,7 @@ export default function DailyPersonalMapsPage() {
       const raw = sessionStorage.getItem("currentUser");
       if (raw) {
         const user = JSON.parse(raw);
-        const roleFromServer = (user?.role as string) || "SURVEY_MANAGER";
+        const roleFromServer = (user?.role as string) || "SURVEY MANAGER";
         let appRole: "admin" | "manager" | "survey" = "survey";
         if (roleFromServer === "ADMIN") appRole = "admin";
         else if (roleFromServer === "MANAGER") appRole = "manager";

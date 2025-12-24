@@ -32,7 +32,7 @@ const router = express.Router();
  *           description: User's password
  *         role:
  *           type: string
- *           enum: [MANAGER, SURVEY_MANAGER]
+ *           enum: [MANAGER, SURVEY MANAGER]
  *           description: User's role in the system
  *         company:
  *           type: string
@@ -70,7 +70,7 @@ const router = express.Router();
  *           description: User's last name
  *         role:
  *           type: string
- *           enum: [ADMIN, MANAGER, SURVEY_MANAGER]
+ *           enum: [ADMIN, MANAGER, SURVEY MANAGER]
  *           description: User's role in the system
  *         company:
  *           type: string
@@ -118,7 +118,7 @@ let users = [
     email: "mike.wilson@company.com",
     firstName: "Mike",
     lastName: "Wilson",
-    role: "SURVEY_MANAGER",
+    role: "SURVEY MANAGER",
     company: "Infrastep",
     isActive: true,
     createdAt: "2024-03-10T09:15:00Z",
@@ -129,7 +129,7 @@ let users = [
     email: "emily.davis@company.com",
     firstName: "Emily",
     lastName: "Davis",
-    role: "SURVEY_MANAGER",
+    role: "SURVEY MANAGER",
     company: "Infrastep",
     isActive: false,
     createdAt: "2024-01-25T11:20:00Z",
@@ -274,9 +274,9 @@ router.post("/login", (req, res) => {
 
     // Update last login
     const userIndex = users.findIndex(u => u.id === user.id);
-    if (userIndex !== -1) {
-      users[userIndex].lastLogin = new Date().toISOString();
-    }
+    // if (userIndex !== -1) {
+    //   users[userIndex].lastLogin = new Date().toISOString();
+    // }
 
     // Remove sensitive information before sending response
     const safeUser = {
@@ -288,7 +288,9 @@ router.post("/login", (req, res) => {
       company: user.company,
       isActive: user.isActive,
       createdAt: user.createdAt,
-      lastLogin: users[userIndex].lastLogin,
+      lastLogin: userIndex !== -1 ? users[userIndex]?.lastLogin : null,
+
+      //lastLogin: users[userIndex]?.lastLogin,
     };
 
     console.log(`✅ User logged in: ${user.firstName} ${user.lastName} (${user.email}) - Role: ${user.role}`);
@@ -622,7 +624,7 @@ router.post("/reset-password", (req, res) => {
     const user = users[userIndex];
 
     // Check if user is active
-    if (!user.isActive) {
+    if (!user?.isActive) {
       return res.status(400).json({
         status_code: 400,
         status_message: "error",
@@ -855,7 +857,7 @@ router.post("/change-password", (req, res) => {
     const user = users[userIndex];
 
     // Check if user is active
-    if (!user.isActive) {
+    if (!user?.isActive) {
       return res.status(400).json({
         status_code: 400,
         status_message: "error",
@@ -976,11 +978,11 @@ router.post("/register", (req, res) => {
     }
 
     // Validate role
-    if (!["MANAGER", "SURVEY_MANAGER"].includes(role)) {
+    if (!["MANAGER", "SURVEY MANAGER"].includes(role)) {
       return res.status(400).json({
         status_code: 400,
         status_message: "error",
-        message: "Role must be either MANAGER or SURVEY_MANAGER",
+        message: "Role must be either MANAGER or SURVEY MANAGER",
         data: null,
       });
     }
@@ -1016,7 +1018,7 @@ router.post("/register", (req, res) => {
       company,
       isActive: true,
       createdAt: new Date().toISOString(),
-      lastLogin: null,
+      lastLogin: "",
     };
 
     users.push(newUser);
@@ -1053,7 +1055,7 @@ router.post("/register", (req, res) => {
  *         name: role
  *         schema:
  *           type: string
- *           enum: [ADMIN, MANAGER, SURVEY_MANAGER]
+ *           enum: [ADMIN, MANAGER, SURVEY MANAGER]
  *         description: Filter by user role
  *       - in: query
  *         name: isActive
@@ -1249,7 +1251,7 @@ router.get("/:id", (req, res) => {
  *                 type: string
  *               role:
  *                 type: string
- *                 enum: [MANAGER, SURVEY_MANAGER]
+ *                 enum: [MANAGER, SURVEY MANAGER]
  *               company:
  *                 type: string
  *               isActive:
@@ -1293,11 +1295,11 @@ router.put("/:id", (req, res) => {
     }
 
     // Validate role if provided
-    if (role && !["MANAGER", "SURVEY_MANAGER"].includes(role)) {
+    if (role && !["MANAGER", "SURVEY MANAGER"].includes(role)) {
       return res.status(400).json({
         status_code: 400,
         status_message: "error",
-        message: "Role must be either MANAGER or SURVEY_MANAGER",
+        message: "Role must be either MANAGER or SURVEY MANAGER",
         data: null,
       });
     }
@@ -1371,7 +1373,7 @@ router.delete("/:id", (req, res) => {
     }
 
     // Prevent deletion of admin users
-    if (users[userIndex].role === "ADMIN") {
+    if (users[userIndex]?.role === "ADMIN") {
       return res.status(400).json({
         status_code: 400,
         status_message: "error",
@@ -1383,13 +1385,13 @@ router.delete("/:id", (req, res) => {
     const deletedUser = users[userIndex];
     users.splice(userIndex, 1);
 
-    console.log(`🗑️ User deleted: ${deletedUser.firstName} ${deletedUser.lastName} (${deletedUser.email})`);
+    console.log(`🗑️ User deleted: ${deletedUser?.firstName} ${deletedUser?.lastName} (${deletedUser?.email})`);
 
     res.status(200).json({
       status_code: 200,
       status_message: "success",
       message: "User deleted successfully",
-      data: deletedUser.id,
+      data: deletedUser?.id,
     });
   } catch (error) {
     console.error("Error deleting user:", error);

@@ -16,7 +16,7 @@ interface UserFormData {
   firstName: string;
   lastName: string;
   email: string;
-  role: "MANAGER" | "SURVEY_MANAGER";
+  role: "MANAGER" | "SURVEY MANAGER";
   company: string;
   password: string;
   confirmPassword: string;
@@ -108,7 +108,7 @@ export default function UserManagement() {
           company: formData.company,
         });
 
-        if (response.status_code === 200) {
+        if (response.success) {
           toast({
             title: "User Updated",
             description: `${formData.firstName} ${formData.lastName} has been updated successfully.`,
@@ -158,7 +158,7 @@ export default function UserManagement() {
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
-      role: user.role as "MANAGER" | "SURVEY_MANAGER",
+      role: user.role as "MANAGER" | "SURVEY MANAGER",
       company: user.company,
       password: "",
       confirmPassword: "",
@@ -175,7 +175,7 @@ export default function UserManagement() {
         isActive: !user.isActive,
       });
 
-      if (response.status_code === 200) {
+      if (response.success) {
         toast({
           title: "User Status Updated",
           description: "User status has been changed successfully.",
@@ -221,7 +221,7 @@ export default function UserManagement() {
         return <Badge variant="destructive" className="flex items-center gap-1"><Shield className="h-3 w-3" /> Admin</Badge>;
       case "MANAGER":
         return <Badge variant="default" className="flex items-center gap-1"><Users className="h-3 w-3" /> Manager</Badge>;
-      case "SURVEY_MANAGER":
+      case "SURVEY MANAGER":
         return <Badge variant="secondary" className="flex items-center gap-1"><UserCheck className="h-3 w-3" /> Survey Manager</Badge>;
       default:
         return <Badge variant="outline">{role}</Badge>;
@@ -232,7 +232,7 @@ export default function UserManagement() {
     totalUsers: users.length,
     activeUsers: users.filter(u => u.isActive).length,
     managers: users.filter(u => u.role === "MANAGER").length,
-    surveyManagers: users.filter(u => u.role === "SURVEY_MANAGER").length,
+    surveyManagers: users.filter(u => u.role === "SURVEY MANAGER").length,
   };
 
   return (
@@ -300,7 +300,7 @@ export default function UserManagement() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="role">Role</Label>
-                <Select value={formData.role} onValueChange={(value: "MANAGER" | "SURVEY_MANAGER") => setFormData({ ...formData, role: value })}>
+                <Select value={formData.role} onValueChange={(value: "MANAGER" | "SURVEY MANAGER") => setFormData({ ...formData, role: value })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
