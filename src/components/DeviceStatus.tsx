@@ -574,8 +574,10 @@ export const DeviceStatus = () => {
                       ? new Date(device.lastSeen).toLocaleString()
                       : "Unknown"}
                   </TableCell>
-                  <TableCell className="text-sm">
-                    {device.location || "Unknown"}
+                  <TableCell className="text-sm font-mono">
+                    {device.coordinates
+                      ? `${device.coordinates.lat.toFixed(4)}, ${device.coordinates.lng.toFixed(4)}`
+                      : "Unknown"}
                   </TableCell>
                   <TableCell>
                     <span className={getBatteryColor(device.batteryLevel || 0)}>
