@@ -144,8 +144,10 @@ const HeatmapLeafletMap = ({ filteredAssets }: any) => {
   useEffect(() => {
     if (!mapRef.current || mapInstance.current) return;
 
-    const map = L.map(mapRef.current).setView([22.57, 88.36], 12);
-
+    //const map = L.map(mapRef.current).setView([22.57, 88.36], 12);
+    // Assam (Guwahati) focus
+    const ASSAM_CENTER: [number, number] = [26.1445, 91.7362];
+    const map = L.map(mapRef.current).setView(ASSAM_CENTER, 6);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: "© OpenStreetMap contributors",
     }).addTo(map);
@@ -167,8 +169,8 @@ const HeatmapLeafletMap = ({ filteredAssets }: any) => {
     if (!layerRef.current) return;
 
     layerRef.current.clearLayers();
-
-    const clusters = clusterPoints(filteredAssets, zoomLevel);
+    const latestMapAssets = getLatestAssetsForMap(filteredAssets);
+    const clusters = clusterPoints(latestMapAssets, zoomLevel);
 
     clusters.forEach((c) => {
       if (c.isCluster) {
@@ -227,6 +229,26 @@ const HeatmapLeafletMap = ({ filteredAssets }: any) => {
 
   return <div ref={mapRef} className="w-full h-96 rounded-lg" />;
 };
+const getLatestAssetsForMap = (assets: any[]) => {
+  const latestMap = new Map<string, any>();
+
+  assets.forEach((asset) => {
+    const deviceId = asset.deviceId || asset.device_id || asset.id;
+    if (!deviceId) return;
+
+    const existing = latestMap.get(deviceId);
+
+    if (
+      !existing ||
+      new Date(asset.timestamp || asset.createdAt) >
+        new Date(existing.timestamp || existing.createdAt)
+    ) {
+      latestMap.set(deviceId, asset);
+    }
+  });
+
+  return Array.from(latestMap.values());
+};
 
 /* ================= MAIN PAGE ================= */
 
@@ -248,7 +270,7 @@ export const LocationHeatmapAnalytics = () => {
         d.coordinates.lng !== 0
     );
   }, [devices]);
-
+  const visibleMapAssets = getLatestAssetsForMap(filteredAssets);
   return (
     <Card>
       <CardHeader>
@@ -257,7 +279,7 @@ export const LocationHeatmapAnalytics = () => {
       <CardContent>
         <HeatmapLeafletMap filteredAssets={filteredAssets} />
         <div className="mt-2 text-sm text-muted-foreground">
-          Visible Assets: {filteredAssets.length}
+          Visible Assets: {visibleMapAssets.length}
         </div>
       </CardContent>
     </Card>
