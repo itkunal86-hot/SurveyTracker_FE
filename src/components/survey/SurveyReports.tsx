@@ -104,15 +104,43 @@ export const SurveyReports = () => {
     },
   ];
 
-  const handleGenerateReport = () => {
+  const handleGenerateReport = async () => {
     if (!reportType || !startDate || !endDate) {
       alert("Please select report type and date range");
       return;
     }
-    
-    // In real implementation, this would call an API to generate the report
-    console.log("Generating report:", { reportType, startDate, endDate });
-    alert("Report generation started. You'll be notified when it's ready.");
+
+    try {
+      // Build the request payload
+      const payload = {
+        reportType,
+        startDate,
+        endDate,
+        deviceId: selectedDevice === "all" ? null : selectedDevice,
+      };
+
+      // Call the report generation API endpoint
+      const url = `${API_BASE_PATH}/reports/generate`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to generate report: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log("Report generation response:", data);
+      alert("Report generation started. You'll be notified when it's ready.");
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to generate report";
+      console.error("Error generating report:", error);
+      alert(`Error: ${errorMessage}`);
+    }
   };
 
   const handleDownloadReport = (reportId: number) => {
