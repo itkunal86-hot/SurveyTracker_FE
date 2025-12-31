@@ -2634,7 +2634,7 @@ class ApiClient {
         const batteryLevel = typeof batteryRaw === "number" ? batteryRaw : (typeof batteryRaw === "string" ? Number(batteryRaw.replace(/%/g, "")) : undefined);
 
         const lastSeen = String(
-          it.lastUpdate ?? it.LastSeen ?? it.lastPing ?? it.LastPing ?? it.timestamp ?? it.Timestamp ?? it.logTime ?? it.LogTime ?? ""
+          it.lastUpdated ?? it.LastUpdated ?? it.lastUpdate ?? it.LastSeen ?? it.lastPing ?? it.LastPing ?? it.timestamp ?? it.Timestamp ?? it.logTime ?? it.LogTime ?? ""
         ) || undefined;
 
         const accuracyVal = it.accuracy ?? it.Accuracy;
