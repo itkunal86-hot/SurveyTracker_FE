@@ -130,7 +130,9 @@ export const DeviceLogGrid = () => {
         ),
         batteryLevel: Number(item.battery ?? item.Battery ?? item.batteryLevel ?? item.BatteryLevel) || undefined,
         lastSeen: String(
-          item.lastSeen ??
+          item.lastUpdated ??
+            item.LastUpdated ??
+            item.lastSeen ??
             item.LastSeen ??
             item.lastPing ??
             item.LastPing ??
