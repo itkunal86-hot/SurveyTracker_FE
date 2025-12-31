@@ -205,6 +205,36 @@ export const SurveyReports = () => {
               </div>
             </div>
 
+            {/* Device Selector */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Device</Label>
+              <Select value={selectedDevice} onValueChange={setSelectedDevice} disabled={devicesLoading}>
+                <SelectTrigger>
+                  {devicesLoading ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Loading devices...
+                    </span>
+                  ) : (
+                    <SelectValue placeholder="Select a device" />
+                  )}
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    <span>All Devices</span>
+                  </SelectItem>
+                  {devices.map((device) => (
+                    <SelectItem key={device.id} value={device.id}>
+                      <span>{device.name}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {devicesError && (
+                <p className="text-sm text-red-600">{devicesError}</p>
+              )}
+            </div>
+
             {/* Report Type Selector */}
             <div className="space-y-3">
               <Label className="text-sm font-medium">Report Type</Label>
