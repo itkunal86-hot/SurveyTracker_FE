@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Activity, Battery, MapPin, Users, Wifi, Smartphone, HardDrive } from "lucide-react";
 import { LocationHeatmapAnalytics } from "@/components/analytics/LocationHeatmapAnalytics";
+import { DeviceLogGrid } from "@/components/survey/DeviceLogGrid";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import { useState } from "react";
 import { useDeviceAlerts } from "@/hooks/useApiQueries";
@@ -206,6 +207,11 @@ useEffect(() => {
             <LocationHeatmapAnalytics />
           </CardContent>
         </Card>
+      </div>
+
+      {/* Device Logs Grid */}
+      <div className="grid grid-cols-1 gap-6">
+        <DeviceLogGrid />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
