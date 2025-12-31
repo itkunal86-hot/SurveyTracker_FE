@@ -319,12 +319,12 @@ export const DeviceLogGrid = () => {
                     <TableCell>
                       {log.lastSeen ? (
                         <div className="flex items-center space-x-1">
-                          {log.lastSeen.includes("mins") || log.lastSeen.includes("ago") ? (
+                          {log.lastSeen.toLowerCase().includes("mins") || log.lastSeen.toLowerCase().includes("ago") || log.lastSeen.toLowerCase().includes("just now") ? (
                             <Wifi className="w-3 h-3 text-green-500" />
                           ) : (
                             <WifiOff className="w-3 h-3 text-red-500" />
                           )}
-                          <span className="text-sm">{log.lastSeen}</span>
+                          <span className="text-sm">{formatLastSeen(log.lastSeen)}</span>
                         </div>
                       ) : (
                         <span className="text-sm text-muted-foreground">-</span>
