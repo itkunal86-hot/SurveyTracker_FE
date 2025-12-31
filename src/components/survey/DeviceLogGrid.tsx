@@ -1,0 +1,307 @@
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Wifi, WifiOff, Battery, Activity, RefreshCw } from "lucide-react";
+import { API_BASE_PATH } from "@/lib/api";
+
+interface DeviceLog {
+  id: string;
+  name: string;
+  type?: string;
+  status: string;
+  batteryLevel?: number;
+  lastSeen?: string;
+  coordinates?: { lat: number; lng: number };
+  surveyor?: string;
+  serialNumber?: string;
+  modelName?: string;
+}
+
+const TIME_OPTIONS = [
+  { value: "5", label: "Last 5 minutes" },
+  { value: "10", label: "Last 10 minutes" },
+  { value: "30", label: "Last 30 minutes" },
+  { value: "today", label: "Today" },
+];
+
+export const DeviceLogGrid = () => {
+  const [selectedTime, setSelectedTime] = useState("5");
+  const [deviceLogs, setDeviceLogs] = useState<DeviceLog[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 });
+
+  // Convert time selection to minutes
+  const getMinutesValue = (timeValue: string): number => {
+    if (timeValue === "today") {
+      // Calculate minutes since midnight
+      const now = new Date();
+      const midnight = new Date(now);
+      midnight.setHours(0, 0, 0, 0);
+      const minutesSinceMidnight = Math.floor(
+        (now.getTime() - midnight.getTime()) / (1000 * 60)
+      );
+      return minutesSinceMidnight;
+    }
+    return parseInt(timeValue, 10);
+  };
+
+  // Fetch device logs
+  const fetchDeviceLogs = async (page: number = 1) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const minutes = getMinutesValue(selectedTime);
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(pagination.limit),
+        minutes: String(minutes),
+      });
+
+      const response = await fetch(
+        `${API_BASE_PATH}/DeviceLog/getdevicelog?${params.toString()}`,
+        {
+          method: "GET",
+          headers: { Accept: "application/json" },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch device logs: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      // Handle various response formats
+      const rawItems = Array.isArray(data?.data?.items)
+        ? data.data.items
+        : Array.isArray(data?.data?.data)
+          ? data.data.data
+          : Array.isArray(data?.data)
+            ? data.data
+            : Array.isArray(data)
+              ? data
+              : [];
+
+      const normalizeStatus = (val: any): string => {
+        const s = String(val || "").toUpperCase();
+        if (s === "ONLINE" || s === "CONNECTED") return "ACTIVE";
+        if (s === "OFFLINE" || s === "DISCONNECTED") return "INACTIVE";
+        if (s === "MAINTENANCE" || s === "SERVICE") return "MAINTENANCE";
+        if (s === "ERROR" || s === "FAULT") return "ERROR";
+        return val || "UNKNOWN";
+      };
+
+      const mapped: DeviceLog[] = rawItems.map((item: any) => ({
+        id: String(
+          item.id ??
+            item.ID ??
+            item.deviceId ??
+            item.DeviceId ??
+            item.device_id ??
+            item.instrumentId ??
+            item.InstrumentId ??
+            `device-${Date.now()}`
+        ),
+        name: String(
+          item.name ??
+            item.Name ??
+            item.deviceName ??
+            item.DeviceName ??
+            item.instrument ??
+            item.Instrument ??
+            "Unknown"
+        ),
+        type: String(
+          item.type ??
+            item.Type ??
+            item.deviceType ??
+            item.DeviceType ??
+            item.model ??
+            item.Model ??
+            "DEVICE"
+        ),
+        status: normalizeStatus(
+          item.status ?? item.Status ?? item.state ?? item.State
+        ),
+        batteryLevel: Number(item.battery ?? item.Battery ?? item.batteryLevel ?? item.BatteryLevel) || undefined,
+        lastSeen: String(
+          item.lastSeen ??
+            item.LastSeen ??
+            item.lastPing ??
+            item.LastPing ??
+            item.timestamp ??
+            item.Timestamp ??
+            ""
+        ) || undefined,
+        coordinates:
+          item.coordinates && typeof item.coordinates.lat === "number"
+            ? { lat: item.coordinates.lat, lng: item.coordinates.lng }
+            : undefined,
+        surveyor: item.surveyor ?? item.Surveyor ?? undefined,
+        serialNumber: String(item.serialNumber ?? item.SerialNumber ?? item.serial_no ?? item.SERIAL_NO ?? "") || undefined,
+        modelName: item.modelName ?? item.ModelName ?? undefined,
+      }));
+
+      setDeviceLogs(mapped);
+      setPagination({
+        page,
+        limit: pagination.limit,
+        total: data?.data?.pagination?.total || mapped.length,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to load device logs";
+      setError(message);
+      console.error("Error fetching device logs:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fetch on component mount and when time selection changes
+  useEffect(() => {
+    fetchDeviceLogs(1);
+  }, [selectedTime]);
+
+  const getBatteryColor = (battery?: number) => {
+    if (battery === undefined) return "text-muted-foreground";
+    if (battery < 20) return "text-red-500";
+    if (battery < 50) return "text-orange-500";
+    return "text-green-500";
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status.toUpperCase()) {
+      case "ACTIVE":
+        return <Badge className="bg-green-100 text-green-800">Active</Badge>;
+      case "INACTIVE":
+        return <Badge className="bg-red-100 text-red-800">Inactive</Badge>;
+      case "MAINTENANCE":
+        return <Badge className="bg-orange-100 text-orange-800">Maintenance</Badge>;
+      case "ERROR":
+        return <Badge className="bg-red-100 text-red-800">Error</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle>Device Logs</CardTitle>
+          <div className="flex items-center gap-3">
+            <Select value={selectedTime} onValueChange={setSelectedTime}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Select time range" />
+              </SelectTrigger>
+              <SelectContent>
+                {TIME_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => fetchDeviceLogs(pagination.page)}
+              disabled={isLoading}
+            >
+              <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            {error}
+          </div>
+        )}
+
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Device ID</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Battery</TableHead>
+                <TableHead>Last Seen</TableHead>
+                <TableHead>Surveyor</TableHead>
+                <TableHead>Serial Number</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
+                    Loading device logs...
+                  </TableCell>
+                </TableRow>
+              ) : deviceLogs.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
+                    No device logs found for the selected time range
+                  </TableCell>
+                </TableRow>
+              ) : (
+                deviceLogs.map((log) => (
+                  <TableRow key={log.id}>
+                    <TableCell className="font-medium">{log.id}</TableCell>
+                    <TableCell>{log.name}</TableCell>
+                    <TableCell className="text-sm">{log.type}</TableCell>
+                    <TableCell>{getStatusBadge(log.status)}</TableCell>
+                    <TableCell>
+                      {log.batteryLevel !== undefined ? (
+                        <div className="flex items-center space-x-1">
+                          <Battery className={`w-4 h-4 ${getBatteryColor(log.batteryLevel)}`} />
+                          <span className={`text-sm ${getBatteryColor(log.batteryLevel)}`}>
+                            {log.batteryLevel}%
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {log.lastSeen ? (
+                        <div className="flex items-center space-x-1">
+                          {log.lastSeen.includes("mins") || log.lastSeen.includes("ago") ? (
+                            <Wifi className="w-3 h-3 text-green-500" />
+                          ) : (
+                            <WifiOff className="w-3 h-3 text-red-500" />
+                          )}
+                          <span className="text-sm">{log.lastSeen}</span>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-sm">{log.surveyor || "-"}</TableCell>
+                    <TableCell className="text-sm">{log.serialNumber || "-"}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        {!isLoading && deviceLogs.length > 0 && (
+          <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
+            <span>
+              Showing {deviceLogs.length} of {pagination.total} logs
+            </span>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
