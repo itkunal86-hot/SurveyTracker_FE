@@ -333,10 +333,33 @@ export const SurveyReports = () => {
               )}
             </div>
 
-            <Button onClick={handleGenerateReport} className="w-full">
-              <Download className="w-4 h-4 mr-2" />
-              Generate Report
-            </Button>
+            <div className="space-y-3">
+              <Button
+                onClick={handleGenerateDeviceReport}
+                className="w-full"
+                disabled={isGeneratingDeviceReport}
+              >
+                {isGeneratingDeviceReport ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4 mr-2" />
+                    Generate Device Report
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={handleGenerateReport}
+                className="w-full"
+                variant="outline"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Generate Analysis Report
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
