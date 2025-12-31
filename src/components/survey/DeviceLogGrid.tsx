@@ -195,6 +195,45 @@ export const DeviceLogGrid = () => {
     }
   };
 
+  const formatLastSeen = (dateString?: string): string => {
+    if (!dateString) return "-";
+
+    try {
+      // Parse the ISO timestamp
+      const date = new Date(dateString);
+
+      // Check if the date is valid
+      if (isNaN(date.getTime())) {
+        return dateString;
+      }
+
+      // Calculate time difference from now
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMs / 3600000);
+      const diffDays = Math.floor(diffMs / 86400000);
+
+      // Return relative time if recent
+      if (diffMins < 1) return "just now";
+      if (diffMins < 60) return `${diffMins} mins ago`;
+      if (diffHours < 24) return `${diffHours} hours ago`;
+      if (diffDays < 7) return `${diffDays} days ago`;
+
+      // Otherwise return formatted date: DD/MM/YYYY HH:MM:SS
+      const day = String(date.getDate()).padStart(2, "0");
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const year = date.getFullYear();
+      const hours = String(date.getHours()).padStart(2, "0");
+      const minutes = String(date.getMinutes()).padStart(2, "0");
+      const seconds = String(date.getSeconds()).padStart(2, "0");
+
+      return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+    } catch {
+      return dateString;
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
