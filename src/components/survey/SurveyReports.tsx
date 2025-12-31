@@ -7,9 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Download, FileText, BarChart3, Clock, TrendingDown, Loader2 } from "lucide-react";
 import { apiClient, API_BASE_PATH } from "@/lib/api";
+import { useToast } from "@/components/ui/use-toast";
 import type { Device } from "@/lib/api";
 
 export const SurveyReports = () => {
+  const { toast } = useToast();
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [reportType, setReportType] = useState("");
@@ -17,6 +19,7 @@ export const SurveyReports = () => {
   const [devices, setDevices] = useState<Device[]>([]);
   const [devicesLoading, setDevicesLoading] = useState(false);
   const [devicesError, setDevicesError] = useState<string | null>(null);
+  const [isGeneratingDeviceReport, setIsGeneratingDeviceReport] = useState(false);
 
   // Fetch devices on component mount
   useEffect(() => {
@@ -103,6 +106,73 @@ export const SurveyReports = () => {
       formats: ["PDF", "CSV"]
     },
   ];
+
+  const handleGenerateDeviceReport = async () => {
+    if (!startDate || !endDate) {
+      toast({
+        title: "Missing Information",
+        description: "Please select a date range to generate the report",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingDeviceReport(true);
+    try {
+      // Build the request payload for device report
+      const payload = {
+        startDate,
+        endDate,
+        deviceId: selectedDevice === "all" ? null : selectedDevice,
+      };
+
+      // Call the device report generation API endpoint
+      const url = `${API_BASE_PATH}/generatereports`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to generate report: ${response.statusText}`);
+      }
+
+      // Get the blob from the response
+      const blob = await response.blob();
+
+      // Create a download link and trigger the download
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+
+      // Generate filename with current timestamp
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "").slice(0, -5);
+      link.download = `DeviceReport_${timestamp}.xlsx`;
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+
+      toast({
+        title: "Success",
+        description: "Device report downloaded successfully",
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to generate report";
+      console.error("Error generating device report:", error);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingDeviceReport(false);
+    }
+  };
 
   const handleGenerateReport = async () => {
     if (!reportType || !startDate || !endDate) {
@@ -263,10 +333,33 @@ export const SurveyReports = () => {
               )}
             </div>
 
-            <Button onClick={handleGenerateReport} className="w-full">
-              <Download className="w-4 h-4 mr-2" />
-              Generate Report
-            </Button>
+            <div className="space-y-3">
+              <Button
+                onClick={handleGenerateDeviceReport}
+                className="w-full"
+                disabled={isGeneratingDeviceReport}
+              >
+                {isGeneratingDeviceReport ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4 mr-2" />
+                    Generate Device Report
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={handleGenerateReport}
+                className="w-full"
+                variant="outline"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Generate Analysis Report
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
