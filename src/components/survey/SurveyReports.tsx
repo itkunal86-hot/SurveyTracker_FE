@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Download, FileText, BarChart3, Clock, TrendingDown, Loader2 } from "lucide-react";
 import { apiClient, API_BASE_PATH } from "@/lib/api";
+import { useToast } from "@/components/ui/use-toast";
 import type { Device } from "@/lib/api";
 
 export const SurveyReports = () => {
