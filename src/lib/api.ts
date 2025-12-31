@@ -937,7 +937,7 @@ class ApiClient {
             : { lat: 0, lng: 0 };
 
         const batteryLevel = typeof it.batteryLevel === "number" ? it.batteryLevel : undefined;
-        const lastSeen = typeof it.lastSeen === "string" ? it.lastSeen : undefined;
+        const lastSeen = typeof (it.lastUpdated ?? it.lastSeen) === "string" ? (it.lastUpdated ?? it.lastSeen) : undefined;
         const accuracy = typeof it.accuracy === "number" ? it.accuracy : undefined;
         const modelName = it.modelName ?? it.ModelName ?? it.deviceModel ?? it.DeviceModel ?? undefined;
 
@@ -2634,7 +2634,7 @@ class ApiClient {
         const batteryLevel = typeof batteryRaw === "number" ? batteryRaw : (typeof batteryRaw === "string" ? Number(batteryRaw.replace(/%/g, "")) : undefined);
 
         const lastSeen = String(
-          it.lastUpdate ?? it.LastSeen ?? it.lastPing ?? it.LastPing ?? it.timestamp ?? it.Timestamp ?? it.logTime ?? it.LogTime ?? ""
+          it.lastUpdated ?? it.LastUpdated ?? it.lastUpdate ?? it.LastSeen ?? it.lastPing ?? it.LastPing ?? it.timestamp ?? it.Timestamp ?? it.logTime ?? it.LogTime ?? ""
         ) || undefined;
 
         const accuracyVal = it.accuracy ?? it.Accuracy;
