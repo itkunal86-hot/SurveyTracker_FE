@@ -1,16 +1,46 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Download, FileText, BarChart3, Clock, TrendingDown } from "lucide-react";
+import { Calendar, Download, FileText, BarChart3, Clock, TrendingDown, Loader2 } from "lucide-react";
+import { apiClient, API_BASE_PATH } from "@/lib/api";
+import type { Device } from "@/lib/api";
 
 export const SurveyReports = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [reportType, setReportType] = useState("");
+  const [selectedDevice, setSelectedDevice] = useState("all");
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [devicesLoading, setDevicesLoading] = useState(false);
+  const [devicesError, setDevicesError] = useState<string | null>(null);
+
+  // Fetch devices on component mount
+  useEffect(() => {
+    const fetchDevices = async () => {
+      setDevicesLoading(true);
+      setDevicesError(null);
+      try {
+        const response = await apiClient.getDevices({ page: 1, limit: 10 });
+        if (response.success && response.data) {
+          setDevices(response.data);
+        } else {
+          setDevicesError("Failed to load devices");
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Failed to load devices";
+        setDevicesError(errorMessage);
+        console.error("Error fetching devices:", error);
+      } finally {
+        setDevicesLoading(false);
+      }
+    };
+
+    fetchDevices();
+  }, []);
 
   // Mock data for recent reports
   const recentReports = [
@@ -74,15 +104,43 @@ export const SurveyReports = () => {
     },
   ];
 
-  const handleGenerateReport = () => {
+  const handleGenerateReport = async () => {
     if (!reportType || !startDate || !endDate) {
       alert("Please select report type and date range");
       return;
     }
-    
-    // In real implementation, this would call an API to generate the report
-    console.log("Generating report:", { reportType, startDate, endDate });
-    alert("Report generation started. You'll be notified when it's ready.");
+
+    try {
+      // Build the request payload
+      const payload = {
+        reportType,
+        startDate,
+        endDate,
+        deviceId: selectedDevice === "all" ? null : selectedDevice,
+      };
+
+      // Call the report generation API endpoint
+      const url = `${API_BASE_PATH}/reports/generate`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to generate report: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log("Report generation response:", data);
+      alert("Report generation started. You'll be notified when it's ready.");
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to generate report";
+      console.error("Error generating report:", error);
+      alert(`Error: ${errorMessage}`);
+    }
   };
 
   const handleDownloadReport = (reportId: number) => {
@@ -145,6 +203,36 @@ export const SurveyReports = () => {
                   />
                 </div>
               </div>
+            </div>
+
+            {/* Device Selector */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Device</Label>
+              <Select value={selectedDevice} onValueChange={setSelectedDevice} disabled={devicesLoading}>
+                <SelectTrigger>
+                  {devicesLoading ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Loading devices...
+                    </span>
+                  ) : (
+                    <SelectValue placeholder="Select a device" />
+                  )}
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    <span>All Devices</span>
+                  </SelectItem>
+                  {devices.map((device) => (
+                    <SelectItem key={device.id} value={device.id}>
+                      <span>{device.name}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {devicesError && (
+                <p className="text-sm text-red-600">{devicesError}</p>
+              )}
             </div>
 
             {/* Report Type Selector */}
