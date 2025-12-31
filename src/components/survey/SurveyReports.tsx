@@ -127,7 +127,7 @@ export const SurveyReports = () => {
       };
 
       // Call the device report generation API endpoint
-      const url = `${API_BASE_PATH}/generatereports`;
+      const url = `${API_BASE_PATH}/DeviceLog/generatereports`;
       const response = await fetch(url, {
         method: "POST",
         headers: {
@@ -351,14 +351,14 @@ export const SurveyReports = () => {
                   </>
                 )}
               </Button>
-              <Button
+              {/* <Button
                 onClick={handleGenerateReport}
                 className="w-full"
                 variant="outline"
               >
                 <Download className="w-4 h-4 mr-2" />
                 Generate Analysis Report
-              </Button>
+              </Button> */}
             </div>
           </CardContent>
         </Card>
