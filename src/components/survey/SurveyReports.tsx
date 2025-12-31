@@ -120,7 +120,7 @@ export const SurveyReports = () => {
       };
 
       // Call the report generation API endpoint
-      const url = `${API_BASE_PATH}/reports/generate`;
+      const url = `${API_BASE_PATH}/DeviceLog/generatereports`;
       const response = await fetch(url, {
         method: "POST",
         headers: {
