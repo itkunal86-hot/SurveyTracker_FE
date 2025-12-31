@@ -18,6 +18,30 @@ export const SurveyReports = () => {
   const [devicesLoading, setDevicesLoading] = useState(false);
   const [devicesError, setDevicesError] = useState<string | null>(null);
 
+  // Fetch devices on component mount
+  useEffect(() => {
+    const fetchDevices = async () => {
+      setDevicesLoading(true);
+      setDevicesError(null);
+      try {
+        const response = await apiClient.getDevices({ page: 1, limit: 10 });
+        if (response.success && response.data) {
+          setDevices(response.data);
+        } else {
+          setDevicesError("Failed to load devices");
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Failed to load devices";
+        setDevicesError(errorMessage);
+        console.error("Error fetching devices:", error);
+      } finally {
+        setDevicesLoading(false);
+      }
+    };
+
+    fetchDevices();
+  }, []);
+
   // Mock data for recent reports
   const recentReports = [
     {
