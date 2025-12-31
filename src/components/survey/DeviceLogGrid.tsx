@@ -132,12 +132,16 @@ export const DeviceLogGrid = () => {
         lastSeen: String(
           item.lastUpdated ??
             item.LastUpdated ??
+            item.lastUpdate ??
+            item.LastUpdate ??
             item.lastSeen ??
             item.LastSeen ??
             item.lastPing ??
             item.LastPing ??
             item.timestamp ??
             item.Timestamp ??
+            item.logTime ??
+            item.LogTime ??
             ""
         ) || undefined,
         coordinates:
