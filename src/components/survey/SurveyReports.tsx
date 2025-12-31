@@ -11,6 +11,7 @@ import { useToast } from "@/components/ui/use-toast";
 import type { Device } from "@/lib/api";
 
 export const SurveyReports = () => {
+  const { toast } = useToast();
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [reportType, setReportType] = useState("");
@@ -18,6 +19,7 @@ export const SurveyReports = () => {
   const [devices, setDevices] = useState<Device[]>([]);
   const [devicesLoading, setDevicesLoading] = useState(false);
   const [devicesError, setDevicesError] = useState<string | null>(null);
+  const [isGeneratingDeviceReport, setIsGeneratingDeviceReport] = useState(false);
 
   // Fetch devices on component mount
   useEffect(() => {
