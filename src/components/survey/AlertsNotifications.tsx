@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,19 +6,47 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertTriangle, Battery, Wifi, WifiOff, Check, Download, Clock, Smartphone, HardDrive, Activity } from "lucide-react";
 import { useDeviceAlerts } from "@/hooks/useApiQueries";
-import { API_BASE_PATH } from "@/lib/api";
+import { API_BASE_PATH, apiClient, type Zone } from "@/lib/api";
+import { getBatteryColor, getBatteryBorderColor } from "@/utils/batteryUtils";
 
 export const AlertsNotifications = () => {
   const [alertTypeFilter, setAlertTypeFilter] = useState("all");
   const [zoneFilter, setZoneFilter] = useState("all");
+  const [zones, setZones] = useState<Zone[]>([]);
+  const [loadingZones, setLoadingZones] = useState(true);
 
   const { data: alertsResp, isLoading } = useDeviceAlerts({ limit: 100 });
   const alerts = Array.isArray(alertsResp?.data) ? alertsResp!.data : [];
 
+  // ✅ Fetch zones from API
+  useEffect(() => {
+    const fetchZones = async () => {
+      try {
+        setLoadingZones(true);
+        const response = await apiClient.getZones({ limit: 100 });
+        setZones(response.data || []);
+      } catch (error) {
+        console.error("Error fetching zones:", error);
+        setZones([]);
+      } finally {
+        setLoadingZones(false);
+      }
+    };
+
+    fetchZones();
+  }, []);
+
   const filteredAlerts = alerts.filter((alert: any) => {
     const at = `${alert.type || ""} ${alert.deviceType || ""}`;
     const matchesType = alertTypeFilter === "all" || at.toLowerCase().includes(alertTypeFilter.toLowerCase());
-    const matchesZone = zoneFilter === "all" || (alert.zone || "").toLowerCase() === zoneFilter.toLowerCase();
+
+    // Match zone by comparing alert zone (name or id) with selected zone id
+    const matchesZone = zoneFilter === "all" ||
+      (alert.zone && (
+        alert.zone.toLowerCase() === zoneFilter.toLowerCase() ||
+        zones.some(z => z.id === zoneFilter && (z.name.toLowerCase() === alert.zone.toLowerCase() || z.id === alert.zone))
+      ));
+
     return matchesType && matchesZone;
   });
 
@@ -226,16 +254,17 @@ const handleExportAlerts = async () => {
               </SelectContent>
             </Select>
             
-            <Select value={zoneFilter} onValueChange={setZoneFilter}>
+            <Select value={zoneFilter} onValueChange={setZoneFilter} disabled={loadingZones}>
               <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Zone" />
+                <SelectValue placeholder={loadingZones ? "Loading zones..." : "Zone"} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Zones</SelectItem>
-                <SelectItem value="Zone A">Zone A</SelectItem>
-                <SelectItem value="Zone B">Zone B</SelectItem>
-                <SelectItem value="Zone C">Zone C</SelectItem>
-                <SelectItem value="Zone D">Zone D</SelectItem>
+                {zones.map((zone) => (
+                  <SelectItem key={zone.id} value={zone.id}>
+                    {zone.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -256,7 +285,7 @@ const handleExportAlerts = async () => {
               <div className="col-span-1 md:col-span-2 lg:col-span-3 text-sm text-muted-foreground">Loading alerts...</div>
             ) : (
               unresolvedAlerts.map((alert: any) => (
-                <Card key={alert.id} className="border-l-4 border-l-red-500">
+                <Card key={alert.id} className={`border-l-4 ${getBatteryBorderColor(alert.batteryLevel)}`}>
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center space-x-2">
@@ -279,7 +308,7 @@ const handleExportAlerts = async () => {
                       <div className="flex items-center space-x-4 text-xs">
                         <div className="flex items-center space-x-1">
                           <Battery className="w-3 h-3" />
-                          <span className={(Number(alert.batteryLevel ?? 0) < 20) ? 'text-red-500' : (Number(alert.batteryLevel ?? 0) < 50) ? 'text-yellow-500' : 'text-green-500'}>
+                          <span className={getBatteryColor(Number(alert.batteryLevel ?? 0))}>
                             {alert.batteryLevel ?? 0}%
                           </span>
                         </div>
@@ -330,7 +359,7 @@ const handleExportAlerts = async () => {
                 <div className="col-span-1 md:col-span-2 lg:col-span-3 text-sm text-muted-foreground">Loading alerts...</div>
               ) : (
                 resolvedAlerts.map((alert: any) => (
-                  <Card key={alert.id} className="border-l-4 border-l-green-500 opacity-70">
+                  <Card key={alert.id} className={`border-l-4 ${getBatteryBorderColor(alert.batteryLevel)} opacity-70`}>
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center space-x-2">
@@ -355,7 +384,7 @@ const handleExportAlerts = async () => {
                         <div className="flex items-center space-x-4 text-xs">
                           <div className="flex items-center space-x-1">
                             <Battery className="w-3 h-3" />
-                            <span className={(Number(alert.batteryLevel ?? 0) < 20) ? 'text-red-500' : (Number(alert.batteryLevel ?? 0) < 50) ? 'text-yellow-500' : 'text-green-500'}>
+                            <span className={getBatteryColor(Number(alert.batteryLevel ?? 0))}>
                               {alert.batteryLevel ?? 0}%
                             </span>
                           </div>
