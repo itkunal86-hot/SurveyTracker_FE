@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AlertTriangle, Battery, Wifi, WifiOff, Check, Download, Clock, Smartphone, HardDrive, Activity } from "lucide-react";
+import { AlertTriangle, Battery, Wifi, WifiOff, Check, Download, Clock, Smartphone, HardDrive, Activity, X } from "lucide-react";
 import { useDeviceAlerts } from "@/hooks/useApiQueries";
 import { API_BASE_PATH, apiClient, type Zone } from "@/lib/api";
 import { getBatteryColor, getBatteryBorderColor, getAlertSeverityBorderColor } from "@/utils/batteryUtils";
