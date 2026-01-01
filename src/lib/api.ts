@@ -152,6 +152,15 @@ export interface DeviceAlert {
   resolved?: boolean;
 }
 
+export interface Zone {
+  id: string;
+  name: string;
+  description?: string;
+  polygon?: Array<{ lat: number; lng: number }>;
+  area?: number;
+  status?: string;
+}
+
 export interface PipelineSegment {
   id: string;
   name: string;
@@ -1575,6 +1584,76 @@ class ApiClient {
         throw new Error(`Survey with id ${id} not found`);
       }
       return createMockApiResponse(survey);
+    }
+  }
+
+  // Zone endpoints
+  async getZones(params?: { page?: number; limit?: number; }): Promise<PaginatedResponse<Zone>> {
+    try {
+      const searchParams = new URLSearchParams();
+      if (params?.page) searchParams.append("page", params.page.toString());
+      if (params?.limit) searchParams.append("limit", params.limit.toString());
+
+      const query = searchParams.toString();
+      const raw: any = await this.request<any>(
+        `/Zone/getzone${query ? `?${query}` : ""}`,
+      );
+
+      const timestamp = raw?.timestamp || new Date().toISOString();
+
+      const rawItems = Array.isArray(raw?.data?.items)
+        ? raw.data.items
+        : Array.isArray(raw?.data?.data)
+          ? raw.data.data
+          : Array.isArray(raw?.data)
+            ? raw.data
+            : Array.isArray(raw)
+              ? raw
+              : [];
+
+      const mapped: Zone[] = rawItems.map((it: any) => {
+        const fallbackId = (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function")
+          ? crypto.randomUUID()
+          : `${Date.now()}`;
+
+        const id = String(it.id ?? it.ID ?? it.zoneId ?? it.ZoneId ?? fallbackId);
+        const name = String(it.name ?? it.Name ?? it.zoneName ?? it.ZoneName ?? "");
+        const description = it.description ?? it.Description ?? undefined;
+        const polygon = Array.isArray(it.polygon) ? it.polygon : Array.isArray(it.Polygon) ? it.Polygon : undefined;
+        const area = typeof it.area === "number" ? it.area : (typeof it.Area === "number" ? it.Area : undefined);
+        const status = it.status ?? it.Status ?? undefined;
+
+        return { id, name, description, polygon, area, status } as Zone;
+      });
+
+      const pagination = raw?.data?.pagination || {
+        page: params?.page ?? 1,
+        limit: params?.limit ?? mapped.length,
+        total: mapped.length,
+        totalPages: 1,
+      };
+
+      return {
+        success: (raw?.status_code ?? 200) >= 200 && (raw?.status_code ?? 200) < 300,
+        data: mapped,
+        message: raw?.message,
+        timestamp,
+        pagination,
+      };
+    } catch (error) {
+      // Return empty zones if API fails
+      return {
+        success: true,
+        data: [],
+        message: "",
+        timestamp: new Date().toISOString(),
+        pagination: {
+          page: params?.page ?? 1,
+          limit: params?.limit ?? 0,
+          total: 0,
+          totalPages: 0,
+        },
+      };
     }
   }
 
