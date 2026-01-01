@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,7 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertTriangle, Battery, Wifi, WifiOff, Check, Download, Clock, Smartphone, HardDrive, Activity } from "lucide-react";
 import { useDeviceAlerts } from "@/hooks/useApiQueries";
-import { API_BASE_PATH } from "@/lib/api";
+import { API_BASE_PATH, apiClient, type Zone } from "@/lib/api";
+import { getBatteryColor, getBatteryBorderColor } from "@/utils/batteryUtils";
 
 export const AlertsNotifications = () => {
   const [alertTypeFilter, setAlertTypeFilter] = useState("all");
