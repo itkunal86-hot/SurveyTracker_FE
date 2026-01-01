@@ -15,6 +15,7 @@ export const SurveyReports = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [reportType, setReportType] = useState("");
+  const [reportFormat, setReportFormat] = useState("Excel");
   const [selectedDevice, setSelectedDevice] = useState("all");
   const [devices, setDevices] = useState<Device[]>([]);
   const [devicesLoading, setDevicesLoading] = useState(false);
@@ -124,6 +125,7 @@ export const SurveyReports = () => {
         startDate,
         endDate,
         deviceId: selectedDevice === "all" ? null : selectedDevice,
+        format: reportFormat,
       };
 
       // Call the device report generation API endpoint
@@ -187,6 +189,7 @@ export const SurveyReports = () => {
         startDate,
         endDate,
         deviceId: selectedDevice === "all" ? null : selectedDevice,
+        format: reportFormat,
       };
 
       // Call the report generation API endpoint
@@ -323,7 +326,7 @@ export const SurveyReports = () => {
                   ))}
                 </SelectContent>
               </Select>
-              
+
               {reportType && (
                 <div className="p-3 bg-muted rounded-lg">
                   <p className="text-sm text-muted-foreground">
@@ -331,6 +334,31 @@ export const SurveyReports = () => {
                   </p>
                 </div>
               )}
+            </div>
+
+            {/* Report Format Selector */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Report Format</Label>
+              <Select value={reportFormat} onValueChange={setReportFormat} disabled={!reportType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select format" />
+                </SelectTrigger>
+                <SelectContent>
+                  {reportType ? (
+                    reportTypes
+                      .find((t) => t.id === reportType)
+                      ?.formats.map((format) => (
+                        <SelectItem key={format} value={format}>
+                          <span>{format}</span>
+                        </SelectItem>
+                      ))
+                  ) : (
+                    <SelectItem value="" disabled>
+                      <span>Select a report type first</span>
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-3">
