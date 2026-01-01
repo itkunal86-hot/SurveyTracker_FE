@@ -8,7 +8,7 @@ import { DeviceLogGrid } from "@/components/survey/DeviceLogGrid";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import { useState } from "react";
 import { useDeviceAlerts } from "@/hooks/useApiQueries";
-import { API_BASE_PATH } from "@/lib/api";
+import { API_BASE_PATH, apiClient, type Zone } from "@/lib/api";
 
 export const SurveyDashboard = () => {
   const [selectedLocation, setSelectedLocation] = useState("all");
