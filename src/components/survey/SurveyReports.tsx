@@ -15,6 +15,7 @@ export const SurveyReports = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [reportType, setReportType] = useState("");
+  const [reportFormat, setReportFormat] = useState("Excel");
   const [selectedDevice, setSelectedDevice] = useState("all");
   const [devices, setDevices] = useState<Device[]>([]);
   const [devicesLoading, setDevicesLoading] = useState(false);
