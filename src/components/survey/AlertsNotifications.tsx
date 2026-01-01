@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AlertTriangle, Battery, Wifi, WifiOff, Check, Download, Clock, Smartphone, HardDrive, Activity } from "lucide-react";
+import { AlertTriangle, Battery, Wifi, WifiOff, Check, Download, Clock, Smartphone, HardDrive, Activity, X } from "lucide-react";
 import { useDeviceAlerts } from "@/hooks/useApiQueries";
 import { API_BASE_PATH, apiClient, type Zone } from "@/lib/api";
 import { getBatteryColor, getBatteryBorderColor, getAlertSeverityBorderColor } from "@/utils/batteryUtils";
@@ -331,7 +331,11 @@ const handleExportAlerts = async () => {
                           onClick={() => handleMarkResolved(String(alert.id))}
                           className="text-xs"
                         >
-                          <Check className="w-3 h-3 mr-1" />
+                          {alert.resolved ? (
+                            <Check className="w-3 h-3 mr-1 text-green-500" />
+                          ) : (
+                            <X className="w-3 h-3 mr-1 text-red-500" />
+                          )}
                           Resolve
                         </Button>
                       </div>
@@ -396,9 +400,21 @@ const handleExportAlerts = async () => {
                           </div>
                         </div>
 
-                        <div className="flex items-center space-x-1 text-xs text-muted-foreground pt-2 border-t">
-                          <Check className="w-3 h-3 text-green-500" />
-                          <span>Resolved: {alert.timestamp}</span>
+                        <div className="flex items-center justify-between pt-2 border-t">
+                          <div className="flex items-center space-x-1 text-xs text-muted-foreground">
+                            <Clock className="w-3 h-3" />
+                            <span>{alert.timestamp}</span>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleMarkResolved(String(alert.id))}
+                            className="text-xs"
+                            disabled
+                          >
+                            <Check className="w-3 h-3 mr-1 text-green-500" />
+                            Resolved
+                          </Button>
                         </div>
                       </div>
                     </CardContent>
