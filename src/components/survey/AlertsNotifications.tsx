@@ -39,7 +39,14 @@ export const AlertsNotifications = () => {
   const filteredAlerts = alerts.filter((alert: any) => {
     const at = `${alert.type || ""} ${alert.deviceType || ""}`;
     const matchesType = alertTypeFilter === "all" || at.toLowerCase().includes(alertTypeFilter.toLowerCase());
-    const matchesZone = zoneFilter === "all" || (alert.zone || "").toLowerCase() === zoneFilter.toLowerCase();
+
+    // Match zone by comparing alert zone (name or id) with selected zone id
+    const matchesZone = zoneFilter === "all" ||
+      (alert.zone && (
+        alert.zone.toLowerCase() === zoneFilter.toLowerCase() ||
+        zones.some(z => z.id === zoneFilter && (z.name.toLowerCase() === alert.zone.toLowerCase() || z.id === alert.zone))
+      ));
+
     return matchesType && matchesZone;
   });
 
