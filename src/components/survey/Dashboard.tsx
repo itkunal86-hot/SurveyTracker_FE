@@ -27,6 +27,24 @@ export const SurveyDashboard = () => {
   // ✅ Track active survey ID as state (reactive)
   const [smId, setSmId] = useState(localStorage.getItem("activeSurveyId"));
 
+// ✅ Fetch zones from API
+useEffect(() => {
+  const fetchZones = async () => {
+    try {
+      setLoadingZones(true);
+      const response = await apiClient.getZones({ limit: 100 });
+      setZones(response.data || []);
+    } catch (error) {
+      console.error("Error fetching zones:", error);
+      setZones([]);
+    } finally {
+      setLoadingZones(false);
+    }
+  };
+
+  fetchZones();
+}, []);
+
 // ✅ Listen for changes to localStorage (from other tabs or in-app updates)
 useEffect(() => {
   const handleStorageChange = (event: StorageEvent) => {
