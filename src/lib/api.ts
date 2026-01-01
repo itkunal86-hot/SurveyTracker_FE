@@ -1620,11 +1620,13 @@ class ApiClient {
         return { id, name, description, polygon, area, status } as Zone;
       });
 
+      const total = raw?.total ?? mapped.length;
+      const limit = (params?.limit ?? mapped.length) || 1;
       const pagination = {
         page: params?.page ?? 1,
         limit: params?.limit ?? mapped.length,
-        total: raw?.total ?? mapped.length,
-        totalPages: Math.ceil((raw?.total ?? mapped.length) / (params?.limit ?? mapped.length || 1)),
+        total,
+        totalPages: Math.ceil(total / limit),
       };
 
       return {
