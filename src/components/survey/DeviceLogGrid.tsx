@@ -18,6 +18,9 @@ interface DeviceLog {
   surveyor?: string;
   serialNumber?: string;
   modelName?: string;
+  currentLocation?: string;
+  location?: string;
+  surveyCount?: string;
 }
 
 const TIME_OPTIONS = [
@@ -63,7 +66,7 @@ export const DeviceLogGrid = () => {
       });
 
       const response = await fetch(
-        `${API_BASE_PATH}/DeviceLog/getdevicelog?${params.toString()}`,
+        `${API_BASE_PATH}/DeviceLog/getdeviceactivelog?${params.toString()}`,
         {
           method: "GET",
           headers: { Accept: "application/json" },
@@ -151,6 +154,9 @@ export const DeviceLogGrid = () => {
         surveyor: item.surveyor ?? item.Surveyor ?? undefined,
         serialNumber: String(item.serialNumber ?? item.SerialNumber ?? item.serial_no ?? item.SERIAL_NO ?? "") || undefined,
         modelName: item.modelName ?? item.ModelName ?? undefined,
+        currentLocation: item.currentLocation  ?? undefined,
+        location: item.location  ?? undefined,
+        surveyCount: item.surveyCount ?? undefined,
       }));
 
       setDeviceLogs(mapped);
@@ -277,6 +283,9 @@ export const DeviceLogGrid = () => {
                 <TableHead>Device ID</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Type</TableHead>
+                <TableHead>Initial Location</TableHead>
+                <TableHead>Current Location</TableHead>
+                <TableHead>Survey Count</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Battery</TableHead>
                 <TableHead>Last Seen</TableHead>
@@ -303,6 +312,9 @@ export const DeviceLogGrid = () => {
                     <TableCell className="font-medium">{log.id}</TableCell>
                     <TableCell>{log.name}</TableCell>
                     <TableCell className="text-sm">{log.type}</TableCell>
+                    <TableCell className="text-sm">{log.location}</TableCell>
+                    <TableCell className="text-sm">{log.currentLocation}</TableCell>
+                    <TableCell className="text-sm">{log.surveyCount}</TableCell>
                     <TableCell>{getStatusBadge(log.status)}</TableCell>
                     <TableCell>
                       {log.batteryLevel !== undefined ? (

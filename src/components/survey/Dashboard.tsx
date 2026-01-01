@@ -272,8 +272,8 @@ useEffect(() => {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Usage Graph */}
+      {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      
         <Card>
           <CardHeader>
             <CardTitle>Usage Statistics</CardTitle>
@@ -312,7 +312,7 @@ useEffect(() => {
           </CardContent>
         </Card>
 
-        {/* Last Sync Status */}
+      
         <Card>
           <CardHeader>
             <CardTitle>Sync Status</CardTitle>
@@ -337,7 +337,7 @@ useEffect(() => {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </div> */}
     </div>
   );
 };

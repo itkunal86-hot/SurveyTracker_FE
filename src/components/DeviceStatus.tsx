@@ -71,7 +71,9 @@ export const DeviceStatus = () => {
 
     return devicesResponse.data.map((device) => ({
       ...device,
-      location: `Zone ${device.name.split(" ")[0]} - ${device.type}`,
+      location: device.location,
+      currentLocation:device.currentLocation,
+      surveyCount:device.surveyCount,
       serialNumber: device.serialNumber,
       surveyor: device.surveyor
         ? {
@@ -320,7 +322,7 @@ export const DeviceStatus = () => {
       </Card>
 
       {/* Status Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center space-x-2">
@@ -374,7 +376,7 @@ export const DeviceStatus = () => {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </div> */}
 
       {/* Filters */}
       <Card>
@@ -437,6 +439,30 @@ export const DeviceStatus = () => {
                 >
                   Type
                 </SortableTableHead>
+                 <SortableTableHead
+                  sortKey="location"
+                  currentSortKey={tableConfig.sortConfig.key}
+                  sortDirection={tableConfig.sortConfig.direction}
+                  onSort={tableConfig.handleSort}
+                >
+                  Initial Location
+                </SortableTableHead>
+                <SortableTableHead
+                  sortKey="currentLocation"
+                  currentSortKey={tableConfig.sortConfig.key}
+                  sortDirection={tableConfig.sortConfig.direction}
+                  onSort={tableConfig.handleSort}
+                >
+                  Current Location
+                </SortableTableHead>
+                <SortableTableHead
+                  sortKey="surveyCount"
+                  currentSortKey={tableConfig.sortConfig.key}
+                  sortDirection={tableConfig.sortConfig.direction}
+                  onSort={tableConfig.handleSort}
+                >
+                  Survey Count
+                </SortableTableHead>
                 <SortableTableHead
                   sortKey="serialNumber"
                   currentSortKey={tableConfig.sortConfig.key}
@@ -445,14 +471,14 @@ export const DeviceStatus = () => {
                 >
                   Serial Number
                 </SortableTableHead>
-                <SortableTableHead
+                {/* <SortableTableHead
                   sortKey="status"
                   currentSortKey={tableConfig.sortConfig.key}
                   sortDirection={tableConfig.sortConfig.direction}
                   onSort={tableConfig.handleSort}
                 >
                   Status
-                </SortableTableHead>
+                </SortableTableHead> */}
                 <SortableTableHead
                   sortKey="surveyor"
                   currentSortKey={tableConfig.sortConfig.key}
@@ -513,10 +539,13 @@ export const DeviceStatus = () => {
                     </div>
                   </TableCell>
                   <TableCell>{device.type}</TableCell>
+                  <TableCell>{device.location}</TableCell>
+                  <TableCell>{device.currentLocation}</TableCell>
+                  <TableCell>{device.surveyCount}</TableCell>
                   <TableCell className="font-mono text-sm">
                     {device.serialNumber || "N/A"}
                   </TableCell>
-                  <TableCell>
+                  {/* <TableCell>
                     <Badge className={getStatusColor(device.status)}>
                       {device.status === "ACTIVE"
                         ? "active"
@@ -528,7 +557,7 @@ export const DeviceStatus = () => {
                               ? "offline"
                               : device.status}
                     </Badge>
-                  </TableCell>
+                  </TableCell> */}
                   <TableCell>
                     {device.surveyor ? (
                       <div className="flex items-center space-x-2">

@@ -125,6 +125,9 @@ export interface Device {
   lastSeen?: string;
   accuracy?: number;
   serialNumber?: string;
+  currentLocation?: string;
+  location?: string;
+  surveyCount?: string;
 }
 
 export interface DeviceCreateUpdate {
@@ -2643,6 +2646,9 @@ class ApiClient {
         const modelName = it.modelName ?? it.ModelName ?? undefined;
         const serialRaw = it.serialNumber ?? it.SerialNumber ?? it.serial_no ?? it.SERIAL_NO ?? it.deviceSerial ?? it.DeviceSerial ?? it.serial ?? it.Serial ?? null;
         const serialNumber = serialRaw != null ? String(serialRaw) : undefined;
+        const location = it.location ?? "";
+        const currentLocation = it.currentLocation ?? ""
+        const surveyCount = it.surveyCount ?? ""
 
         return {
           id,
@@ -2656,6 +2662,9 @@ class ApiClient {
           lastSeen,
           accuracy,
           serialNumber,
+          location,
+          currentLocation,
+          surveyCount
         } as Device;
       });
 

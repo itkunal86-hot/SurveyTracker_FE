@@ -151,6 +151,7 @@ export const InstrumentList = () => {
                 <TableRow>
                   <TableHead>Instrument ID</TableHead>
                   <TableHead>Serial Number</TableHead>
+                  
                   <TableHead>Model</TableHead>
                   <TableHead>Assigned Surveyor</TableHead>
                   <TableHead>Location Status</TableHead>
