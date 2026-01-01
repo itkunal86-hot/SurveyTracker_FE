@@ -331,7 +331,11 @@ const handleExportAlerts = async () => {
                           onClick={() => handleMarkResolved(String(alert.id))}
                           className="text-xs"
                         >
-                          <Check className="w-3 h-3 mr-1" />
+                          {alert.resolved ? (
+                            <Check className="w-3 h-3 mr-1 text-green-500" />
+                          ) : (
+                            <X className="w-3 h-3 mr-1 text-red-500" />
+                          )}
                           Resolve
                         </Button>
                       </div>
