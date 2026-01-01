@@ -1590,34 +1590,28 @@ class ApiClient {
   // Zone endpoints
   async getZones(params?: { page?: number; limit?: number; }): Promise<PaginatedResponse<Zone>> {
     try {
-      const searchParams = new URLSearchParams();
-      if (params?.page) searchParams.append("page", params.page.toString());
-      if (params?.limit) searchParams.append("limit", params.limit.toString());
+      const query = new URLSearchParams();
+      if (params?.page) query.append("page", params.page.toString());
+      if (params?.limit) query.append("limit", params.limit.toString());
 
-      const query = searchParams.toString();
+      const queryString = query.toString();
       const raw: any = await this.request<any>(
-        `/Zone/getzone${query ? `?${query}` : ""}`,
+        `/DeviceLog/getallzone${queryString ? `?${queryString}` : ""}`,
       );
 
       const timestamp = raw?.timestamp || new Date().toISOString();
 
-      const rawItems = Array.isArray(raw?.data?.items)
-        ? raw.data.items
-        : Array.isArray(raw?.data?.data)
-          ? raw.data.data
-          : Array.isArray(raw?.data)
-            ? raw.data
-            : Array.isArray(raw)
-              ? raw
-              : [];
+      // Extract data array from response - the API returns { total, data: [...] }
+      const rawItems = Array.isArray(raw?.data) ? raw.data : [];
 
       const mapped: Zone[] = rawItems.map((it: any) => {
         const fallbackId = (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function")
           ? crypto.randomUUID()
           : `${Date.now()}`;
 
+        // Map districtName from API to name field in Zone interface
         const id = String(it.id ?? it.ID ?? it.zoneId ?? it.ZoneId ?? fallbackId);
-        const name = String(it.name ?? it.Name ?? it.zoneName ?? it.ZoneName ?? "");
+        const name = String(it.districtName ?? it.DistrictName ?? it.name ?? it.Name ?? it.zoneName ?? it.ZoneName ?? "");
         const description = it.description ?? it.Description ?? undefined;
         const polygon = Array.isArray(it.polygon) ? it.polygon : Array.isArray(it.Polygon) ? it.Polygon : undefined;
         const area = typeof it.area === "number" ? it.area : (typeof it.Area === "number" ? it.Area : undefined);
@@ -1626,11 +1620,11 @@ class ApiClient {
         return { id, name, description, polygon, area, status } as Zone;
       });
 
-      const pagination = raw?.data?.pagination || {
+      const pagination = {
         page: params?.page ?? 1,
         limit: params?.limit ?? mapped.length,
-        total: mapped.length,
-        totalPages: 1,
+        total: raw?.total ?? mapped.length,
+        totalPages: Math.ceil((raw?.total ?? mapped.length) / (params?.limit ?? mapped.length || 1)),
       };
 
       return {
