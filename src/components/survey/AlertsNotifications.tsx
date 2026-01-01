@@ -282,7 +282,7 @@ const handleExportAlerts = async () => {
               <div className="col-span-1 md:col-span-2 lg:col-span-3 text-sm text-muted-foreground">Loading alerts...</div>
             ) : (
               unresolvedAlerts.map((alert: any) => (
-                <Card key={alert.id} className="border-l-4 border-l-red-500">
+                <Card key={alert.id} className={`border-l-4 ${getBatteryBorderColor(alert.batteryLevel)}`}>
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center space-x-2">
@@ -305,7 +305,7 @@ const handleExportAlerts = async () => {
                       <div className="flex items-center space-x-4 text-xs">
                         <div className="flex items-center space-x-1">
                           <Battery className="w-3 h-3" />
-                          <span className={(Number(alert.batteryLevel ?? 0) < 20) ? 'text-red-500' : (Number(alert.batteryLevel ?? 0) < 50) ? 'text-yellow-500' : 'text-green-500'}>
+                          <span className={getBatteryColor(Number(alert.batteryLevel ?? 0))}>
                             {alert.batteryLevel ?? 0}%
                           </span>
                         </div>
