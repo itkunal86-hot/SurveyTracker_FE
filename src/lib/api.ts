@@ -149,6 +149,15 @@ export interface DeviceAlert {
   resolved?: boolean;
 }
 
+export interface Zone {
+  id: string;
+  name: string;
+  description?: string;
+  polygon?: Array<{ lat: number; lng: number }>;
+  area?: number;
+  status?: string;
+}
+
 export interface PipelineSegment {
   id: string;
   name: string;
