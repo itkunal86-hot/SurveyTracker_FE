@@ -189,6 +189,7 @@ export const SurveyReports = () => {
         startDate,
         endDate,
         deviceId: selectedDevice === "all" ? null : selectedDevice,
+        format: reportFormat,
       };
 
       // Call the report generation API endpoint
