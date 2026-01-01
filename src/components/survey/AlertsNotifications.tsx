@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { AlertTriangle, Battery, Wifi, WifiOff, Check, Download, Clock, Smartphone, HardDrive, Activity } from "lucide-react";
 import { useDeviceAlerts } from "@/hooks/useApiQueries";
 import { API_BASE_PATH, apiClient, type Zone } from "@/lib/api";
-import { getBatteryColor, getBatteryBorderColor } from "@/utils/batteryUtils";
+import { getBatteryColor, getBatteryBorderColor, getAlertSeverityBorderColor } from "@/utils/batteryUtils";
 
 export const AlertsNotifications = () => {
   const [alertTypeFilter, setAlertTypeFilter] = useState("all");
