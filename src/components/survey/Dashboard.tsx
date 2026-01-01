@@ -99,19 +99,6 @@ useEffect(() => {
   fetchStats();
 }, [smId]);
 
-// export const SurveyDashboard = () => {
-//   const [selectedLocation, setSelectedLocation] = useState("all");
-
-  // Location/Zone filter options
-  const locationOptions = [
-    { value: "all", label: "All Zones" },
-    { value: "zone-a", label: "Zone A - Main Pipeline" },
-    { value: "zone-b", label: "Zone B - Distribution" },
-    { value: "zone-c", label: "Zone C - Terminal" },
-    { value: "zone-d", label: "Zone D" },
-    { value: "godown", label: "Godown" }
-  ];
-
   // Mock data - replace with actual API calls
   // const stats = {
   //   totalInstruments: 156,
