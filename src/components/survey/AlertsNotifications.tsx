@@ -224,7 +224,7 @@ const handleExportAlerts = async () => {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Resolved</p>
                 {/* <p className="text-2xl font-bold text-green-600">{isLoading ? "..." : resolvedAlerts.length}</p> */}
-              <p className="text-2xl font-bold text-orange-600">
+              <p className="text-2xl font-bold text-green-600">
                   {isLoading ? "..." : filteredAlerts.filter((a: any) => a.severity === 'good').length}
                 </p>
               </div>
@@ -241,7 +241,7 @@ const handleExportAlerts = async () => {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col md:flex-row gap-4">
-            <Select value={alertTypeFilter} onValueChange={setAlertTypeFilter}>
+            {/* <Select value={alertTypeFilter} onValueChange={setAlertTypeFilter}>
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Alert Type" />
               </SelectTrigger>
@@ -252,7 +252,7 @@ const handleExportAlerts = async () => {
                 <SelectItem value="battery">Battery Issues</SelectItem>
                 <SelectItem value="health">Health Issues</SelectItem>
               </SelectContent>
-            </Select>
+            </Select> */}
             
             <Select value={zoneFilter} onValueChange={setZoneFilter} disabled={loadingZones}>
               <SelectTrigger className="w-[200px]">
