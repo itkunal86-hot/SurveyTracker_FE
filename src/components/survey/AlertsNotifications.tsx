@@ -251,16 +251,17 @@ const handleExportAlerts = async () => {
               </SelectContent>
             </Select>
             
-            <Select value={zoneFilter} onValueChange={setZoneFilter}>
+            <Select value={zoneFilter} onValueChange={setZoneFilter} disabled={loadingZones}>
               <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Zone" />
+                <SelectValue placeholder={loadingZones ? "Loading zones..." : "Zone"} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Zones</SelectItem>
-                <SelectItem value="Zone A">Zone A</SelectItem>
-                <SelectItem value="Zone B">Zone B</SelectItem>
-                <SelectItem value="Zone C">Zone C</SelectItem>
-                <SelectItem value="Zone D">Zone D</SelectItem>
+                {zones.map((zone) => (
+                  <SelectItem key={zone.id} value={zone.id}>
+                    {zone.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
