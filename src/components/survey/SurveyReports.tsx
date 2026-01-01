@@ -10,6 +10,12 @@ import { apiClient, API_BASE_PATH } from "@/lib/api";
 import { useToast } from "@/components/ui/use-toast";
 import type { Device } from "@/lib/api";
 
+const REPORT_FORMATS = [
+  { value: "Excel", label: "Excel" },
+  { value: "Pdf", label: "PDF" },
+  { value: "Csv", label: "CSV" },
+];
+
 export const SurveyReports = () => {
   const { toast } = useToast();
   const [startDate, setStartDate] = useState("");
@@ -339,24 +345,16 @@ export const SurveyReports = () => {
             {/* Report Format Selector */}
             <div className="space-y-3">
               <Label className="text-sm font-medium">Report Format</Label>
-              <Select value={reportFormat} onValueChange={setReportFormat} disabled={!reportType}>
+              <Select value={reportFormat} onValueChange={setReportFormat}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select format" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {reportType ? (
-                    reportTypes
-                      .find((t) => t.id === reportType)
-                      ?.formats.map((format) => (
-                        <SelectItem key={format} value={format}>
-                          <span>{format}</span>
-                        </SelectItem>
-                      ))
-                  ) : (
-                    <SelectItem value="" disabled>
-                      <span>Select a report type first</span>
+                  {REPORT_FORMATS.map((format) => (
+                    <SelectItem key={format.value} value={format.value}>
+                      <span>{format.label}</span>
                     </SelectItem>
-                  )}
+                  ))}
                 </SelectContent>
               </Select>
             </div>
