@@ -359,7 +359,7 @@ const handleExportAlerts = async () => {
                 <div className="col-span-1 md:col-span-2 lg:col-span-3 text-sm text-muted-foreground">Loading alerts...</div>
               ) : (
                 resolvedAlerts.map((alert: any) => (
-                  <Card key={alert.id} className={`border-l-4 ${getBatteryBorderColor(alert.batteryLevel)} opacity-70`}>
+                  <Card key={alert.id} className={`border-l-4 ${getAlertSeverityBorderColor(alert.severity)} opacity-70`}>
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center space-x-2">
