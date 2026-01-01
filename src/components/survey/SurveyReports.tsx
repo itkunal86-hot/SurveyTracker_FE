@@ -324,7 +324,7 @@ export const SurveyReports = () => {
                   ))}
                 </SelectContent>
               </Select>
-              
+
               {reportType && (
                 <div className="p-3 bg-muted rounded-lg">
                   <p className="text-sm text-muted-foreground">
@@ -332,6 +332,31 @@ export const SurveyReports = () => {
                   </p>
                 </div>
               )}
+            </div>
+
+            {/* Report Format Selector */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Report Format</Label>
+              <Select value={reportFormat} onValueChange={setReportFormat} disabled={!reportType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select format" />
+                </SelectTrigger>
+                <SelectContent>
+                  {reportType ? (
+                    reportTypes
+                      .find((t) => t.id === reportType)
+                      ?.formats.map((format) => (
+                        <SelectItem key={format} value={format}>
+                          <span>{format}</span>
+                        </SelectItem>
+                      ))
+                  ) : (
+                    <SelectItem value="" disabled>
+                      <span>Select a report type first</span>
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-3">
