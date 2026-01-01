@@ -238,49 +238,53 @@ useEffect(() => {
               <Badge variant="destructive">{alertsLoading ? "..." : alerts.length}</Badge>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {alertsLoading ? (
-                <div className="text-sm text-muted-foreground">Loading alerts...</div>
-              ) : (
-                alerts.map((alert: any) => (
-                  <div key={alert.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      {alert.deviceType === 'DA2' ? (
-                        <HardDrive className="w-4 h-4 text-blue-500" />
-                      ) : (
-                        <Smartphone className="w-4 h-4 text-green-500" />
-                      )}
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2">
-                          <p className="font-medium">{alert.instrument}</p>
+          <CardContent className="p-0">
+            <div className="max-h-96 overflow-y-auto">
+              <div className="space-y-2 p-4">
+                {alertsLoading ? (
+                  <div className="text-sm text-muted-foreground">Loading alerts...</div>
+                ) : alerts.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">No alerts</div>
+                ) : (
+                  alerts.map((alert: any) => (
+                    <div key={alert.id} className="flex items-start gap-2 p-2 border rounded-md hover:bg-muted/50 transition-colors">
+                      <div className="flex-shrink-0 mt-0.5">
+                        {alert.deviceType === 'DA2' ? (
+                          <HardDrive className="w-4 h-4 text-blue-500" />
+                        ) : (
+                          <Smartphone className="w-4 h-4 text-green-500" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-medium text-sm">{alert.instrument}</p>
                           <Badge variant="outline" className="text-xs">
                             {alert.deviceType}
                           </Badge>
+                          <Badge variant={(String(alert.severity || '').toLowerCase() === 'critical') ? 'destructive' : 'secondary'} className="text-xs">
+                            {String(alert.severity || '').toLowerCase() || 'info'}
+                          </Badge>
                         </div>
-                        <p className="text-sm text-muted-foreground">{alert.message}</p>
-                        <div className="flex items-center space-x-4 mt-1">
-                          <div className="flex items-center space-x-1">
+                        <p className="text-xs text-muted-foreground line-clamp-2">{alert.message}</p>
+                        <div className="flex items-center gap-3 mt-1 text-xs flex-wrap">
+                          <div className="flex items-center gap-1">
                             <Battery className="w-3 h-3" />
-                            <span className={`text-xs ${Number(alert.batteryLevel ?? 0) < 20 ? 'text-red-500' : Number(alert.batteryLevel ?? 0) < 50 ? 'text-yellow-500' : 'text-green-500'}`}>
+                            <span className={`${Number(alert.batteryLevel ?? 0) < 20 ? 'text-red-500' : Number(alert.batteryLevel ?? 0) < 50 ? 'text-yellow-500' : 'text-green-500'}`}>
                               {Number(alert.batteryLevel ?? 0)}%
                             </span>
                           </div>
-                          <div className="flex items-center space-x-1">
+                          <div className="flex items-center gap-1">
                             <Activity className="w-3 h-3" />
-                            <span className={`text-xs ${alert.healthStatus === 'Critical' ? 'text-red-500' : alert.healthStatus === 'Warning' || alert.healthStatus === 'Fair' ? 'text-yellow-500' : 'text-green-500'}`}>
+                            <span className={`${alert.healthStatus === 'Critical' ? 'text-red-500' : alert.healthStatus === 'Warning' || alert.healthStatus === 'Fair' ? 'text-yellow-500' : 'text-green-500'}`}>
                               {alert.healthStatus ?? ''}
                             </span>
                           </div>
                         </div>
                       </div>
                     </div>
-                    <Badge variant={(String(alert.severity || '').toLowerCase() === 'critical') ? 'destructive' : 'secondary'}>
-                      {String(alert.severity || '').toLowerCase() || 'info'}
-                    </Badge>
-                  </div>
-                ))
-              )}
+                  ))
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
