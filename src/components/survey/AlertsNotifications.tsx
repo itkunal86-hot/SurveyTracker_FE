@@ -12,9 +12,29 @@ import { getBatteryColor, getBatteryBorderColor } from "@/utils/batteryUtils";
 export const AlertsNotifications = () => {
   const [alertTypeFilter, setAlertTypeFilter] = useState("all");
   const [zoneFilter, setZoneFilter] = useState("all");
+  const [zones, setZones] = useState<Zone[]>([]);
+  const [loadingZones, setLoadingZones] = useState(true);
 
   const { data: alertsResp, isLoading } = useDeviceAlerts({ limit: 100 });
   const alerts = Array.isArray(alertsResp?.data) ? alertsResp!.data : [];
+
+  // ✅ Fetch zones from API
+  useEffect(() => {
+    const fetchZones = async () => {
+      try {
+        setLoadingZones(true);
+        const response = await apiClient.getZones({ limit: 100 });
+        setZones(response.data || []);
+      } catch (error) {
+        console.error("Error fetching zones:", error);
+        setZones([]);
+      } finally {
+        setLoadingZones(false);
+      }
+    };
+
+    fetchZones();
+  }, []);
 
   const filteredAlerts = alerts.filter((alert: any) => {
     const at = `${alert.type || ""} ${alert.deviceType || ""}`;
