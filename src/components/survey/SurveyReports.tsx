@@ -11,9 +11,9 @@ import { useToast } from "@/components/ui/use-toast";
 import type { Device } from "@/lib/api";
 
 const REPORT_FORMATS = [
-  { value: "Excel", label: "Excel" },
-  { value: "Pdf", label: "PDF" },
-  { value: "Csv", label: "CSV" },
+  { value: "excel", label: "Excel" },
+  // { value: "pdf", label: "PDF" },
+  // { value: "csv", label: "CSV" },
 ];
 
 export const SurveyReports = () => {
@@ -21,7 +21,7 @@ export const SurveyReports = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [reportType, setReportType] = useState("");
-  const [reportFormat, setReportFormat] = useState("Excel");
+  const [reportFormat, setReportFormat] = useState("excel");
   const [selectedDevice, setSelectedDevice] = useState("all");
   const [devices, setDevices] = useState<Device[]>([]);
   const [devicesLoading, setDevicesLoading] = useState(false);
@@ -421,7 +421,7 @@ export const SurveyReports = () => {
       </div>
 
       {/* Recent Reports */}
-      <Card>
+      {/* <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             Recent Reports
@@ -462,10 +462,10 @@ export const SurveyReports = () => {
             ))}
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -513,7 +513,7 @@ export const SurveyReports = () => {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </div> */}
     </div>
   );
 };
