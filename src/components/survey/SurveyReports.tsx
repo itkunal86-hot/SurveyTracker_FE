@@ -10,6 +10,12 @@ import { apiClient, API_BASE_PATH } from "@/lib/api";
 import { useToast } from "@/components/ui/use-toast";
 import type { Device } from "@/lib/api";
 
+const REPORT_FORMATS = [
+  { value: "Excel", label: "Excel" },
+  { value: "Pdf", label: "PDF" },
+  { value: "Csv", label: "CSV" },
+];
+
 export const SurveyReports = () => {
   const { toast } = useToast();
   const [startDate, setStartDate] = useState("");
