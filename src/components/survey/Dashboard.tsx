@@ -129,8 +129,8 @@ useEffect(() => {
         <div className="flex items-center space-x-4">
           <h1 className="text-3xl font-bold">Survey Dashboard</h1>
           <div className="flex items-center space-x-2">
-            <MapPin className="w-4 h-4 text-muted-foreground" />
-            <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+            {/* <MapPin className="w-4 h-4 text-muted-foreground" /> */}
+            {/* <Select value={selectedLocation} onValueChange={setSelectedLocation}>
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="Select location/zone" />
               </SelectTrigger>
@@ -148,7 +148,7 @@ useEffect(() => {
                   <div className="p-2 text-sm text-muted-foreground">No zones available</div>
                 )}
               </SelectContent>
-            </Select>
+            </Select> */}
           </div>
         </div>
         <div className="flex items-center space-x-2 text-sm text-muted-foreground">

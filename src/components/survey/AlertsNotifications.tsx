@@ -180,9 +180,9 @@ const handleExportAlerts = async () => {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Warnings</p>
+                <p className="text-sm font-medium text-muted-foreground">Fair</p>
                 <p className="text-2xl font-bold text-orange-600">
-                  {isLoading ? "..." : filteredAlerts.filter((a: any) => a.severity === 'warning').length}
+                  {isLoading ? "..." : filteredAlerts.filter((a: any) => a.severity === 'fair').length}
                 </p>
               </div>
               <div className="h-2 w-2 bg-orange-500 rounded-full"></div>
@@ -195,7 +195,10 @@ const handleExportAlerts = async () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Resolved</p>
-                <p className="text-2xl font-bold text-green-600">{isLoading ? "..." : resolvedAlerts.length}</p>
+                {/* <p className="text-2xl font-bold text-green-600">{isLoading ? "..." : resolvedAlerts.length}</p> */}
+              <p className="text-2xl font-bold text-orange-600">
+                  {isLoading ? "..." : filteredAlerts.filter((a: any) => a.severity === 'good').length}
+                </p>
               </div>
               <Check className="h-4 w-4 text-green-500" />
             </div>
