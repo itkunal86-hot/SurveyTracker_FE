@@ -400,9 +400,21 @@ const handleExportAlerts = async () => {
                           </div>
                         </div>
 
-                        <div className="flex items-center space-x-1 text-xs text-muted-foreground pt-2 border-t">
-                          <Check className="w-3 h-3 text-green-500" />
-                          <span>Resolved: {alert.timestamp}</span>
+                        <div className="flex items-center justify-between pt-2 border-t">
+                          <div className="flex items-center space-x-1 text-xs text-muted-foreground">
+                            <Clock className="w-3 h-3" />
+                            <span>{alert.timestamp}</span>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleMarkResolved(String(alert.id))}
+                            className="text-xs"
+                            disabled
+                          >
+                            <Check className="w-3 h-3 mr-1 text-green-500" />
+                            Resolved
+                          </Button>
                         </div>
                       </div>
                     </CardContent>
