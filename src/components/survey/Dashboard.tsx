@@ -12,6 +12,8 @@ import { API_BASE_PATH, apiClient, type Zone } from "@/lib/api";
 
 export const SurveyDashboard = () => {
   const [selectedLocation, setSelectedLocation] = useState("all");
+  const [zones, setZones] = useState<Zone[]>([]);
+  const [loadingZones, setLoadingZones] = useState(true);
   const [stats, setStats] = useState({
     totalDevices: 0,
     activeDevices: 0,
