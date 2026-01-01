@@ -135,11 +135,18 @@ useEffect(() => {
                 <SelectValue placeholder="Select location/zone" />
               </SelectTrigger>
               <SelectContent>
-                {locationOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
+                <SelectItem value="all">All Zones</SelectItem>
+                {loadingZones ? (
+                  <div className="p-2 text-sm text-muted-foreground">Loading zones...</div>
+                ) : zones.length > 0 ? (
+                  zones.map((zone) => (
+                    <SelectItem key={zone.id} value={zone.id}>
+                      {zone.name}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <div className="p-2 text-sm text-muted-foreground">No zones available</div>
+                )}
               </SelectContent>
             </Select>
           </div>
