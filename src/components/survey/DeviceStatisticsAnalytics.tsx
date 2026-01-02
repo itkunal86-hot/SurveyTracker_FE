@@ -51,7 +51,7 @@ const TIME_RANGE_OPTIONS = [
   { value: "3months", label: "Last 3 Months" },
 ];
 
-const SURVEY_POINT_THRESHOLD = 100; // Configurable threshold
+const SURVEY_POINT_THRESHOLD = 100;
 
 interface StatItemProps {
   label: string;
@@ -61,12 +61,12 @@ interface StatItemProps {
 }
 
 const StatItem = ({ label, value, color = "text-foreground", icon }: StatItemProps) => (
-  <div className="flex items-center justify-between py-3 border-b last:border-b-0">
+  <div className="flex items-center justify-between py-2 border-b last:border-b-0">
     <div className="flex items-center gap-2">
       {icon && <div className="flex-shrink-0">{icon}</div>}
       <span className="text-sm text-muted-foreground">{label}</span>
     </div>
-    <span className={`text-xl font-bold ${color}`}>{value}</span>
+    <span className={`font-semibold ${color}`}>{value}</span>
   </div>
 );
 
@@ -90,7 +90,6 @@ export const DeviceStatisticsAnalytics = () => {
   const [loadingStats, setLoadingStats] = useState(false);
   const [smId, setSmId] = useState(localStorage.getItem("activeSurveyId"));
 
-  // Fetch zones
   useEffect(() => {
     const fetchZones = async () => {
       try {
@@ -108,7 +107,6 @@ export const DeviceStatisticsAnalytics = () => {
     fetchZones();
   }, []);
 
-  // Listen for survey ID changes
   useEffect(() => {
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === "activeSurveyId") {
@@ -130,7 +128,6 @@ export const DeviceStatisticsAnalytics = () => {
     };
   }, []);
 
-  // Calculate date range based on time range selection
   const getDateRange = () => {
     const endDate = new Date();
     const startDate = new Date();
@@ -150,7 +147,6 @@ export const DeviceStatisticsAnalytics = () => {
     return { startDate, endDate };
   };
 
-  // Fetch and calculate statistics
   useEffect(() => {
     const fetchStatistics = async () => {
       if (!smId) {
@@ -162,7 +158,6 @@ export const DeviceStatisticsAnalytics = () => {
         setLoadingStats(true);
         const { startDate, endDate } = getDateRange();
 
-        // Fetch device usage logs
         const usageParams = new URLSearchParams({
           page: "1",
           limit: "1000",
@@ -189,7 +184,6 @@ export const DeviceStatisticsAnalytics = () => {
           console.warn("Could not fetch device usage logs:", error);
         }
 
-        // Fetch device assignments summary
         let deviceSummary = {
           totalDevices: 0,
           activeDevices: 0,
@@ -208,7 +202,6 @@ export const DeviceStatisticsAnalytics = () => {
           console.warn("Could not fetch device summary:", error);
         }
 
-        // Calculate usage statistics
         const normalUsageDevices = usageLogs.filter(
           (log) => log.dataPointsCollected >= SURVEY_POINT_THRESHOLD
         ).length;
@@ -218,12 +211,10 @@ export const DeviceStatisticsAnalytics = () => {
             log.dataPointsCollected < SURVEY_POINT_THRESHOLD
         ).length;
 
-        // Mock accuracy data (would come from GNSS accuracy API in production)
         const activeCount = deviceSummary.activeDevices || 1;
         const normalAccuracyDevices = Math.round(activeCount * 0.85);
         const belowAverageAccuracyDevices = activeCount - normalAccuracyDevices;
 
-        // Mock TTFA data (would come from device initialization logs in production)
         const ttfaMinutes = 2;
         const ttfaAverageMinutes = 8;
         const ttfaMaxMinutes = 25;
@@ -265,8 +256,8 @@ export const DeviceStatisticsAnalytics = () => {
       : 0;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-2xl font-bold">Device Statistics & Analytics</h2>
           <p className="text-sm text-muted-foreground mt-1">
@@ -316,153 +307,147 @@ export const DeviceStatisticsAnalytics = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Device Status Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Device Status Statistics - Single Card */}
         <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Activity className="h-5 w-5 text-blue-500" />
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Activity className="h-4 w-4 text-blue-500" />
               Device Status
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             <div className="space-y-0">
               <StatItem
                 label="Total Devices"
                 value={statistics.totalDevices}
                 color="text-blue-600"
-                icon={<Zap className="h-4 w-4 text-blue-500" />}
+                icon={<Zap className="h-3 w-3 text-blue-500" />}
               />
               <StatItem
                 label="Active Devices"
                 value={statistics.activeDevices}
                 color="text-green-600"
-                icon={<Activity className="h-4 w-4 text-green-500" />}
+                icon={<Activity className="h-3 w-3 text-green-500" />}
               />
               <StatItem
                 label="Inactive Devices"
                 value={statistics.inactiveDevices}
                 color="text-red-600"
-                icon={<AlertCircle className="h-4 w-4 text-red-500" />}
+                icon={<AlertCircle className="h-3 w-3 text-red-500" />}
               />
             </div>
           </CardContent>
         </Card>
 
-        {/* Device Usage Classification */}
+        {/* Device Usage Classification - Single Card */}
         <Card>
-          <CardHeader className="pb-4">
-            <div>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <TrendingUp className="h-5 w-5 text-green-500" />
-                Device Usage Classification
-              </CardTitle>
-              <p className="text-xs text-muted-foreground mt-2">
-                Threshold: {SURVEY_POINT_THRESHOLD} points
-              </p>
-            </div>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <TrendingUp className="h-4 w-4 text-green-500" />
+              Device Usage Classification
+            </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Threshold: {SURVEY_POINT_THRESHOLD} points
+            </p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             <div className="space-y-0">
               <StatItem
                 label="Total Active Devices"
                 value={statistics.activeDevices}
                 color="text-blue-600"
-                icon={<Activity className="h-4 w-4 text-blue-500" />}
+                icon={<Activity className="h-3 w-3 text-blue-500" />}
               />
               <StatItem
-                label="Normal Usage Devices"
+                label="Normal Usage"
                 value={`${statistics.normalUsageDevices} (${usagePercentage}%)`}
                 color="text-green-600"
-                icon={<TrendingUp className="h-4 w-4 text-green-500" />}
+                icon={<TrendingUp className="h-3 w-3 text-green-500" />}
               />
               <StatItem
-                label="Under Usage Devices"
+                label="Under Usage"
                 value={statistics.underUsageDevices}
                 color="text-yellow-600"
-                icon={<AlertCircle className="h-4 w-4 text-yellow-500" />}
+                icon={<AlertCircle className="h-3 w-3 text-yellow-500" />}
               />
             </div>
           </CardContent>
         </Card>
 
-        {/* Accuracy Performance Statistics */}
+        {/* Accuracy Performance - Single Card */}
         <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Target className="h-5 w-5 text-purple-500" />
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Target className="h-4 w-4 text-purple-500" />
               Accuracy Performance
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             <div className="space-y-0">
               <StatItem
-                label="Normal Accuracy Devices"
+                label="Normal Accuracy"
                 value={`${statistics.normalAccuracyDevices} (${accuracyPercentage}%)`}
                 color="text-green-600"
-                icon={<Target className="h-4 w-4 text-green-500" />}
+                icon={<Target className="h-3 w-3 text-green-500" />}
               />
               <StatItem
                 label="Below Average Accuracy"
                 value={statistics.belowAverageAccuracyDevices}
                 color="text-red-600"
-                icon={<AlertCircle className="h-4 w-4 text-red-500" />}
+                icon={<AlertCircle className="h-3 w-3 text-red-500" />}
               />
-            </div>
-            <div className="mt-4 pt-4 border-t">
-              <p className="text-xs text-muted-foreground">
-                Data sourced from: Trimble Mobile Manager, Trimble Access, Trimble Cloud
-              </p>
+              <div className="mt-2 pt-2 border-t text-xs text-muted-foreground">
+                <span>Data: Trimble Mobile Manager, Access, Cloud</span>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Time to Achieve Accuracy (TTFA) */}
+        {/* Time to Achieve Accuracy - Single Card */}
         <Card>
-          <CardHeader className="pb-4">
-            <div>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Clock className="h-5 w-5 text-orange-500" />
-                Time to Achieve Accuracy
-              </CardTitle>
-              <p className="text-xs text-muted-foreground mt-2">
-                Duration from activation to first acceptable accuracy
-              </p>
-            </div>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Clock className="h-4 w-4 text-orange-500" />
+              Time to Achieve Accuracy
+            </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Duration from activation to acceptable accuracy
+            </p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             <div className="space-y-0">
               <StatItem
                 label="Minimum TTFA"
                 value={`${statistics.ttfaMinutes}m`}
                 color="text-green-600"
-                icon={<Clock className="h-4 w-4 text-green-500" />}
+                icon={<Clock className="h-3 w-3 text-green-500" />}
               />
               <StatItem
                 label="Average TTFA"
                 value={`${statistics.ttfaAverageMinutes}m`}
                 color="text-blue-600"
-                icon={<Clock className="h-4 w-4 text-blue-500" />}
+                icon={<Clock className="h-3 w-3 text-blue-500" />}
               />
               <StatItem
                 label="Maximum TTFA"
                 value={`${statistics.ttfaMaxMinutes}m`}
                 color="text-orange-600"
-                icon={<Clock className="h-4 w-4 text-orange-500" />}
+                icon={<Clock className="h-3 w-3 text-orange-500" />}
               />
-            </div>
-            <div className="mt-4 pt-4 border-t space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Less than 5 minutes</span>
-                <Badge variant="secondary" className="bg-green-100">Optimal</Badge>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">5-15 minutes</span>
-                <Badge variant="secondary" className="bg-yellow-100">Normal</Badge>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">More than 15 minutes</span>
-                <Badge variant="secondary" className="bg-red-100">Requires Attention</Badge>
+              <div className="mt-3 pt-2 border-t space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">&lt; 5 minutes</span>
+                  <Badge variant="secondary" className="bg-green-100 text-xs h-5">Optimal</Badge>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">5-15 minutes</span>
+                  <Badge variant="secondary" className="bg-yellow-100 text-xs h-5">Normal</Badge>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">&gt; 15 minutes</span>
+                  <Badge variant="secondary" className="bg-red-100 text-xs h-5">Attention</Badge>
+                </div>
               </div>
             </div>
           </CardContent>
