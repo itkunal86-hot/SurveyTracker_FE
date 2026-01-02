@@ -405,12 +405,14 @@ export const DeviceStatisticsAnalytics = () => {
                 value={`${statistics.normalAccuracyDevices} (${accuracyPercentage}%)`}
                 color="text-green-600"
                 icon={<Target className="h-3 w-3 text-green-500" />}
+                onClick={() => handleStatItemClick("Accuracy Performance", "Normal Accuracy", `${statistics.normalAccuracyDevices} (${accuracyPercentage}%)`)}
               />
               <StatItem
                 label="Below Average Accuracy"
                 value={statistics.belowAverageAccuracyDevices}
                 color="text-red-600"
                 icon={<AlertCircle className="h-3 w-3 text-red-500" />}
+                onClick={() => handleStatItemClick("Accuracy Performance", "Below Average Accuracy", statistics.belowAverageAccuracyDevices)}
               />
               <div className="mt-2 pt-2 border-t text-xs text-muted-foreground">
                 <span>Data: Trimble Mobile Manager, Access, Cloud</span>
