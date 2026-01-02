@@ -58,15 +58,19 @@ interface StatItemProps {
   value: string | number;
   color?: string;
   icon?: React.ReactNode;
+  onClick?: () => void;
 }
 
-const StatItem = ({ label, value, color = "text-foreground", icon }: StatItemProps) => (
-  <div className="flex items-center justify-between py-2 border-b last:border-b-0">
+const StatItem = ({ label, value, color = "text-foreground", icon, onClick }: StatItemProps) => (
+  <div
+    onClick={onClick}
+    className="flex items-center justify-between py-2 px-2 border-b last:border-b-0 cursor-pointer transition-colors hover:bg-muted/50 rounded"
+  >
     <div className="flex items-center gap-2">
       {icon && <div className="flex-shrink-0">{icon}</div>}
-      <span className="text-sm text-muted-foreground">{label}</span>
+      <span className="text-sm text-muted-foreground hover:text-foreground transition-colors">{label}</span>
     </div>
-    <span className={`font-semibold ${color}`}>{value}</span>
+    <span className={`font-semibold ${color} hover:opacity-80 transition-opacity`}>{value}</span>
   </div>
 );
 
