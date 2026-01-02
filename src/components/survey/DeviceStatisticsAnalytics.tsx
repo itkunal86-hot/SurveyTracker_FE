@@ -439,18 +439,21 @@ export const DeviceStatisticsAnalytics = () => {
                 value={`${statistics.ttfaMinutes}m`}
                 color="text-green-600"
                 icon={<Clock className="h-3 w-3 text-green-500" />}
+                onClick={() => handleStatItemClick("Time to Achieve Accuracy", "Minimum TTFA", `${statistics.ttfaMinutes}m`)}
               />
               <StatItem
                 label="Average TTFA"
                 value={`${statistics.ttfaAverageMinutes}m`}
                 color="text-blue-600"
                 icon={<Clock className="h-3 w-3 text-blue-500" />}
+                onClick={() => handleStatItemClick("Time to Achieve Accuracy", "Average TTFA", `${statistics.ttfaAverageMinutes}m`)}
               />
               <StatItem
                 label="Maximum TTFA"
                 value={`${statistics.ttfaMaxMinutes}m`}
                 color="text-orange-600"
                 icon={<Clock className="h-3 w-3 text-orange-500" />}
+                onClick={() => handleStatItemClick("Time to Achieve Accuracy", "Maximum TTFA", `${statistics.ttfaMaxMinutes}m`)}
               />
               <div className="mt-3 pt-2 border-t space-y-1">
                 <div className="flex items-center justify-between text-xs">
