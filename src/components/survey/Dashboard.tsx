@@ -224,6 +224,9 @@ useEffect(() => {
         </Card>
       </div>
 
+      {/* Device Statistics & Analytics */}
+      <DeviceStatisticsAnalytics />
+
       {/* Device Logs Grid */}
       <div className="grid grid-cols-1 gap-6">
         <DeviceLogGrid />
