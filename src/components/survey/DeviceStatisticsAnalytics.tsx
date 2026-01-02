@@ -332,18 +332,21 @@ export const DeviceStatisticsAnalytics = () => {
                 value={statistics.totalDevices}
                 color="text-blue-600"
                 icon={<Zap className="h-3 w-3 text-blue-500" />}
+                onClick={() => handleStatItemClick("Device Status", "Total Devices", statistics.totalDevices)}
               />
               <StatItem
                 label="Active Devices"
                 value={statistics.activeDevices}
                 color="text-green-600"
                 icon={<Activity className="h-3 w-3 text-green-500" />}
+                onClick={() => handleStatItemClick("Device Status", "Active Devices", statistics.activeDevices)}
               />
               <StatItem
                 label="Inactive Devices"
                 value={statistics.inactiveDevices}
                 color="text-red-600"
                 icon={<AlertCircle className="h-3 w-3 text-red-500" />}
+                onClick={() => handleStatItemClick("Device Status", "Inactive Devices", statistics.inactiveDevices)}
               />
             </div>
           </CardContent>
