@@ -95,6 +95,10 @@ export const DeviceStatisticsAnalytics = () => {
   const [loadingStats, setLoadingStats] = useState(false);
   const [smId, setSmId] = useState(localStorage.getItem("activeSurveyId"));
 
+  const handleStatItemClick = (section: string, label: string, value: string | number) => {
+    toast.success(`${section}: ${label} = ${value}`);
+  };
+
   useEffect(() => {
     const fetchZones = async () => {
       try {
