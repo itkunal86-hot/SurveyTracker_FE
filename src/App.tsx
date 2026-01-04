@@ -14,7 +14,6 @@ import Admin from "./pages/Admin";
 import PipelineOperations from "./pages/PipelineOperations";
 import AssetMenus from "./pages/AssetMenus";
 import NotFound from "./pages/NotFound";
-import { DeviceStatisticsPage } from "./pages/DeviceStatisticsPage";
 
 const queryClient = new QueryClient();
 
