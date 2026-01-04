@@ -75,11 +75,7 @@ const StatItem = ({ label, value, color = "text-foreground", icon, onClick }: St
   </div>
 );
 
-interface DeviceStatisticsAnalyticsProps {
-  deviceId?: string;
-}
-
-export const DeviceStatisticsAnalytics = ({ deviceId }: DeviceStatisticsAnalyticsProps) => {
+export const DeviceStatisticsAnalytics = () => {
   const [timeRange, setTimeRange] = useState<TimeRange>("7days");
   const [selectedZone, setSelectedZone] = useState<ZoneSelection>("all");
   const [zones, setZones] = useState<Zone[]>([]);
