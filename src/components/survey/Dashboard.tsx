@@ -1,17 +1,18 @@
-import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Activity, Battery, MapPin, Users, Wifi, Smartphone, HardDrive } from "lucide-react";
 import { LocationHeatmapAnalytics } from "@/components/analytics/LocationHeatmapAnalytics";
 import { DeviceLogGrid } from "@/components/survey/DeviceLogGrid";
+import { DeviceStatisticsAnalytics } from "@/components/survey/DeviceStatisticsAnalytics";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDeviceAlerts } from "@/hooks/useApiQueries";
 import { API_BASE_PATH, apiClient, type Zone } from "@/lib/api";
 
 export const SurveyDashboard = () => {
   const [selectedLocation, setSelectedLocation] = useState("all");
+  const [deviceTypeFilter, setDeviceTypeFilter] = useState("all");
   const [zones, setZones] = useState<Zone[]>([]);
   const [loadingZones, setLoadingZones] = useState(true);
   const [stats, setStats] = useState({
@@ -121,7 +122,12 @@ useEffect(() => {
 
   // Alerts from API
   const { data: alertsResp, isLoading: alertsLoading } = useDeviceAlerts({ limit: 100 });
-  const alerts = Array.isArray(alertsResp?.data) ? alertsResp!.data : [];
+  const allAlerts = Array.isArray(alertsResp?.data) ? alertsResp!.data : [];
+
+  // Filter alerts by device type
+  const alerts = allAlerts.filter((alert: any) =>
+    deviceTypeFilter === "all" || alert.deviceType === deviceTypeFilter
+  );
 
   return (
     <div className="p-6 space-y-6">
@@ -223,6 +229,9 @@ useEffect(() => {
         </Card>
       </div>
 
+      {/* Device Statistics & Analytics */}
+      <DeviceStatisticsAnalytics />
+
       {/* Device Logs Grid */}
       <div className="grid grid-cols-1 gap-6">
         <DeviceLogGrid />
@@ -237,6 +246,18 @@ useEffect(() => {
               Alerts
               <Badge variant="destructive">{alertsLoading ? "..." : alerts.length}</Badge>
             </CardTitle>
+            <div className="mt-4">
+              <Select value={deviceTypeFilter} onValueChange={setDeviceTypeFilter}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Filter by device" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Devices</SelectItem>
+                  <SelectItem value="DA2">DA2 Device</SelectItem>
+                  <SelectItem value="Android">Android Device</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             <div className="max-h-96 overflow-y-auto">

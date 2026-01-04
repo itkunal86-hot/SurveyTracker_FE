@@ -10,7 +10,7 @@ import { API_BASE_PATH, apiClient, type Zone } from "@/lib/api";
 import { getBatteryColor, getBatteryBorderColor, getAlertSeverityBorderColor } from "@/utils/batteryUtils";
 
 export const AlertsNotifications = () => {
-  const [alertTypeFilter, setAlertTypeFilter] = useState("all");
+  const [deviceTypeFilter, setDeviceTypeFilter] = useState("all");
   const [zoneFilter, setZoneFilter] = useState("all");
   const [zones, setZones] = useState<Zone[]>([]);
   const [loadingZones, setLoadingZones] = useState(true);
@@ -37,8 +37,9 @@ export const AlertsNotifications = () => {
   }, []);
 
   const filteredAlerts = alerts.filter((alert: any) => {
-    const at = `${alert.type || ""} ${alert.deviceType || ""}`;
-    const matchesType = alertTypeFilter === "all" || at.toLowerCase().includes(alertTypeFilter.toLowerCase());
+    // Match device type (Android or DA2)
+    const matchesDeviceType = deviceTypeFilter === "all" ||
+      alert.deviceType === deviceTypeFilter;
 
     // Match zone by comparing alert zone (name or id) with selected zone id
     const matchesZone = zoneFilter === "all" ||
@@ -47,7 +48,7 @@ export const AlertsNotifications = () => {
         zones.some(z => z.id === zoneFilter && (z.name.toLowerCase() === alert.zone.toLowerCase() || z.id === alert.zone))
       ));
 
-    return matchesType && matchesZone;
+    return matchesDeviceType && matchesZone;
   });
 
   const unresolvedAlerts = filteredAlerts.filter((alert: any) => !(alert.resolved ?? false));
@@ -241,19 +242,17 @@ const handleExportAlerts = async () => {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col md:flex-row gap-4">
-            {/* <Select value={alertTypeFilter} onValueChange={setAlertTypeFilter}>
+            <Select value={deviceTypeFilter} onValueChange={setDeviceTypeFilter}>
               <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Alert Type" />
+                <SelectValue placeholder="Device Type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="all">All Devices</SelectItem>
                 <SelectItem value="DA2">DA2 Device</SelectItem>
-                <SelectItem value="Android">Android Controller</SelectItem>
-                <SelectItem value="battery">Battery Issues</SelectItem>
-                <SelectItem value="health">Health Issues</SelectItem>
+                <SelectItem value="Android">Android Device</SelectItem>
               </SelectContent>
-            </Select> */}
-            
+            </Select>
+
             <Select value={zoneFilter} onValueChange={setZoneFilter} disabled={loadingZones}>
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder={loadingZones ? "Loading zones..." : "Zone"} />
