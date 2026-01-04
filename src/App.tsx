@@ -34,7 +34,6 @@ const App = () => (
               <Route path="/pipeline-operations" element={<PipelineOperations />} />
               <Route path="/assets/:menu" element={<AssetMenus />} />
               <Route path="/admin" element={<Admin />} />
-              <Route path="/device-statistics/:deviceId" element={<DeviceStatisticsPage />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
