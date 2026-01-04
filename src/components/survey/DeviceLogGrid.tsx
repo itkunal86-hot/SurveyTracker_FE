@@ -351,7 +351,7 @@ export const DeviceLogGrid = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => navigate(`/device-statistics/${log.id}`)}
+                        onClick={() => navigate("/analytics")}
                         className="flex items-center gap-2"
                       >
                         <BarChart3 className="w-4 h-4" />
