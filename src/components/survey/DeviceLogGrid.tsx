@@ -4,7 +4,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Wifi, WifiOff, Battery, Activity, RefreshCw } from "lucide-react";
+import { Wifi, WifiOff, Battery, Activity, RefreshCw, BarChart3 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { API_BASE_PATH } from "@/lib/api";
 
 interface DeviceLog {
@@ -31,6 +32,7 @@ const TIME_OPTIONS = [
 ];
 
 export const DeviceLogGrid = () => {
+  const navigate = useNavigate();
   const [selectedTime, setSelectedTime] = useState("5");
   const [deviceLogs, setDeviceLogs] = useState<DeviceLog[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -291,6 +293,7 @@ export const DeviceLogGrid = () => {
                 <TableHead>Last Seen</TableHead>
                 <TableHead>Surveyor</TableHead>
                 <TableHead>Serial Number</TableHead>
+                <TableHead>Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -344,6 +347,17 @@ export const DeviceLogGrid = () => {
                     </TableCell>
                     <TableCell className="text-sm">{log.surveyor || "-"}</TableCell>
                     <TableCell className="text-sm">{log.serialNumber || "-"}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate("/daily-personal-maps")}
+                        className="flex items-center gap-2"
+                      >
+                        <BarChart3 className="w-4 h-4" />
+                        View Analytics
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))
               )}
