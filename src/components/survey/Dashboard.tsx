@@ -241,9 +241,6 @@ useEffect(() => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="font-medium text-sm">{alert.instrument}</p>
-                          <Badge variant="outline" className="text-xs">
-                            {alert.deviceType}
-                          </Badge>
                           <Badge variant={(String(alert.severity || '').toLowerCase() === 'critical') ? 'destructive' : 'secondary'} className="text-xs">
                             {String(alert.severity || '').toLowerCase() || 'info'}
                           </Badge>
@@ -256,12 +253,16 @@ useEffect(() => {
                               {Number(alert.batteryLevel ?? 0)}%
                             </span>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <Activity className="w-3 h-3" />
-                            <span className={`${alert.healthStatus === 'Critical' ? 'text-red-500' : alert.healthStatus === 'Warning' || alert.healthStatus === 'Fair' ? 'text-yellow-500' : 'text-green-500'}`}>
-                              {alert.healthStatus ?? ''}
-                            </span>
-                          </div>
+                          {alert.controllerHealthStatus && (
+                            <Badge variant="outline" className="text-xs">
+                              Controller: {alert.controllerHealthStatus}
+                            </Badge>
+                          )}
+                          {alert.deviceHealthStatus && (
+                            <Badge variant="outline" className="text-xs">
+                              Device: {alert.deviceHealthStatus}
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     </div>
