@@ -827,10 +827,34 @@ class ApiClient {
     const healthStatus = hsRaw != null ? String(hsRaw) : undefined;
 
     const controllerHsRaw = it.controllerHealthStatus ?? it.ControllerHealthStatus ?? it.controllerHealth ?? it.ControllerHealth;
-    const controllerHealthStatus = controllerHsRaw != null ? String(controllerHsRaw) : "Good";
+    // If not provided, derive from severity or use healthStatus as fallback
+    let controllerHealthStatus: string | undefined;
+    if (controllerHsRaw != null) {
+      controllerHealthStatus = String(controllerHsRaw);
+    } else if (healthStatus) {
+      // Use the overall health status for controller as fallback
+      controllerHealthStatus = healthStatus;
+    } else {
+      // Default based on severity
+      controllerHealthStatus = severity === "critical" ? "Critical" : severity === "warning" ? "Warning" : "Good";
+    }
 
     const deviceHsRaw = it.deviceHealthStatus ?? it.DeviceHealthStatus ?? it.deviceHealth ?? it.DeviceHealth;
-    const deviceHealthStatus = deviceHsRaw != null ? String(deviceHsRaw) : "Good";
+    // If not provided, derive from battery level
+    let deviceHealthStatus: string | undefined;
+    if (deviceHsRaw != null) {
+      deviceHealthStatus = String(deviceHsRaw);
+    } else {
+      // Derive from battery level
+      const battLevel = batteryLevel ?? 100;
+      if (battLevel < 20) {
+        deviceHealthStatus = "Critical";
+      } else if (battLevel < 50) {
+        deviceHealthStatus = "Warning";
+      } else {
+        deviceHealthStatus = "Good";
+      }
+    }
 
     const resolvedVal = it.resolved ?? it.Resolved ?? it.isResolved ?? it.IsResolved;
     const resolved = typeof resolvedVal === "boolean" ? resolvedVal : (String(resolvedVal ?? "").toLowerCase() === "true");
