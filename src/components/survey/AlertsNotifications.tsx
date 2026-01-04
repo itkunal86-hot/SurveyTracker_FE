@@ -37,8 +37,9 @@ export const AlertsNotifications = () => {
   }, []);
 
   const filteredAlerts = alerts.filter((alert: any) => {
-    const at = `${alert.type || ""} ${alert.deviceType || ""}`;
-    const matchesType = alertTypeFilter === "all" || at.toLowerCase().includes(alertTypeFilter.toLowerCase());
+    // Match device type (Android or DA2)
+    const matchesDeviceType = deviceTypeFilter === "all" ||
+      alert.deviceType === deviceTypeFilter;
 
     // Match zone by comparing alert zone (name or id) with selected zone id
     const matchesZone = zoneFilter === "all" ||
@@ -47,7 +48,7 @@ export const AlertsNotifications = () => {
         zones.some(z => z.id === zoneFilter && (z.name.toLowerCase() === alert.zone.toLowerCase() || z.id === alert.zone))
       ));
 
-    return matchesType && matchesZone;
+    return matchesDeviceType && matchesZone;
   });
 
   const unresolvedAlerts = filteredAlerts.filter((alert: any) => !(alert.resolved ?? false));
