@@ -13,8 +13,8 @@ export const AlertsNotifications = () => {
   const { data: alertsResp, isLoading } = useDeviceAlerts({ limit: 100 });
   const alerts = Array.isArray(alertsResp?.data) ? alertsResp!.data : [];
 
-  const unresolvedAlerts = filteredAlerts.filter((alert: any) => !(alert.resolved ?? false));
-  const resolvedAlerts = filteredAlerts.filter((alert: any) => (alert.resolved ?? false));
+  const unresolvedAlerts = alerts.filter((alert: any) => !(alert.resolved ?? false));
+  const resolvedAlerts = alerts.filter((alert: any) => (alert.resolved ?? false));
 
   const getAlertIcon = (deviceType: string) => {
     switch (deviceType) {
