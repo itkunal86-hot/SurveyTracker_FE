@@ -7,7 +7,7 @@ import { LocationHeatmapAnalytics } from "@/components/analytics/LocationHeatmap
 import { DeviceLogGrid } from "@/components/survey/DeviceLogGrid";
 import { DeviceStatisticsAnalytics } from "@/components/survey/DeviceStatisticsAnalytics";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDeviceAlerts } from "@/hooks/useApiQueries";
 import { API_BASE_PATH, apiClient, type Zone } from "@/lib/api";
 
