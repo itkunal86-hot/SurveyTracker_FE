@@ -293,6 +293,7 @@ export const DeviceLogGrid = () => {
                 <TableHead>Last Seen</TableHead>
                 <TableHead>Surveyor</TableHead>
                 <TableHead>Serial Number</TableHead>
+                <TableHead>Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
