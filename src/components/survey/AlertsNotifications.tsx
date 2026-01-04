@@ -242,19 +242,17 @@ const handleExportAlerts = async () => {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col md:flex-row gap-4">
-            {/* <Select value={alertTypeFilter} onValueChange={setAlertTypeFilter}>
+            <Select value={deviceTypeFilter} onValueChange={setDeviceTypeFilter}>
               <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Alert Type" />
+                <SelectValue placeholder="Device Type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="all">All Devices</SelectItem>
                 <SelectItem value="DA2">DA2 Device</SelectItem>
-                <SelectItem value="Android">Android Controller</SelectItem>
-                <SelectItem value="battery">Battery Issues</SelectItem>
-                <SelectItem value="health">Health Issues</SelectItem>
+                <SelectItem value="Android">Android Device</SelectItem>
               </SelectContent>
-            </Select> */}
-            
+            </Select>
+
             <Select value={zoneFilter} onValueChange={setZoneFilter} disabled={loadingZones}>
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder={loadingZones ? "Loading zones..." : "Zone"} />
