@@ -826,10 +826,16 @@ class ApiClient {
     const hsRaw = it.healthStatus ?? it.HealthStatus ?? it.health ?? it.Health;
     const healthStatus = hsRaw != null ? String(hsRaw) : undefined;
 
+    const controllerHsRaw = it.controllerHealthStatus ?? it.ControllerHealthStatus ?? it.controllerHealth ?? it.ControllerHealth;
+    const controllerHealthStatus = controllerHsRaw != null ? String(controllerHsRaw) : undefined;
+
+    const deviceHsRaw = it.deviceHealthStatus ?? it.DeviceHealthStatus ?? it.deviceHealth ?? it.DeviceHealth;
+    const deviceHealthStatus = deviceHsRaw != null ? String(deviceHsRaw) : undefined;
+
     const resolvedVal = it.resolved ?? it.Resolved ?? it.isResolved ?? it.IsResolved;
     const resolved = typeof resolvedVal === "boolean" ? resolvedVal : (String(resolvedVal ?? "").toLowerCase() === "true");
 
-    return { id, type, instrument, deviceType, message, severity, zone, surveyor, timestamp, batteryLevel, healthStatus, resolved };
+    return { id, type, instrument, deviceType, message, severity, zone, surveyor, timestamp, batteryLevel, healthStatus, controllerHealthStatus, deviceHealthStatus, resolved };
   }
 
   async getDeviceAlerts(params?: { page?: number; limit?: number }): Promise<PaginatedResponse<DeviceAlert>> {
