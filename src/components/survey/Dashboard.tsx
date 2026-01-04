@@ -1,14 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Activity, Battery, MapPin, Users, Wifi, Smartphone, HardDrive } from "lucide-react";
+import { Battery, MapPin, Users, Wifi, Smartphone, HardDrive } from "lucide-react";
 import { LocationHeatmapAnalytics } from "@/components/analytics/LocationHeatmapAnalytics";
 import { DeviceLogGrid } from "@/components/survey/DeviceLogGrid";
 import { DeviceStatisticsAnalytics } from "@/components/survey/DeviceStatisticsAnalytics";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import { useState, useEffect } from "react";
 import { useDeviceAlerts } from "@/hooks/useApiQueries";
-import { API_BASE_PATH, apiClient, type Zone } from "@/lib/api";
+import { API_BASE_PATH } from "@/lib/api";
 
 export const SurveyDashboard = () => {
   const [stats, setStats] = useState({
