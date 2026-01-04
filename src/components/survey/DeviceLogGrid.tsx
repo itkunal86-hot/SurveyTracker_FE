@@ -4,7 +4,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Wifi, WifiOff, Battery, Activity, RefreshCw } from "lucide-react";
+import { Wifi, WifiOff, Battery, Activity, RefreshCw, BarChart3 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { API_BASE_PATH } from "@/lib/api";
 
 interface DeviceLog {
