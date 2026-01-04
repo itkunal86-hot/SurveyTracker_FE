@@ -347,6 +347,17 @@ export const DeviceLogGrid = () => {
                     </TableCell>
                     <TableCell className="text-sm">{log.surveyor || "-"}</TableCell>
                     <TableCell className="text-sm">{log.serialNumber || "-"}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate(`/device-statistics/${log.id}`)}
+                        className="flex items-center gap-2"
+                      >
+                        <BarChart3 className="w-4 h-4" />
+                        View Analytics
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))
               )}
