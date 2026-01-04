@@ -10,7 +10,7 @@ import { API_BASE_PATH, apiClient, type Zone } from "@/lib/api";
 import { getBatteryColor, getBatteryBorderColor, getAlertSeverityBorderColor } from "@/utils/batteryUtils";
 
 export const AlertsNotifications = () => {
-  const [alertTypeFilter, setAlertTypeFilter] = useState("all");
+  const [deviceTypeFilter, setDeviceTypeFilter] = useState("all");
   const [zoneFilter, setZoneFilter] = useState("all");
   const [zones, setZones] = useState<Zone[]>([]);
   const [loadingZones, setLoadingZones] = useState(true);
