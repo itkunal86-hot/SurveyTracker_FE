@@ -101,12 +101,7 @@ useEffect(() => {
 
   // Alerts from API
   const { data: alertsResp, isLoading: alertsLoading } = useDeviceAlerts({ limit: 100 });
-  const allAlerts = Array.isArray(alertsResp?.data) ? alertsResp!.data : [];
-
-  // Filter alerts by device type
-  const alerts = allAlerts.filter((alert: any) =>
-    deviceTypeFilter === "all" || alert.deviceType === deviceTypeFilter
-  );
+  const alerts = Array.isArray(alertsResp?.data) ? alertsResp!.data : [];
 
   return (
     <div className="p-6 space-y-6">
