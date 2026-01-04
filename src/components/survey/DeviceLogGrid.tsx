@@ -32,6 +32,7 @@ const TIME_OPTIONS = [
 ];
 
 export const DeviceLogGrid = () => {
+  const navigate = useNavigate();
   const [selectedTime, setSelectedTime] = useState("5");
   const [deviceLogs, setDeviceLogs] = useState<DeviceLog[]>([]);
   const [isLoading, setIsLoading] = useState(false);
