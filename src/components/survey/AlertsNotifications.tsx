@@ -10,46 +10,8 @@ import { API_BASE_PATH, apiClient, type Zone } from "@/lib/api";
 import { getBatteryColor, getBatteryBorderColor, getAlertSeverityBorderColor } from "@/utils/batteryUtils";
 
 export const AlertsNotifications = () => {
-  const [deviceTypeFilter, setDeviceTypeFilter] = useState("all");
-  const [zoneFilter, setZoneFilter] = useState("all");
-  const [zones, setZones] = useState<Zone[]>([]);
-  const [loadingZones, setLoadingZones] = useState(true);
-
   const { data: alertsResp, isLoading } = useDeviceAlerts({ limit: 100 });
   const alerts = Array.isArray(alertsResp?.data) ? alertsResp!.data : [];
-
-  // ✅ Fetch zones from API
-  useEffect(() => {
-    const fetchZones = async () => {
-      try {
-        setLoadingZones(true);
-        const response = await apiClient.getZones({ limit: 100 });
-        setZones(response.data || []);
-      } catch (error) {
-        console.error("Error fetching zones:", error);
-        setZones([]);
-      } finally {
-        setLoadingZones(false);
-      }
-    };
-
-    fetchZones();
-  }, []);
-
-  const filteredAlerts = alerts.filter((alert: any) => {
-    // Match device type (Android or DA2)
-    const matchesDeviceType = deviceTypeFilter === "all" ||
-      alert.deviceType === deviceTypeFilter;
-
-    // Match zone by comparing alert zone (name or id) with selected zone id
-    const matchesZone = zoneFilter === "all" ||
-      (alert.zone && (
-        alert.zone.toLowerCase() === zoneFilter.toLowerCase() ||
-        zones.some(z => z.id === zoneFilter && (z.name.toLowerCase() === alert.zone.toLowerCase() || z.id === alert.zone))
-      ));
-
-    return matchesDeviceType && matchesZone;
-  });
 
   const unresolvedAlerts = filteredAlerts.filter((alert: any) => !(alert.resolved ?? false));
   const resolvedAlerts = filteredAlerts.filter((alert: any) => (alert.resolved ?? false));
