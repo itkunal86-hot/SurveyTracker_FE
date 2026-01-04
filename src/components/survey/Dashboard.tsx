@@ -247,6 +247,18 @@ useEffect(() => {
               Alerts
               <Badge variant="destructive">{alertsLoading ? "..." : alerts.length}</Badge>
             </CardTitle>
+            <div className="mt-4">
+              <Select value={deviceTypeFilter} onValueChange={setDeviceTypeFilter}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Filter by device" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Devices</SelectItem>
+                  <SelectItem value="DA2">DA2 Device</SelectItem>
+                  <SelectItem value="Android">Android Device</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             <div className="max-h-96 overflow-y-auto">
