@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Battery, MapPin, Users, Wifi, Smartphone, HardDrive } from "lucide-react";
+import { Activity, Battery, MapPin, Users, Wifi, Smartphone, HardDrive } from "lucide-react";
 import { LocationHeatmapAnalytics } from "@/components/analytics/LocationHeatmapAnalytics";
 import { DeviceLogGrid } from "@/components/survey/DeviceLogGrid";
 import { DeviceStatisticsAnalytics } from "@/components/survey/DeviceStatisticsAnalytics";
