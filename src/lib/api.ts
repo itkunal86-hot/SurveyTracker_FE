@@ -827,10 +827,10 @@ class ApiClient {
     const healthStatus = hsRaw != null ? String(hsRaw) : undefined;
 
     const controllerHsRaw = it.controllerHealthStatus ?? it.ControllerHealthStatus ?? it.controllerHealth ?? it.ControllerHealth;
-    const controllerHealthStatus = controllerHsRaw != null ? String(controllerHsRaw) : undefined;
+    const controllerHealthStatus = controllerHsRaw != null ? String(controllerHsRaw) : "Good";
 
     const deviceHsRaw = it.deviceHealthStatus ?? it.DeviceHealthStatus ?? it.deviceHealth ?? it.DeviceHealth;
-    const deviceHealthStatus = deviceHsRaw != null ? String(deviceHsRaw) : undefined;
+    const deviceHealthStatus = deviceHsRaw != null ? String(deviceHsRaw) : "Good";
 
     const resolvedVal = it.resolved ?? it.Resolved ?? it.isResolved ?? it.IsResolved;
     const resolved = typeof resolvedVal === "boolean" ? resolvedVal : (String(resolvedVal ?? "").toLowerCase() === "true");
