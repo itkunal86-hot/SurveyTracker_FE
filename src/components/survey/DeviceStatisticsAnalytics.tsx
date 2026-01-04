@@ -272,7 +272,9 @@ export const DeviceStatisticsAnalytics = ({ deviceId }: DeviceStatisticsAnalytic
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-2xl font-bold">Device Statistics & Analytics</h2>
+          <h2 className="text-2xl font-bold">
+            {deviceId ? `Device Statistics & Analytics - ${deviceId}` : "Device Statistics & Analytics"}
+          </h2>
           <p className="text-sm text-muted-foreground mt-1">
             Time-based operational overview of GNSS devices
           </p>
