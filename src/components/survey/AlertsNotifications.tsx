@@ -216,9 +216,6 @@ const handleExportAlerts = async () => {
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center space-x-2">
                         {getAlertIcon(alert.deviceType)}
-                        <Badge variant="outline" className="text-xs">
-                          {alert.deviceType}
-                        </Badge>
                       </div>
                       {getSeverityBadge(alert.severity)}
                     </div>
@@ -231,19 +228,23 @@ const handleExportAlerts = async () => {
 
                       <p className="text-sm text-muted-foreground">{alert.message}</p>
 
-                      <div className="flex items-center space-x-4 text-xs">
+                      <div className="flex items-center space-x-4 text-xs flex-wrap gap-2">
                         <div className="flex items-center space-x-1">
                           <Battery className="w-3 h-3" />
                           <span className={getBatteryColor(Number(alert.batteryLevel ?? 0))}>
                             {alert.batteryLevel ?? 0}%
                           </span>
                         </div>
-                        <div className="flex items-center space-x-1">
-                          <Activity className="w-3 h-3" />
-                          <span className={alert.healthStatus === 'Critical' ? 'text-red-500' : alert.healthStatus === 'Warning' || alert.healthStatus === 'Fair' ? 'text-yellow-500' : 'text-green-500'}>
-                            {alert.healthStatus ?? ''}
-                          </span>
-                        </div>
+                        {alert.controllerHealthStatus && (
+                          <Badge variant="outline" className="text-xs">
+                            Controller: {alert.controllerHealthStatus}
+                          </Badge>
+                        )}
+                        {alert.deviceHealthStatus && (
+                          <Badge variant="outline" className="text-xs">
+                            Device: {alert.deviceHealthStatus}
+                          </Badge>
+                        )}
                       </div>
 
                       <div className="flex items-center justify-between pt-2 border-t">
