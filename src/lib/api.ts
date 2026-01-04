@@ -149,6 +149,8 @@ export interface DeviceAlert {
   timestamp: string;
   batteryLevel?: number;
   healthStatus?: "Critical" | "Warning" | "Fair" | "Good" | string;
+  controllerHealthStatus?: "Critical" | "Warning" | "Fair" | "Good" | string;
+  deviceHealthStatus?: "Critical" | "Warning" | "Fair" | "Good" | string;
   resolved?: boolean;
 }
 
