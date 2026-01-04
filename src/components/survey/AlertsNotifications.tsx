@@ -1,58 +1,17 @@
-import { useState, useEffect } from "react";
+import { AlertTriangle, Battery, Check, Download, Clock, Smartphone, HardDrive, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AlertTriangle, Battery, Wifi, WifiOff, Check, Download, Clock, Smartphone, HardDrive, Activity, X } from "lucide-react";
 import { useDeviceAlerts } from "@/hooks/useApiQueries";
-import { API_BASE_PATH, apiClient, type Zone } from "@/lib/api";
-import { getBatteryColor, getBatteryBorderColor, getAlertSeverityBorderColor } from "@/utils/batteryUtils";
+import { API_BASE_PATH } from "@/lib/api";
+import { getBatteryColor, getAlertSeverityBorderColor } from "@/utils/batteryUtils";
 
 export const AlertsNotifications = () => {
-  const [deviceTypeFilter, setDeviceTypeFilter] = useState("all");
-  const [zoneFilter, setZoneFilter] = useState("all");
-  const [zones, setZones] = useState<Zone[]>([]);
-  const [loadingZones, setLoadingZones] = useState(true);
-
   const { data: alertsResp, isLoading } = useDeviceAlerts({ limit: 100 });
   const alerts = Array.isArray(alertsResp?.data) ? alertsResp!.data : [];
 
-  // ✅ Fetch zones from API
-  useEffect(() => {
-    const fetchZones = async () => {
-      try {
-        setLoadingZones(true);
-        const response = await apiClient.getZones({ limit: 100 });
-        setZones(response.data || []);
-      } catch (error) {
-        console.error("Error fetching zones:", error);
-        setZones([]);
-      } finally {
-        setLoadingZones(false);
-      }
-    };
-
-    fetchZones();
-  }, []);
-
-  const filteredAlerts = alerts.filter((alert: any) => {
-    // Match device type (Android or DA2)
-    const matchesDeviceType = deviceTypeFilter === "all" ||
-      alert.deviceType === deviceTypeFilter;
-
-    // Match zone by comparing alert zone (name or id) with selected zone id
-    const matchesZone = zoneFilter === "all" ||
-      (alert.zone && (
-        alert.zone.toLowerCase() === zoneFilter.toLowerCase() ||
-        zones.some(z => z.id === zoneFilter && (z.name.toLowerCase() === alert.zone.toLowerCase() || z.id === alert.zone))
-      ));
-
-    return matchesDeviceType && matchesZone;
-  });
-
-  const unresolvedAlerts = filteredAlerts.filter((alert: any) => !(alert.resolved ?? false));
-  const resolvedAlerts = filteredAlerts.filter((alert: any) => (alert.resolved ?? false));
+  const unresolvedAlerts = alerts.filter((alert: any) => !(alert.resolved ?? false));
+  const resolvedAlerts = alerts.filter((alert: any) => (alert.resolved ?? false));
 
   const getAlertIcon = (deviceType: string) => {
     switch (deviceType) {
@@ -184,49 +143,48 @@ const handleExportAlerts = async () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Alerts</p>
-                <p className="text-2xl font-bold">{isLoading ? "..." : filteredAlerts.length}</p>
+                <p className="text-2xl font-bold">{isLoading ? "..." : alerts.length}</p>
               </div>
               <AlertTriangle className="h-4 w-4 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Critical</p>
                 <p className="text-2xl font-bold text-red-600">
-                  {isLoading ? "..." : filteredAlerts.filter((a: any) => a.severity === 'critical').length}
+                  {isLoading ? "..." : alerts.filter((a: any) => a.severity === 'critical').length}
                 </p>
               </div>
               <div className="h-2 w-2 bg-red-500 rounded-full"></div>
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Fair</p>
                 <p className="text-2xl font-bold text-orange-600">
-                  {isLoading ? "..." : filteredAlerts.filter((a: any) => a.severity === 'fair').length}
+                  {isLoading ? "..." : alerts.filter((a: any) => a.severity === 'fair').length}
                 </p>
               </div>
               <div className="h-2 w-2 bg-orange-500 rounded-full"></div>
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Resolved</p>
-                {/* <p className="text-2xl font-bold text-green-600">{isLoading ? "..." : resolvedAlerts.length}</p> */}
               <p className="text-2xl font-bold text-green-600">
-                  {isLoading ? "..." : filteredAlerts.filter((a: any) => a.severity === 'good').length}
+                  {isLoading ? "..." : alerts.filter((a: any) => a.severity === 'good').length}
                 </p>
               </div>
               <Check className="h-4 w-4 text-green-500" />
@@ -235,40 +193,6 @@ const handleExportAlerts = async () => {
         </Card>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col md:flex-row gap-4">
-            <Select value={deviceTypeFilter} onValueChange={setDeviceTypeFilter}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Device Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Devices</SelectItem>
-                <SelectItem value="DA2">DA2 Device</SelectItem>
-                <SelectItem value="Android">Android Device</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={zoneFilter} onValueChange={setZoneFilter} disabled={loadingZones}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder={loadingZones ? "Loading zones..." : "Zone"} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Zones</SelectItem>
-                {zones.map((zone) => (
-                  <SelectItem key={zone.id} value={zone.id}>
-                    {zone.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Unresolved Alerts */}
       <Card>
@@ -289,9 +213,6 @@ const handleExportAlerts = async () => {
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center space-x-2">
                         {getAlertIcon(alert.deviceType)}
-                        <Badge variant="outline" className="text-xs">
-                          {alert.deviceType}
-                        </Badge>
                       </div>
                       {getSeverityBadge(alert.severity)}
                     </div>
@@ -304,19 +225,23 @@ const handleExportAlerts = async () => {
 
                       <p className="text-sm text-muted-foreground">{alert.message}</p>
 
-                      <div className="flex items-center space-x-4 text-xs">
+                      <div className="flex items-center space-x-4 text-xs flex-wrap gap-2">
                         <div className="flex items-center space-x-1">
                           <Battery className="w-3 h-3" />
                           <span className={getBatteryColor(Number(alert.batteryLevel ?? 0))}>
                             {alert.batteryLevel ?? 0}%
                           </span>
                         </div>
-                        <div className="flex items-center space-x-1">
-                          <Activity className="w-3 h-3" />
-                          <span className={alert.healthStatus === 'Critical' ? 'text-red-500' : alert.healthStatus === 'Warning' || alert.healthStatus === 'Fair' ? 'text-yellow-500' : 'text-green-500'}>
-                            {alert.healthStatus ?? ''}
-                          </span>
-                        </div>
+                        {alert.controllerHealthStatus && (
+                          <Badge variant="outline" className="text-xs">
+                            Controller: {alert.controllerHealthStatus}
+                          </Badge>
+                        )}
+                        {alert.deviceHealthStatus && (
+                          <Badge variant="outline" className="text-xs">
+                            Device: {alert.deviceHealthStatus}
+                          </Badge>
+                        )}
                       </div>
 
                       <div className="flex items-center justify-between pt-2 border-t">
@@ -367,9 +292,6 @@ const handleExportAlerts = async () => {
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center space-x-2">
                           {getAlertIcon(alert.deviceType)}
-                          <Badge variant="outline" className="text-xs">
-                            {alert.deviceType}
-                          </Badge>
                         </div>
                         <Badge variant="secondary" className="text-green-700 bg-green-100">
                           Resolved
@@ -384,19 +306,23 @@ const handleExportAlerts = async () => {
 
                         <p className="text-sm text-muted-foreground">{alert.message}</p>
 
-                        <div className="flex items-center space-x-4 text-xs">
+                        <div className="flex items-center space-x-4 text-xs flex-wrap gap-2">
                           <div className="flex items-center space-x-1">
                             <Battery className="w-3 h-3" />
                             <span className={getBatteryColor(Number(alert.batteryLevel ?? 0))}>
                               {alert.batteryLevel ?? 0}%
                             </span>
                           </div>
-                          <div className="flex items-center space-x-1">
-                            <Activity className="w-3 h-3" />
-                            <span className={alert.healthStatus === 'Critical' ? 'text-red-500' : alert.healthStatus === 'Warning' || alert.healthStatus === 'Fair' ? 'text-yellow-500' : 'text-green-500'}>
-                              {alert.healthStatus ?? ''}
-                            </span>
-                          </div>
+                          {alert.controllerHealthStatus && (
+                            <Badge variant="outline" className="text-xs">
+                              Controller: {alert.controllerHealthStatus}
+                            </Badge>
+                          )}
+                          {alert.deviceHealthStatus && (
+                            <Badge variant="outline" className="text-xs">
+                              Device: {alert.deviceHealthStatus}
+                            </Badge>
+                          )}
                         </div>
 
                         <div className="flex items-center justify-between pt-2 border-t">

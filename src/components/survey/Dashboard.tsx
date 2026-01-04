@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Activity, Battery, MapPin, Users, Wifi, Smartphone, HardDrive } from "lucide-react";
 import { LocationHeatmapAnalytics } from "@/components/analytics/LocationHeatmapAnalytics";
 import { DeviceLogGrid } from "@/components/survey/DeviceLogGrid";
@@ -8,13 +7,9 @@ import { DeviceStatisticsAnalytics } from "@/components/survey/DeviceStatisticsA
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import { useState, useEffect } from "react";
 import { useDeviceAlerts } from "@/hooks/useApiQueries";
-import { API_BASE_PATH, apiClient, type Zone } from "@/lib/api";
+import { API_BASE_PATH } from "@/lib/api";
 
 export const SurveyDashboard = () => {
-  const [selectedLocation, setSelectedLocation] = useState("all");
-  const [deviceTypeFilter, setDeviceTypeFilter] = useState("all");
-  const [zones, setZones] = useState<Zone[]>([]);
-  const [loadingZones, setLoadingZones] = useState(true);
   const [stats, setStats] = useState({
     totalDevices: 0,
     activeDevices: 0,
@@ -28,23 +23,6 @@ export const SurveyDashboard = () => {
   // ✅ Track active survey ID as state (reactive)
   const [smId, setSmId] = useState(localStorage.getItem("activeSurveyId"));
 
-// ✅ Fetch zones from API
-useEffect(() => {
-  const fetchZones = async () => {
-    try {
-      setLoadingZones(true);
-      const response = await apiClient.getZones({ limit: 100 });
-      setZones(response.data || []);
-    } catch (error) {
-      console.error("Error fetching zones:", error);
-      setZones([]);
-    } finally {
-      setLoadingZones(false);
-    }
-  };
-
-  fetchZones();
-}, []);
 
 // ✅ Listen for changes to localStorage (from other tabs or in-app updates)
 useEffect(() => {
@@ -122,12 +100,7 @@ useEffect(() => {
 
   // Alerts from API
   const { data: alertsResp, isLoading: alertsLoading } = useDeviceAlerts({ limit: 100 });
-  const allAlerts = Array.isArray(alertsResp?.data) ? alertsResp!.data : [];
-
-  // Filter alerts by device type
-  const alerts = allAlerts.filter((alert: any) =>
-    deviceTypeFilter === "all" || alert.deviceType === deviceTypeFilter
-  );
+  const alerts = Array.isArray(alertsResp?.data) ? alertsResp!.data : [];
 
   return (
     <div className="p-6 space-y-6">
@@ -246,18 +219,6 @@ useEffect(() => {
               Alerts
               <Badge variant="destructive">{alertsLoading ? "..." : alerts.length}</Badge>
             </CardTitle>
-            <div className="mt-4">
-              <Select value={deviceTypeFilter} onValueChange={setDeviceTypeFilter}>
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Filter by device" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Devices</SelectItem>
-                  <SelectItem value="DA2">DA2 Device</SelectItem>
-                  <SelectItem value="Android">Android Device</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </CardHeader>
           <CardContent className="p-0">
             <div className="max-h-96 overflow-y-auto">
@@ -279,9 +240,6 @@ useEffect(() => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="font-medium text-sm">{alert.instrument}</p>
-                          <Badge variant="outline" className="text-xs">
-                            {alert.deviceType}
-                          </Badge>
                           <Badge variant={(String(alert.severity || '').toLowerCase() === 'critical') ? 'destructive' : 'secondary'} className="text-xs">
                             {String(alert.severity || '').toLowerCase() || 'info'}
                           </Badge>
@@ -294,12 +252,16 @@ useEffect(() => {
                               {Number(alert.batteryLevel ?? 0)}%
                             </span>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <Activity className="w-3 h-3" />
-                            <span className={`${alert.healthStatus === 'Critical' ? 'text-red-500' : alert.healthStatus === 'Warning' || alert.healthStatus === 'Fair' ? 'text-yellow-500' : 'text-green-500'}`}>
-                              {alert.healthStatus ?? ''}
-                            </span>
-                          </div>
+                          {alert.controllerHealthStatus && (
+                            <Badge variant="outline" className="text-xs">
+                              Controller: {alert.controllerHealthStatus}
+                            </Badge>
+                          )}
+                          {alert.deviceHealthStatus && (
+                            <Badge variant="outline" className="text-xs">
+                              Device: {alert.deviceHealthStatus}
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     </div>
