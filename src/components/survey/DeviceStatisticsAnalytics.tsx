@@ -92,32 +92,12 @@ export const DeviceStatisticsAnalytics = ({ onSummaryTypeSelect }: DeviceStatist
   const handleStatItemClick = (summaryType: string) => {
     setSelectedSummaryType(summaryType);
 
-    // Call the API endpoint with the selected summaryType
-    const fetchDeviceLogWithFilter = async () => {
-      try {
-        const params = new URLSearchParams({
-          page: "1",
-          limit: "10",
-          minutes: "5",
-          summaryType: summaryType,
-        });
+    // Notify parent component to refresh DeviceLogGrid with new summaryType
+    if (onSummaryTypeSelect) {
+      onSummaryTypeSelect(summaryType);
+    }
 
-        const response = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/DeviceLog/getdeviceactivelog?${params.toString()}`
-        );
-
-        if (response.ok) {
-          toast.success(`Loaded devices: ${summaryType}`);
-        } else {
-          toast.error("Failed to load device logs");
-        }
-      } catch (error) {
-        console.error("Error fetching device logs:", error);
-        toast.error("Error loading device logs");
-      }
-    };
-
-    fetchDeviceLogWithFilter();
+    toast.success(`Loaded devices: ${summaryType}`);
   };
 
   useEffect(() => {
