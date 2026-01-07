@@ -223,6 +223,22 @@ export const DeviceStatisticsAnalytics = ({
           </p>
         </div>
         <div className="flex gap-3">
+          {timeOptions.length > 0 && (
+            <div className="w-48">
+              <Select value={selectedTime} onValueChange={(value) => onSelectedTimeChange?.(value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select time range" />
+                </SelectTrigger>
+                <SelectContent>
+                  {timeOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="w-48">
             <Select value={timeRange} onValueChange={(value) => setTimeRange(value as TimeRange)}>
               <SelectTrigger>
