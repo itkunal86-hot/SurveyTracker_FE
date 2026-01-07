@@ -246,18 +246,6 @@ export const DeviceLogGrid = ({ summaryType = "", selectedTime = "5" }: DeviceLo
         <div className="flex items-center justify-between">
           <CardTitle>Device Logs</CardTitle>
           <div className="flex items-center gap-3">
-            <Select value={selectedTime} onValueChange={setSelectedTime}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Select time range" />
-              </SelectTrigger>
-              <SelectContent>
-                {TIME_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
             <Button
               variant="outline"
               size="sm"
