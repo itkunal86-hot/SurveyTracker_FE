@@ -27,6 +27,7 @@ interface DeviceLog {
 interface DeviceLogGridProps {
   summaryType?: string;
   selectedTime?: string;
+  selectedZone?: string;
 }
 
 export const DeviceLogGrid = ({ summaryType = "", selectedTime = "5" }: DeviceLogGridProps) => {

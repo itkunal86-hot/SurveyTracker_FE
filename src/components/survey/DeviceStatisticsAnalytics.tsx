@@ -71,6 +71,7 @@ interface TimeOption {
 
 interface DeviceStatisticsAnalyticsProps {
   onSummaryTypeSelect?: (summaryType: string) => void;
+  onZoneSelect?: (zone: ZoneSelection) => void;
   selectedTime?: string;
   onSelectedTimeChange?: (time: string) => void;
   timeOptions?: TimeOption[];
@@ -78,6 +79,7 @@ interface DeviceStatisticsAnalyticsProps {
 
 export const DeviceStatisticsAnalytics = ({
   onSummaryTypeSelect,
+  onZoneSelect,
   selectedTime = "5",
   onSelectedTimeChange,
   timeOptions = []
@@ -171,6 +173,7 @@ export const DeviceStatisticsAnalytics = ({
           limit: "10",
           minutes: "5",
           summaryType: "",
+          zone: selectedZone === "all" ? "" : selectedZone,
           startDate: startDate.toISOString().split("T")[0],
           endDate: endDate.toISOString().split("T")[0]
         });
@@ -265,7 +268,15 @@ export const DeviceStatisticsAnalytics = ({
             </Select>
           </div>
           <div className="w-48">
-            <Select value={selectedZone} onValueChange={setSelectedZone}>
+            <Select
+              value={selectedZone}
+              onValueChange={(zone) => {
+                setSelectedZone(zone as ZoneSelection);
+                if (onZoneSelect) {
+                  onZoneSelect(zone as ZoneSelection);
+                }
+              }}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select zone" />
               </SelectTrigger>
