@@ -83,7 +83,6 @@ export const DeviceStatisticsAnalytics = () => {
     maximumTTFA: 0,
   });
   const [loadingStats, setLoadingStats] = useState(false);
-  const [smId, setSmId] = useState(localStorage.getItem("activeSurveyId"));
 
   const handleStatItemClick = (section: string, label: string, value: string | number) => {
     toast.success(`${section}: ${label} = ${value}`);
@@ -105,46 +104,6 @@ export const DeviceStatisticsAnalytics = () => {
 
     fetchZones();
   }, []);
-
-  useEffect(() => {
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === "activeSurveyId") {
-        setSmId(event.newValue);
-      }
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-
-    const checkLocalChange = () => {
-      const currentId = localStorage.getItem("activeSurveyId");
-      setSmId(currentId);
-    };
-    const interval = setInterval(checkLocalChange, 1000);
-
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      clearInterval(interval);
-    };
-  }, []);
-
-  const getDateRange = () => {
-    const endDate = new Date();
-    const startDate = new Date();
-
-    switch (timeRange) {
-      case "7days":
-        startDate.setDate(startDate.getDate() - 7);
-        break;
-      case "1month":
-        startDate.setMonth(startDate.getMonth() - 1);
-        break;
-      case "3months":
-        startDate.setMonth(startDate.getMonth() - 3);
-        break;
-    }
-
-    return { startDate, endDate };
-  };
 
   useEffect(() => {
     const fetchStatistics = async () => {
