@@ -105,16 +105,38 @@ export const DeviceStatisticsAnalytics = () => {
     fetchZones();
   }, []);
 
+  const getDateRange = () => {
+    const endDate = new Date();
+    const startDate = new Date();
+
+    switch (timeRange) {
+      case "7days":
+        startDate.setDate(startDate.getDate() - 7);
+        break;
+      case "1month":
+        startDate.setMonth(startDate.getMonth() - 1);
+        break;
+      case "3months":
+        startDate.setMonth(startDate.getMonth() - 3);
+        break;
+    }
+
+    return { startDate, endDate };
+  };
+
   useEffect(() => {
     const fetchStatistics = async () => {
       try {
         setLoadingStats(true);
+        const { startDate, endDate } = getDateRange();
 
         const params = new URLSearchParams({
           page: "1",
           limit: "10",
           minutes: "5",
           summaryType: "",
+          startDate: startDate.toISOString().split("T")[0],
+          endDate: endDate.toISOString().split("T")[0],
         });
 
         const response = await fetch(
