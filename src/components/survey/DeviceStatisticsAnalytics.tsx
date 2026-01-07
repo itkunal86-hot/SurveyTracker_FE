@@ -160,97 +160,53 @@ export const DeviceStatisticsAnalytics = () => {
 
   useEffect(() => {
     const fetchStatistics = async () => {
-      if (!smId) {
-        console.warn("No activeSurveyId found");
-        return;
-      }
-
       try {
         setLoadingStats(true);
-        const { startDate, endDate } = getDateRange();
 
-        const usageParams = new URLSearchParams({
+        const params = new URLSearchParams({
           page: "1",
-          limit: "1000",
-          startDate: startDate.toISOString().split("T")[0],
-          endDate: endDate.toISOString().split("T")[0],
+          limit: "10",
+          minutes: "5",
+          summaryType: "",
         });
 
-        let usageLogs: DeviceUsageLog[] = [];
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/DeviceLog/getdeviceactivelog?${params.toString()}`
+        );
 
-        try {
-          const usageResponse = await fetch(
-            `${API_BASE_PATH}/survey-history/device-usage?${usageParams.toString()}`
-          );
+        if (response.ok) {
+          const responseData = await response.json();
+          const summary = responseData?.data?.summary;
 
-          if (usageResponse.ok) {
-            const usageData = await usageResponse.json();
-            usageLogs = Array.isArray(usageData?.data)
-              ? usageData.data
-              : Array.isArray(usageData?.data?.data)
-                ? usageData.data.data
-                : [];
+          if (summary) {
+            setStatistics({
+              totalDeviceCount: summary.totalDeviceCount || 0,
+              totalActiveDeviceCount: summary.totalActiveDeviceCount || 0,
+              totalInactiveDeviceCount: summary.totalInactiveDeviceCount || 0,
+              normalUsage: summary.normalUsage || 0,
+              underUsage: summary.underUsage || 0,
+              normalAccuracy: summary.normalAccuracy || 0,
+              belowAverageAccuracy: summary.belowAverageAccuracy || 0,
+              normalAccuracyPercentage: summary.normalAccuracyPercentage || 0,
+              minimumTTFA: summary.minimumTTFA || 0,
+              averageTTFA: summary.averageTTFA || 0,
+              maximumTTFA: summary.maximumTTFA || 0,
+            });
           }
-        } catch (error) {
-          console.warn("Could not fetch device usage logs:", error);
+        } else {
+          console.error("Failed to fetch device statistics:", response.statusText);
+          toast.error("Failed to fetch device statistics");
         }
-
-        let deviceSummary = {
-          totalDevices: 0,
-          activeDevices: 0,
-          inactiveDevices: 0,
-        };
-
-        try {
-          const summaryResponse = await fetch(
-            `${API_BASE_PATH}/DeviceAssignments/summary/${smId}`
-          );
-
-          if (summaryResponse.ok) {
-            deviceSummary = await summaryResponse.json();
-          }
-        } catch (error) {
-          console.warn("Could not fetch device summary:", error);
-        }
-
-        const normalUsageDevices = usageLogs.filter(
-          (log) => log.dataPointsCollected >= SURVEY_POINT_THRESHOLD
-        ).length;
-        const underUsageDevices = usageLogs.filter(
-          (log) =>
-            log.dataPointsCollected > 0 &&
-            log.dataPointsCollected < SURVEY_POINT_THRESHOLD
-        ).length;
-
-        const activeCount = deviceSummary.activeDevices || 1;
-        const normalAccuracyDevices = Math.round(activeCount * 0.85);
-        const belowAverageAccuracyDevices = activeCount - normalAccuracyDevices;
-
-        const ttfaMinutes = 2;
-        const ttfaAverageMinutes = 8;
-        const ttfaMaxMinutes = 25;
-
-        setStatistics({
-          totalDevices: deviceSummary.totalDevices || 0,
-          activeDevices: deviceSummary.activeDevices || 0,
-          inactiveDevices: deviceSummary.inactiveDevices || 0,
-          normalUsageDevices,
-          underUsageDevices,
-          normalAccuracyDevices,
-          belowAverageAccuracyDevices,
-          ttfaMinutes,
-          ttfaAverageMinutes,
-          ttfaMaxMinutes,
-        });
       } catch (error) {
         console.error("Error fetching statistics:", error);
+        toast.error("Error fetching device statistics");
       } finally {
         setLoadingStats(false);
       }
     };
 
     fetchStatistics();
-  }, [timeRange, selectedZone, smId]);
+  }, [timeRange, selectedZone]);
 
   const usagePercentage =
     statistics.activeDevices > 0
