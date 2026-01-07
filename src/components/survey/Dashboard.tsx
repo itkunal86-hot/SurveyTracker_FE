@@ -204,11 +204,11 @@ useEffect(() => {
       </div>
 
       {/* Device Statistics & Analytics */}
-      <DeviceStatisticsAnalytics />
+      <DeviceStatisticsAnalytics onSummaryTypeSelect={setSelectedSummaryType} />
 
       {/* Device Logs Grid */}
       <div className="grid grid-cols-1 gap-6">
-        <DeviceLogGrid />
+        <DeviceLogGrid summaryType={selectedSummaryType} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
