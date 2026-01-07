@@ -31,7 +31,11 @@ const TIME_OPTIONS = [
   { value: "today", label: "Today" },
 ];
 
-export const DeviceLogGrid = () => {
+interface DeviceLogGridProps {
+  summaryType?: string;
+}
+
+export const DeviceLogGrid = ({ summaryType = "" }: DeviceLogGridProps) => {
   const navigate = useNavigate();
   const [selectedTime, setSelectedTime] = useState("5");
   const [deviceLogs, setDeviceLogs] = useState<DeviceLog[]>([]);
@@ -65,6 +69,7 @@ export const DeviceLogGrid = () => {
         page: String(page),
         limit: String(pagination.limit),
         minutes: String(minutes),
+        ...(summaryType && { summaryType }),
       });
 
       const response = await fetch(
@@ -176,10 +181,10 @@ export const DeviceLogGrid = () => {
     }
   };
 
-  // Fetch on component mount and when time selection changes
+  // Fetch on component mount and when time selection or summaryType changes
   useEffect(() => {
     fetchDeviceLogs(1);
-  }, [selectedTime]);
+  }, [selectedTime, summaryType]);
 
   const getBatteryColor = (battery?: number) => {
     if (battery === undefined) return "text-muted-foreground";
