@@ -76,7 +76,12 @@ interface DeviceStatisticsAnalyticsProps {
   timeOptions?: TimeOption[];
 }
 
-export const DeviceStatisticsAnalytics = ({ onSummaryTypeSelect }: DeviceStatisticsAnalyticsProps) => {
+export const DeviceStatisticsAnalytics = ({
+  onSummaryTypeSelect,
+  selectedTime = "5",
+  onSelectedTimeChange,
+  timeOptions = []
+}: DeviceStatisticsAnalyticsProps) => {
   const [timeRange, setTimeRange] = useState<TimeRange>("7days");
   const [selectedZone, setSelectedZone] = useState<ZoneSelection>("all");
   const [zones, setZones] = useState<Zone[]>([]);
