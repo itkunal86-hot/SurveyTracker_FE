@@ -43,8 +43,6 @@ const TIME_RANGE_OPTIONS = [
   { value: "3months", label: "Last 3 Months" },
 ];
 
-const SURVEY_POINT_THRESHOLD = 100;
-
 interface StatItemProps {
   label: string;
   value: string | number;
