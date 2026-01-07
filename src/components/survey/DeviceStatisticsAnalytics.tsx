@@ -79,6 +79,7 @@ interface DeviceStatisticsAnalyticsProps {
 
 export const DeviceStatisticsAnalytics = ({
   onSummaryTypeSelect,
+  onZoneSelect,
   selectedTime = "5",
   onSelectedTimeChange,
   timeOptions = []
