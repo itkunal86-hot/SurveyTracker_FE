@@ -24,20 +24,13 @@ interface DeviceLog {
   surveyCount?: string;
 }
 
-const TIME_OPTIONS = [
-  { value: "5", label: "Last 5 minutes" },
-  { value: "10", label: "Last 10 minutes" },
-  { value: "30", label: "Last 30 minutes" },
-  { value: "today", label: "Today" },
-];
-
 interface DeviceLogGridProps {
   summaryType?: string;
+  selectedTime?: string;
 }
 
-export const DeviceLogGrid = ({ summaryType = "" }: DeviceLogGridProps) => {
+export const DeviceLogGrid = ({ summaryType = "", selectedTime = "5" }: DeviceLogGridProps) => {
   const navigate = useNavigate();
-  const [selectedTime, setSelectedTime] = useState("5");
   const [deviceLogs, setDeviceLogs] = useState<DeviceLog[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -253,18 +246,6 @@ export const DeviceLogGrid = ({ summaryType = "" }: DeviceLogGridProps) => {
         <div className="flex items-center justify-between">
           <CardTitle>Device Logs</CardTitle>
           <div className="flex items-center gap-3">
-            <Select value={selectedTime} onValueChange={setSelectedTime}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Select time range" />
-              </SelectTrigger>
-              <SelectContent>
-                {TIME_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
             <Button
               variant="outline"
               size="sm"

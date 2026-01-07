@@ -64,11 +64,24 @@ const StatItem = ({ label, value, color = "text-foreground", icon, onClick }: St
   </div>
 );
 
-interface DeviceStatisticsAnalyticsProps {
-  onSummaryTypeSelect?: (summaryType: string) => void;
+interface TimeOption {
+  value: string;
+  label: string;
 }
 
-export const DeviceStatisticsAnalytics = ({ onSummaryTypeSelect }: DeviceStatisticsAnalyticsProps) => {
+interface DeviceStatisticsAnalyticsProps {
+  onSummaryTypeSelect?: (summaryType: string) => void;
+  selectedTime?: string;
+  onSelectedTimeChange?: (time: string) => void;
+  timeOptions?: TimeOption[];
+}
+
+export const DeviceStatisticsAnalytics = ({
+  onSummaryTypeSelect,
+  selectedTime = "5",
+  onSelectedTimeChange,
+  timeOptions = []
+}: DeviceStatisticsAnalyticsProps) => {
   const [timeRange, setTimeRange] = useState<TimeRange>("7days");
   const [selectedZone, setSelectedZone] = useState<ZoneSelection>("all");
   const [zones, setZones] = useState<Zone[]>([]);
@@ -210,6 +223,22 @@ export const DeviceStatisticsAnalytics = ({ onSummaryTypeSelect }: DeviceStatist
           </p>
         </div>
         <div className="flex gap-3">
+          {timeOptions.length > 0 && (
+            <div className="w-48">
+              <Select value={selectedTime} onValueChange={(value) => onSelectedTimeChange?.(value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select time range" />
+                </SelectTrigger>
+                <SelectContent>
+                  {timeOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="w-48">
             <Select value={timeRange} onValueChange={(value) => setTimeRange(value as TimeRange)}>
               <SelectTrigger>
