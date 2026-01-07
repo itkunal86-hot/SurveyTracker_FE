@@ -71,6 +71,7 @@ interface TimeOption {
 
 interface DeviceStatisticsAnalyticsProps {
   onSummaryTypeSelect?: (summaryType: string) => void;
+  onZoneSelect?: (zone: ZoneSelection) => void;
   selectedTime?: string;
   onSelectedTimeChange?: (time: string) => void;
   timeOptions?: TimeOption[];
