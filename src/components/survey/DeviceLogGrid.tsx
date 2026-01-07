@@ -181,10 +181,10 @@ export const DeviceLogGrid = ({ summaryType = "" }: DeviceLogGridProps) => {
     }
   };
 
-  // Fetch on component mount and when time selection changes
+  // Fetch on component mount and when time selection or summaryType changes
   useEffect(() => {
     fetchDeviceLogs(1);
-  }, [selectedTime]);
+  }, [selectedTime, summaryType]);
 
   const getBatteryColor = (battery?: number) => {
     if (battery === undefined) return "text-muted-foreground";
