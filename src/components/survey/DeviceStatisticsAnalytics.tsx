@@ -284,24 +284,24 @@ export const DeviceStatisticsAnalytics = () => {
             <div className="space-y-0">
               <StatItem
                 label="Total Devices"
-                value={statistics.totalDevices}
+                value={statistics.totalDeviceCount}
                 color="text-blue-600"
                 icon={<Zap className="h-3 w-3 text-blue-500" />}
-                onClick={() => handleStatItemClick("Device Status", "Total Devices", statistics.totalDevices)}
+                onClick={() => handleStatItemClick("Device Status", "Total Devices", statistics.totalDeviceCount)}
               />
               <StatItem
                 label="Active Devices"
-                value={statistics.activeDevices}
+                value={statistics.totalActiveDeviceCount}
                 color="text-green-600"
                 icon={<Activity className="h-3 w-3 text-green-500" />}
-                onClick={() => handleStatItemClick("Device Status", "Active Devices", statistics.activeDevices)}
+                onClick={() => handleStatItemClick("Device Status", "Active Devices", statistics.totalActiveDeviceCount)}
               />
               <StatItem
                 label="Inactive Devices"
-                value={statistics.inactiveDevices}
+                value={statistics.totalInactiveDeviceCount}
                 color="text-red-600"
                 icon={<AlertCircle className="h-3 w-3 text-red-500" />}
-                onClick={() => handleStatItemClick("Device Status", "Inactive Devices", statistics.inactiveDevices)}
+                onClick={() => handleStatItemClick("Device Status", "Inactive Devices", statistics.totalInactiveDeviceCount)}
               />
             </div>
           </CardContent>
