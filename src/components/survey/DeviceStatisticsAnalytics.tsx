@@ -64,8 +64,16 @@ const StatItem = ({ label, value, color = "text-foreground", icon, onClick }: St
   </div>
 );
 
+interface TimeOption {
+  value: string;
+  label: string;
+}
+
 interface DeviceStatisticsAnalyticsProps {
   onSummaryTypeSelect?: (summaryType: string) => void;
+  selectedTime?: string;
+  onSelectedTimeChange?: (time: string) => void;
+  timeOptions?: TimeOption[];
 }
 
 export const DeviceStatisticsAnalytics = ({ onSummaryTypeSelect }: DeviceStatisticsAnalyticsProps) => {
