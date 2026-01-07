@@ -19,28 +19,19 @@ import { Badge } from "@/components/ui/badge";
 import { API_BASE_PATH, apiClient, type Zone } from "@/lib/api";
 import { toast } from "sonner";
 
-interface DeviceUsageLog {
-  deviceId: string;
-  deviceName: string;
-  usageDate: string;
-  hoursUsed: number;
-  dataPointsCollected: number;
-  batteryStart: number;
-  batteryEnd: number;
-  operator: string;
-}
 
 interface DeviceStatisticsData {
-  totalDevices: number;
-  activeDevices: number;
-  inactiveDevices: number;
-  normalUsageDevices: number;
-  underUsageDevices: number;
-  normalAccuracyDevices: number;
-  belowAverageAccuracyDevices: number;
-  ttfaMinutes: number;
-  ttfaAverageMinutes: number;
-  ttfaMaxMinutes: number;
+  totalDeviceCount: number;
+  totalActiveDeviceCount: number;
+  totalInactiveDeviceCount: number;
+  normalUsage: number;
+  underUsage: number;
+  normalAccuracy: number;
+  belowAverageAccuracy: number;
+  normalAccuracyPercentage: number;
+  minimumTTFA: number;
+  averageTTFA: number;
+  maximumTTFA: number;
 }
 
 type TimeRange = "7days" | "1month" | "3months";
@@ -51,8 +42,6 @@ const TIME_RANGE_OPTIONS = [
   { value: "1month", label: "Last 1 Month" },
   { value: "3months", label: "Last 3 Months" },
 ];
-
-const SURVEY_POINT_THRESHOLD = 100;
 
 interface StatItemProps {
   label: string;
@@ -81,19 +70,19 @@ export const DeviceStatisticsAnalytics = () => {
   const [zones, setZones] = useState<Zone[]>([]);
   const [loadingZones, setLoadingZones] = useState(true);
   const [statistics, setStatistics] = useState<DeviceStatisticsData>({
-    totalDevices: 0,
-    activeDevices: 0,
-    inactiveDevices: 0,
-    normalUsageDevices: 0,
-    underUsageDevices: 0,
-    normalAccuracyDevices: 0,
-    belowAverageAccuracyDevices: 0,
-    ttfaMinutes: 0,
-    ttfaAverageMinutes: 0,
-    ttfaMaxMinutes: 0,
+    totalDeviceCount: 0,
+    totalActiveDeviceCount: 0,
+    totalInactiveDeviceCount: 0,
+    normalUsage: 0,
+    underUsage: 0,
+    normalAccuracy: 0,
+    belowAverageAccuracy: 0,
+    normalAccuracyPercentage: 0,
+    minimumTTFA: 0,
+    averageTTFA: 0,
+    maximumTTFA: 0,
   });
   const [loadingStats, setLoadingStats] = useState(false);
-  const [smId, setSmId] = useState(localStorage.getItem("activeSurveyId"));
 
   const handleStatItemClick = (section: string, label: string, value: string | number) => {
     toast.success(`${section}: ${label} = ${value}`);
@@ -114,27 +103,6 @@ export const DeviceStatisticsAnalytics = () => {
     };
 
     fetchZones();
-  }, []);
-
-  useEffect(() => {
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === "activeSurveyId") {
-        setSmId(event.newValue);
-      }
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-
-    const checkLocalChange = () => {
-      const currentId = localStorage.getItem("activeSurveyId");
-      setSmId(currentId);
-    };
-    const interval = setInterval(checkLocalChange, 1000);
-
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      clearInterval(interval);
-    };
   }, []);
 
   const getDateRange = () => {
@@ -158,111 +126,67 @@ export const DeviceStatisticsAnalytics = () => {
 
   useEffect(() => {
     const fetchStatistics = async () => {
-      if (!smId) {
-        console.warn("No activeSurveyId found");
-        return;
-      }
-
       try {
         setLoadingStats(true);
         const { startDate, endDate } = getDateRange();
 
-        const usageParams = new URLSearchParams({
+        const params = new URLSearchParams({
           page: "1",
-          limit: "1000",
+          limit: "10",
+          minutes: "5",
+          summaryType: "",
           startDate: startDate.toISOString().split("T")[0],
           endDate: endDate.toISOString().split("T")[0],
         });
 
-        let usageLogs: DeviceUsageLog[] = [];
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/DeviceLog/getdeviceactivelog?${params.toString()}`
+        );
 
-        try {
-          const usageResponse = await fetch(
-            `${API_BASE_PATH}/survey-history/device-usage?${usageParams.toString()}`
-          );
+        if (response.ok) {
+          const responseData = await response.json();
+          const summary = responseData?.data?.summary;
 
-          if (usageResponse.ok) {
-            const usageData = await usageResponse.json();
-            usageLogs = Array.isArray(usageData?.data)
-              ? usageData.data
-              : Array.isArray(usageData?.data?.data)
-                ? usageData.data.data
-                : [];
+          if (summary) {
+            setStatistics({
+              totalDeviceCount: summary.totalDeviceCount || 0,
+              totalActiveDeviceCount: summary.totalActiveDeviceCount || 0,
+              totalInactiveDeviceCount: summary.totalInactiveDeviceCount || 0,
+              normalUsage: summary.normalUsage || 0,
+              underUsage: summary.underUsage || 0,
+              normalAccuracy: summary.normalAccuracy || 0,
+              belowAverageAccuracy: summary.belowAverageAccuracy || 0,
+              normalAccuracyPercentage: summary.normalAccuracyPercentage || 0,
+              minimumTTFA: summary.minimumTTFA || 0,
+              averageTTFA: summary.averageTTFA || 0,
+              maximumTTFA: summary.maximumTTFA || 0,
+            });
           }
-        } catch (error) {
-          console.warn("Could not fetch device usage logs:", error);
+        } else {
+          console.error("Failed to fetch device statistics:", response.statusText);
+          toast.error("Failed to fetch device statistics");
         }
-
-        let deviceSummary = {
-          totalDevices: 0,
-          activeDevices: 0,
-          inactiveDevices: 0,
-        };
-
-        try {
-          const summaryResponse = await fetch(
-            `${API_BASE_PATH}/DeviceAssignments/summary/${smId}`
-          );
-
-          if (summaryResponse.ok) {
-            deviceSummary = await summaryResponse.json();
-          }
-        } catch (error) {
-          console.warn("Could not fetch device summary:", error);
-        }
-
-        const normalUsageDevices = usageLogs.filter(
-          (log) => log.dataPointsCollected >= SURVEY_POINT_THRESHOLD
-        ).length;
-        const underUsageDevices = usageLogs.filter(
-          (log) =>
-            log.dataPointsCollected > 0 &&
-            log.dataPointsCollected < SURVEY_POINT_THRESHOLD
-        ).length;
-
-        const activeCount = deviceSummary.activeDevices || 1;
-        const normalAccuracyDevices = Math.round(activeCount * 0.85);
-        const belowAverageAccuracyDevices = activeCount - normalAccuracyDevices;
-
-        const ttfaMinutes = 2;
-        const ttfaAverageMinutes = 8;
-        const ttfaMaxMinutes = 25;
-
-        setStatistics({
-          totalDevices: deviceSummary.totalDevices || 0,
-          activeDevices: deviceSummary.activeDevices || 0,
-          inactiveDevices: deviceSummary.inactiveDevices || 0,
-          normalUsageDevices,
-          underUsageDevices,
-          normalAccuracyDevices,
-          belowAverageAccuracyDevices,
-          ttfaMinutes,
-          ttfaAverageMinutes,
-          ttfaMaxMinutes,
-        });
       } catch (error) {
         console.error("Error fetching statistics:", error);
+        toast.error("Error fetching device statistics");
       } finally {
         setLoadingStats(false);
       }
     };
 
     fetchStatistics();
-  }, [timeRange, selectedZone, smId]);
+  }, [timeRange, selectedZone]);
 
   const usagePercentage =
-    statistics.activeDevices > 0
+    statistics.totalActiveDeviceCount > 0
       ? Math.round(
-          (statistics.normalUsageDevices / statistics.activeDevices) * 100
+          (statistics.normalUsage / statistics.totalActiveDeviceCount) * 100
         )
-      : 0;
+      : statistics.normalUsage > 0
+        ? 100
+        : 0;
 
-  const accuracyPercentage =
-    statistics.activeDevices > 0
-      ? Math.round(
-          (statistics.normalAccuracyDevices / statistics.activeDevices) * 100
-        )
-      : 0;
+  const accuracyPercentage = statistics.normalAccuracyPercentage || 0;
 
   return (
     <div className="space-y-4">
@@ -329,24 +253,24 @@ export const DeviceStatisticsAnalytics = () => {
             <div className="space-y-0">
               <StatItem
                 label="Total Devices"
-                value={statistics.totalDevices}
+                value={statistics.totalDeviceCount}
                 color="text-blue-600"
                 icon={<Zap className="h-3 w-3 text-blue-500" />}
-                onClick={() => handleStatItemClick("Device Status", "Total Devices", statistics.totalDevices)}
+                onClick={() => handleStatItemClick("Device Status", "Total Devices", statistics.totalDeviceCount)}
               />
               <StatItem
                 label="Active Devices"
-                value={statistics.activeDevices}
+                value={statistics.totalActiveDeviceCount}
                 color="text-green-600"
                 icon={<Activity className="h-3 w-3 text-green-500" />}
-                onClick={() => handleStatItemClick("Device Status", "Active Devices", statistics.activeDevices)}
+                onClick={() => handleStatItemClick("Device Status", "Active Devices", statistics.totalActiveDeviceCount)}
               />
               <StatItem
                 label="Inactive Devices"
-                value={statistics.inactiveDevices}
+                value={statistics.totalInactiveDeviceCount}
                 color="text-red-600"
                 icon={<AlertCircle className="h-3 w-3 text-red-500" />}
-                onClick={() => handleStatItemClick("Device Status", "Inactive Devices", statistics.inactiveDevices)}
+                onClick={() => handleStatItemClick("Device Status", "Inactive Devices", statistics.totalInactiveDeviceCount)}
               />
             </div>
           </CardContent>
@@ -367,24 +291,24 @@ export const DeviceStatisticsAnalytics = () => {
             <div className="space-y-0">
               <StatItem
                 label="Total Active Devices"
-                value={statistics.activeDevices}
+                value={statistics.totalActiveDeviceCount}
                 color="text-blue-600"
                 icon={<Activity className="h-3 w-3 text-blue-500" />}
-                onClick={() => handleStatItemClick("Device Usage Classification", "Total Active Devices", statistics.activeDevices)}
+                onClick={() => handleStatItemClick("Device Usage Classification", "Total Active Devices", statistics.totalActiveDeviceCount)}
               />
               <StatItem
                 label="Normal Usage"
-                value={`${statistics.normalUsageDevices} (${usagePercentage}%)`}
+                value={`${statistics.normalUsage} (${usagePercentage}%)`}
                 color="text-green-600"
                 icon={<TrendingUp className="h-3 w-3 text-green-500" />}
-                onClick={() => handleStatItemClick("Device Usage Classification", "Normal Usage", `${statistics.normalUsageDevices} (${usagePercentage}%)`)}
+                onClick={() => handleStatItemClick("Device Usage Classification", "Normal Usage", `${statistics.normalUsage} (${usagePercentage}%)`)}
               />
               <StatItem
                 label="Under Usage"
-                value={statistics.underUsageDevices}
+                value={statistics.underUsage}
                 color="text-yellow-600"
                 icon={<AlertCircle className="h-3 w-3 text-yellow-500" />}
-                onClick={() => handleStatItemClick("Device Usage Classification", "Under Usage", statistics.underUsageDevices)}
+                onClick={() => handleStatItemClick("Device Usage Classification", "Under Usage", statistics.underUsage)}
               />
             </div>
           </CardContent>
@@ -402,17 +326,17 @@ export const DeviceStatisticsAnalytics = () => {
             <div className="space-y-0">
               <StatItem
                 label="Normal Accuracy"
-                value={`${statistics.normalAccuracyDevices} (${accuracyPercentage}%)`}
+                value={`${statistics.normalAccuracy} (${accuracyPercentage}%)`}
                 color="text-green-600"
                 icon={<Target className="h-3 w-3 text-green-500" />}
-                onClick={() => handleStatItemClick("Accuracy Performance", "Normal Accuracy", `${statistics.normalAccuracyDevices} (${accuracyPercentage}%)`)}
+                onClick={() => handleStatItemClick("Accuracy Performance", "Normal Accuracy", `${statistics.normalAccuracy} (${accuracyPercentage}%)`)}
               />
               <StatItem
                 label="Below Average Accuracy"
-                value={statistics.belowAverageAccuracyDevices}
+                value={statistics.belowAverageAccuracy}
                 color="text-red-600"
                 icon={<AlertCircle className="h-3 w-3 text-red-500" />}
-                onClick={() => handleStatItemClick("Accuracy Performance", "Below Average Accuracy", statistics.belowAverageAccuracyDevices)}
+                onClick={() => handleStatItemClick("Accuracy Performance", "Below Average Accuracy", statistics.belowAverageAccuracy)}
               />
               <div className="mt-2 pt-2 border-t text-xs text-muted-foreground">
                 <span>Data: Trimble Mobile Manager, Access, Cloud</span>
@@ -436,24 +360,24 @@ export const DeviceStatisticsAnalytics = () => {
             <div className="space-y-0">
               <StatItem
                 label="Minimum TTFA"
-                value={`${statistics.ttfaMinutes}m`}
+                value={`${statistics.minimumTTFA}m`}
                 color="text-green-600"
                 icon={<Clock className="h-3 w-3 text-green-500" />}
-                onClick={() => handleStatItemClick("Time to Achieve Accuracy", "Minimum TTFA", `${statistics.ttfaMinutes}m`)}
+                onClick={() => handleStatItemClick("Time to Achieve Accuracy", "Minimum TTFA", `${statistics.minimumTTFA}m`)}
               />
               <StatItem
                 label="Average TTFA"
-                value={`${statistics.ttfaAverageMinutes}m`}
+                value={`${statistics.averageTTFA}m`}
                 color="text-blue-600"
                 icon={<Clock className="h-3 w-3 text-blue-500" />}
-                onClick={() => handleStatItemClick("Time to Achieve Accuracy", "Average TTFA", `${statistics.ttfaAverageMinutes}m`)}
+                onClick={() => handleStatItemClick("Time to Achieve Accuracy", "Average TTFA", `${statistics.averageTTFA}m`)}
               />
               <StatItem
                 label="Maximum TTFA"
-                value={`${statistics.ttfaMaxMinutes}m`}
+                value={`${statistics.maximumTTFA}m`}
                 color="text-orange-600"
                 icon={<Clock className="h-3 w-3 text-orange-500" />}
-                onClick={() => handleStatItemClick("Time to Achieve Accuracy", "Maximum TTFA", `${statistics.ttfaMaxMinutes}m`)}
+                onClick={() => handleStatItemClick("Time to Achieve Accuracy", "Maximum TTFA", `${statistics.maximumTTFA}m`)}
               />
               <div className="mt-3 pt-2 border-t space-y-1">
                 <div className="flex items-center justify-between text-xs">
