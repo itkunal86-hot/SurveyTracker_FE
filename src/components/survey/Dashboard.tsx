@@ -9,6 +9,13 @@ import { useState, useEffect } from "react";
 import { useDeviceAlerts } from "@/hooks/useApiQueries";
 import { API_BASE_PATH } from "@/lib/api";
 
+const TIME_OPTIONS = [
+  { value: "5", label: "Last 5 minutes" },
+  { value: "10", label: "Last 10 minutes" },
+  { value: "30", label: "Last 30 minutes" },
+  { value: "today", label: "Today" },
+];
+
 export const SurveyDashboard = () => {
   const [stats, setStats] = useState({
     totalDevices: 0,
@@ -18,6 +25,7 @@ export const SurveyDashboard = () => {
   });
   const [loadingStats, setLoadingStats] = useState(true);
   const [selectedSummaryType, setSelectedSummaryType] = useState<string>("");
+  const [selectedTime, setSelectedTime] = useState("5");
 
   // ✅ Fetch smId (Survey ID) from localStorage
   // const smId = localStorage.getItem("activeSurveyId");
@@ -204,11 +212,16 @@ useEffect(() => {
       </div>
 
       {/* Device Statistics & Analytics */}
-      <DeviceStatisticsAnalytics onSummaryTypeSelect={setSelectedSummaryType} />
+      <DeviceStatisticsAnalytics
+        onSummaryTypeSelect={setSelectedSummaryType}
+        selectedTime={selectedTime}
+        onSelectedTimeChange={setSelectedTime}
+        timeOptions={TIME_OPTIONS}
+      />
 
       {/* Device Logs Grid */}
       <div className="grid grid-cols-1 gap-6">
-        <DeviceLogGrid summaryType={selectedSummaryType} />
+        <DeviceLogGrid summaryType={selectedSummaryType} selectedTime={selectedTime} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
