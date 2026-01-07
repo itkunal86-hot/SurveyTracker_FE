@@ -31,16 +31,17 @@ interface DeviceUsageLog {
 }
 
 interface DeviceStatisticsData {
-  totalDevices: number;
-  activeDevices: number;
-  inactiveDevices: number;
-  normalUsageDevices: number;
-  underUsageDevices: number;
-  normalAccuracyDevices: number;
-  belowAverageAccuracyDevices: number;
-  ttfaMinutes: number;
-  ttfaAverageMinutes: number;
-  ttfaMaxMinutes: number;
+  totalDeviceCount: number;
+  totalActiveDeviceCount: number;
+  totalInactiveDeviceCount: number;
+  normalUsage: number;
+  underUsage: number;
+  normalAccuracy: number;
+  belowAverageAccuracy: number;
+  normalAccuracyPercentage: number;
+  minimumTTFA: number;
+  averageTTFA: number;
+  maximumTTFA: number;
 }
 
 type TimeRange = "7days" | "1month" | "3months";
@@ -81,16 +82,17 @@ export const DeviceStatisticsAnalytics = () => {
   const [zones, setZones] = useState<Zone[]>([]);
   const [loadingZones, setLoadingZones] = useState(true);
   const [statistics, setStatistics] = useState<DeviceStatisticsData>({
-    totalDevices: 0,
-    activeDevices: 0,
-    inactiveDevices: 0,
-    normalUsageDevices: 0,
-    underUsageDevices: 0,
-    normalAccuracyDevices: 0,
-    belowAverageAccuracyDevices: 0,
-    ttfaMinutes: 0,
-    ttfaAverageMinutes: 0,
-    ttfaMaxMinutes: 0,
+    totalDeviceCount: 0,
+    totalActiveDeviceCount: 0,
+    totalInactiveDeviceCount: 0,
+    normalUsage: 0,
+    underUsage: 0,
+    normalAccuracy: 0,
+    belowAverageAccuracy: 0,
+    normalAccuracyPercentage: 0,
+    minimumTTFA: 0,
+    averageTTFA: 0,
+    maximumTTFA: 0,
   });
   const [loadingStats, setLoadingStats] = useState(false);
   const [smId, setSmId] = useState(localStorage.getItem("activeSurveyId"));
