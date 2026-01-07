@@ -69,6 +69,7 @@ export const DeviceLogGrid = ({ summaryType = "" }: DeviceLogGridProps) => {
         page: String(page),
         limit: String(pagination.limit),
         minutes: String(minutes),
+        ...(summaryType && { summaryType }),
       });
 
       const response = await fetch(
