@@ -209,18 +209,15 @@ export const DeviceStatisticsAnalytics = () => {
   }, [timeRange, selectedZone]);
 
   const usagePercentage =
-    statistics.activeDevices > 0
+    statistics.totalActiveDeviceCount > 0
       ? Math.round(
-          (statistics.normalUsageDevices / statistics.activeDevices) * 100
+          (statistics.normalUsage / statistics.totalActiveDeviceCount) * 100
         )
-      : 0;
+      : statistics.normalUsage > 0
+        ? 100
+        : 0;
 
-  const accuracyPercentage =
-    statistics.activeDevices > 0
-      ? Math.round(
-          (statistics.normalAccuracyDevices / statistics.activeDevices) * 100
-        )
-      : 0;
+  const accuracyPercentage = statistics.normalAccuracyPercentage || 0;
 
   return (
     <div className="space-y-4">
