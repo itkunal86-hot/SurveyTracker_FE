@@ -322,21 +322,21 @@ export const DeviceStatisticsAnalytics = () => {
                 value={statistics.totalActiveDeviceCount}
                 color="text-blue-600"
                 icon={<Activity className="h-3 w-3 text-blue-500" />}
-                onClick={() => handleStatItemClick("Device Usage Classification", "Total Active Devices", statistics.totalActiveDeviceCount)}
+                onClick={() => handleStatItemClick("activeDevice")}
               />
               <StatItem
                 label="Normal Usage"
                 value={`${statistics.normalUsage} (${usagePercentage}%)`}
                 color="text-green-600"
                 icon={<TrendingUp className="h-3 w-3 text-green-500" />}
-                onClick={() => handleStatItemClick("Device Usage Classification", "Normal Usage", `${statistics.normalUsage} (${usagePercentage}%)`)}
+                onClick={() => handleStatItemClick("normalUsage")}
               />
               <StatItem
                 label="Under Usage"
                 value={statistics.underUsage}
                 color="text-yellow-600"
                 icon={<AlertCircle className="h-3 w-3 text-yellow-500" />}
-                onClick={() => handleStatItemClick("Device Usage Classification", "Under Usage", statistics.underUsage)}
+                onClick={() => handleStatItemClick("underUsage")}
               />
             </div>
           </CardContent>
