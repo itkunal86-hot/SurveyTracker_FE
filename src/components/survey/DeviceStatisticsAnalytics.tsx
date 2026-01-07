@@ -284,7 +284,7 @@ export const DeviceStatisticsAnalytics = () => {
               Device Usage Classification
             </CardTitle>
             <p className="text-xs text-muted-foreground mt-1">
-              Threshold: {SURVEY_POINT_THRESHOLD} points
+              {/* Threshold: {SURVEY_POINT_THRESHOLD} points */}
             </p>
           </CardHeader>
           <CardContent className="pt-0">
