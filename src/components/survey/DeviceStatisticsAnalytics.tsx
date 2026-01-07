@@ -83,9 +83,37 @@ export const DeviceStatisticsAnalytics = () => {
     maximumTTFA: 0,
   });
   const [loadingStats, setLoadingStats] = useState(false);
+  const [selectedSummaryType, setSelectedSummaryType] = useState<string>("");
 
-  const handleStatItemClick = (section: string, label: string, value: string | number) => {
-    toast.success(`${section}: ${label} = ${value}`);
+  const handleStatItemClick = (summaryType: string) => {
+    setSelectedSummaryType(summaryType);
+
+    // Call the API endpoint with the selected summaryType
+    const fetchDeviceLogWithFilter = async () => {
+      try {
+        const params = new URLSearchParams({
+          page: "1",
+          limit: "10",
+          minutes: "5",
+          summaryType: summaryType,
+        });
+
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/DeviceLog/getdeviceactivelog?${params.toString()}`
+        );
+
+        if (response.ok) {
+          toast.success(`Loaded devices: ${summaryType}`);
+        } else {
+          toast.error("Failed to load device logs");
+        }
+      } catch (error) {
+        console.error("Error fetching device logs:", error);
+        toast.error("Error loading device logs");
+      }
+    };
+
+    fetchDeviceLogWithFilter();
   };
 
   useEffect(() => {
