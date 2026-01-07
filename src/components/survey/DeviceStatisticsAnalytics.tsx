@@ -267,7 +267,15 @@ export const DeviceStatisticsAnalytics = ({
             </Select>
           </div>
           <div className="w-48">
-            <Select value={selectedZone} onValueChange={setSelectedZone}>
+            <Select
+              value={selectedZone}
+              onValueChange={(zone) => {
+                setSelectedZone(zone as ZoneSelection);
+                if (onZoneSelect) {
+                  onZoneSelect(zone as ZoneSelection);
+                }
+              }}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select zone" />
               </SelectTrigger>
