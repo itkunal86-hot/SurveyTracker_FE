@@ -31,7 +31,11 @@ const TIME_OPTIONS = [
   { value: "today", label: "Today" },
 ];
 
-export const DeviceLogGrid = () => {
+interface DeviceLogGridProps {
+  summaryType?: string;
+}
+
+export const DeviceLogGrid = ({ summaryType = "" }: DeviceLogGridProps) => {
   const navigate = useNavigate();
   const [selectedTime, setSelectedTime] = useState("5");
   const [deviceLogs, setDeviceLogs] = useState<DeviceLog[]>([]);
