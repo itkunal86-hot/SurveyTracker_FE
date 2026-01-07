@@ -89,7 +89,8 @@ export const DeviceStatisticsAnalytics = ({ onSummaryTypeSelect }: DeviceStatist
   const [loadingStats, setLoadingStats] = useState(false);
   const [selectedSummaryType, setSelectedSummaryType] = useState<string>("");
 
-  const handleStatItemClick = (summaryType: string) => {
+
+  const handleStatItemClick = (section: string, label: string, value: string | number,summaryType: string) => {
     setSelectedSummaryType(summaryType);
 
     // Notify parent component to refresh DeviceLogGrid with new summaryType
@@ -97,8 +98,18 @@ export const DeviceStatisticsAnalytics = ({ onSummaryTypeSelect }: DeviceStatist
       onSummaryTypeSelect(summaryType);
     }
 
-    toast.success(`Loaded devices: ${summaryType}`);
+    toast.success(`${section}: ${label} = ${value}`);
   };
+  // const handleStatItemClick = (summaryType: string) => {
+  //   setSelectedSummaryType(summaryType);
+
+  //   // Notify parent component to refresh DeviceLogGrid with new summaryType
+  //   if (onSummaryTypeSelect) {
+  //     onSummaryTypeSelect(summaryType);
+  //   }
+
+  //   toast.success(`Loaded devices: ${summaryType}`);
+  // };
 
   useEffect(() => {
     const fetchZones = async () => {
@@ -268,21 +279,21 @@ export const DeviceStatisticsAnalytics = ({ onSummaryTypeSelect }: DeviceStatist
                 value={statistics.totalDeviceCount}
                 color="text-blue-600"
                 icon={<Zap className="h-3 w-3 text-blue-500" />}
-                onClick={() => handleStatItemClick("totalDevice")}
+                onClick={() => handleStatItemClick("Device Status","Total Devices",`${statistics.totalDeviceCount}m`,"totalDevice")}
               />
               <StatItem
                 label="Active Devices"
                 value={statistics.totalActiveDeviceCount}
                 color="text-green-600"
                 icon={<Activity className="h-3 w-3 text-green-500" />}
-                onClick={() => handleStatItemClick("activeDevice")}
+                onClick={() => handleStatItemClick("Device Status","Active Devices",`${statistics.totalActiveDeviceCount}m`,"activeDevice")}
               />
               <StatItem
                 label="Inactive Devices"
                 value={statistics.totalInactiveDeviceCount}
                 color="text-red-600"
                 icon={<AlertCircle className="h-3 w-3 text-red-500" />}
-                onClick={() => handleStatItemClick("inactiveDevice")}
+                onClick={() => handleStatItemClick("Device Status","Inactive Devices",`${statistics.totalInactiveDeviceCount}m`,"inactiveDevice")}
               />
             </div>
           </CardContent>
@@ -306,21 +317,21 @@ export const DeviceStatisticsAnalytics = ({ onSummaryTypeSelect }: DeviceStatist
                 value={statistics.totalActiveDeviceCount}
                 color="text-blue-600"
                 icon={<Activity className="h-3 w-3 text-blue-500" />}
-                onClick={() => handleStatItemClick("activeDevice")}
+                onClick={() => handleStatItemClick("Total Active Devices","Active Device",`${statistics.totalActiveDeviceCount}m`,"activeDevice")}
               />
               <StatItem
                 label="Normal Usage"
                 value={`${statistics.normalUsage} (${usagePercentage}%)`}
                 color="text-green-600"
                 icon={<TrendingUp className="h-3 w-3 text-green-500" />}
-                onClick={() => handleStatItemClick("normalUsage")}
+                onClick={() => handleStatItemClick("Total Active Devices","Normal Usage",`${statistics.normalUsage}m`,"normalUsage")}
               />
               <StatItem
                 label="Under Usage"
                 value={statistics.underUsage}
                 color="text-yellow-600"
                 icon={<AlertCircle className="h-3 w-3 text-yellow-500" />}
-                onClick={() => handleStatItemClick("underUsage")}
+                onClick={() => handleStatItemClick("Total Active Devices","Under Usage",`${statistics.underUsage}m`,"underUsage")}
               />
             </div>
           </CardContent>
@@ -341,14 +352,14 @@ export const DeviceStatisticsAnalytics = ({ onSummaryTypeSelect }: DeviceStatist
                 value={`${statistics.normalAccuracy} (${accuracyPercentage}%)`}
                 color="text-green-600"
                 icon={<Target className="h-3 w-3 text-green-500" />}
-                onClick={() => handleStatItemClick("normalAccuracy")}
+                onClick={() => handleStatItemClick("Accuracy Performance","Normal Accuracy", `${statistics.normalAccuracy}m`,"normalAccuracy")}
               />
               <StatItem
                 label="Below Average Accuracy"
                 value={statistics.belowAverageAccuracy}
                 color="text-red-600"
                 icon={<AlertCircle className="h-3 w-3 text-red-500" />}
-                onClick={() => handleStatItemClick("underAccuracy")}
+                onClick={() => handleStatItemClick("Accuracy Performance","Under Accuracy", `${statistics.normalAccuracy}m`,"underAccuracy")}
               />
               <div className="mt-2 pt-2 border-t text-xs text-muted-foreground">
                 <span>Data: Trimble Mobile Manager, Access, Cloud</span>
@@ -375,21 +386,21 @@ export const DeviceStatisticsAnalytics = ({ onSummaryTypeSelect }: DeviceStatist
                 value={`${statistics.minimumTTFA}m`}
                 color="text-green-600"
                 icon={<Clock className="h-3 w-3 text-green-500" />}
-                onClick={() => handleStatItemClick("Time to Achieve Accuracy", "Minimum TTFA", `${statistics.minimumTTFA}m`)}
+                onClick={() => handleStatItemClick("Time to Achieve Accuracy", "Minimum TTFA", `${statistics.minimumTTFA}m`,"minimumTTFA")}
               />
               <StatItem
                 label="Average TTFA"
                 value={`${statistics.averageTTFA}m`}
                 color="text-blue-600"
                 icon={<Clock className="h-3 w-3 text-blue-500" />}
-                onClick={() => handleStatItemClick("Time to Achieve Accuracy", "Average TTFA", `${statistics.averageTTFA}m`)}
+                onClick={() => handleStatItemClick("Time to Achieve Accuracy", "Average TTFA", `${statistics.averageTTFA}m`,"averageTTFA")}
               />
               <StatItem
                 label="Maximum TTFA"
                 value={`${statistics.maximumTTFA}m`}
                 color="text-orange-600"
                 icon={<Clock className="h-3 w-3 text-orange-500" />}
-                onClick={() => handleStatItemClick("Time to Achieve Accuracy", "Maximum TTFA", `${statistics.maximumTTFA}m`)}
+                onClick={() => handleStatItemClick("Time to Achieve Accuracy", "Maximum TTFA", `${statistics.maximumTTFA}m`,"maximumTTFA")}
               />
               <div className="mt-3 pt-2 border-t space-y-1">
                 <div className="flex items-center justify-between text-xs">
