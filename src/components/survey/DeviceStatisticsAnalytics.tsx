@@ -322,24 +322,24 @@ export const DeviceStatisticsAnalytics = () => {
             <div className="space-y-0">
               <StatItem
                 label="Total Active Devices"
-                value={statistics.activeDevices}
+                value={statistics.totalActiveDeviceCount}
                 color="text-blue-600"
                 icon={<Activity className="h-3 w-3 text-blue-500" />}
-                onClick={() => handleStatItemClick("Device Usage Classification", "Total Active Devices", statistics.activeDevices)}
+                onClick={() => handleStatItemClick("Device Usage Classification", "Total Active Devices", statistics.totalActiveDeviceCount)}
               />
               <StatItem
                 label="Normal Usage"
-                value={`${statistics.normalUsageDevices} (${usagePercentage}%)`}
+                value={`${statistics.normalUsage} (${usagePercentage}%)`}
                 color="text-green-600"
                 icon={<TrendingUp className="h-3 w-3 text-green-500" />}
-                onClick={() => handleStatItemClick("Device Usage Classification", "Normal Usage", `${statistics.normalUsageDevices} (${usagePercentage}%)`)}
+                onClick={() => handleStatItemClick("Device Usage Classification", "Normal Usage", `${statistics.normalUsage} (${usagePercentage}%)`)}
               />
               <StatItem
                 label="Under Usage"
-                value={statistics.underUsageDevices}
+                value={statistics.underUsage}
                 color="text-yellow-600"
                 icon={<AlertCircle className="h-3 w-3 text-yellow-500" />}
-                onClick={() => handleStatItemClick("Device Usage Classification", "Under Usage", statistics.underUsageDevices)}
+                onClick={() => handleStatItemClick("Device Usage Classification", "Under Usage", statistics.underUsage)}
               />
             </div>
           </CardContent>
