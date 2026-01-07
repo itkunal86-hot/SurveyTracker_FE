@@ -173,6 +173,7 @@ export const DeviceStatisticsAnalytics = ({
           limit: "10",
           minutes: "5",
           summaryType: "",
+          zone: selectedZone === "all" ? "" : selectedZone,
           startDate: startDate.toISOString().split("T")[0],
           endDate: endDate.toISOString().split("T")[0]
         });
