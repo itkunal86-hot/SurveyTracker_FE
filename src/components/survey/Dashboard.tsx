@@ -212,11 +212,16 @@ useEffect(() => {
       </div>
 
       {/* Device Statistics & Analytics */}
-      <DeviceStatisticsAnalytics onSummaryTypeSelect={setSelectedSummaryType} />
+      <DeviceStatisticsAnalytics
+        onSummaryTypeSelect={setSelectedSummaryType}
+        selectedTime={selectedTime}
+        onSelectedTimeChange={setSelectedTime}
+        timeOptions={TIME_OPTIONS}
+      />
 
       {/* Device Logs Grid */}
       <div className="grid grid-cols-1 gap-6">
-        <DeviceLogGrid summaryType={selectedSummaryType} />
+        <DeviceLogGrid summaryType={selectedSummaryType} selectedTime={selectedTime} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
