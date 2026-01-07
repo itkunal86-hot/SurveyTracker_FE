@@ -172,7 +172,7 @@ export const DeviceStatisticsAnalytics = ({
           minutes: "5",
           summaryType: "",
           startDate: startDate.toISOString().split("T")[0],
-          endDate: endDate.toISOString().split("T")[0],
+          endDate: endDate.toISOString().split("T")[0]
         });
 
         const response = await fetch(
