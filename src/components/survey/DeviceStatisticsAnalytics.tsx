@@ -16,7 +16,7 @@ import {
   Target,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { API_BASE_PATH, apiClient, type Zone } from "@/lib/api";
+import { API_BASE_PATH, apiClient, type Zone, type Device } from "@/lib/api";
 import { toast } from "sonner";
 
 
@@ -33,6 +33,67 @@ interface DeviceStatisticsData {
   averageTTFA: number;
   maximumTTFA: number;
 }
+
+// Helper function to calculate statistics from device log data
+const calculateStatisticsFromDevices = (devices: Device[]): DeviceStatisticsData => {
+  if (!devices || devices.length === 0) {
+    return {
+      totalDeviceCount: 0,
+      totalActiveDeviceCount: 0,
+      totalInactiveDeviceCount: 0,
+      normalUsage: 0,
+      underUsage: 0,
+      normalAccuracy: 0,
+      belowAverageAccuracy: 0,
+      normalAccuracyPercentage: 0,
+      minimumTTFA: 0,
+      averageTTFA: 0,
+      maximumTTFA: 0,
+    };
+  }
+
+  const totalDeviceCount = devices.length;
+  const totalActiveDeviceCount = devices.filter(d => d.status === "ACTIVE").length;
+  const totalInactiveDeviceCount = devices.filter(d => d.status === "INACTIVE").length;
+
+  // Usage classification based on battery level
+  const BATTERY_THRESHOLD = 50; // Battery % threshold for normal usage
+  const normalUsage = devices.filter(d => d.batteryLevel !== undefined && d.batteryLevel >= BATTERY_THRESHOLD).length;
+  const underUsage = devices.filter(d => d.batteryLevel !== undefined && d.batteryLevel < BATTERY_THRESHOLD).length;
+
+  // Accuracy classification
+  const ACCURACY_THRESHOLD = 10; // Accuracy threshold in meters
+  const accuracyValues = devices
+    .map(d => d.accuracy)
+    .filter((acc) => acc !== undefined && typeof acc === "number") as number[];
+
+  const normalAccuracy = accuracyValues.filter(acc => acc <= ACCURACY_THRESHOLD).length;
+  const belowAverageAccuracy = accuracyValues.filter(acc => acc > ACCURACY_THRESHOLD).length;
+  const normalAccuracyPercentage = accuracyValues.length > 0
+    ? Math.round((normalAccuracy / accuracyValues.length) * 100)
+    : 0;
+
+  // Time to Achieve Accuracy (represented by accuracy values in meters/minutes)
+  const minimumTTFA = accuracyValues.length > 0 ? Math.min(...accuracyValues) : 0;
+  const maximumTTFA = accuracyValues.length > 0 ? Math.max(...accuracyValues) : 0;
+  const averageTTFA = accuracyValues.length > 0
+    ? Math.round(accuracyValues.reduce((sum, acc) => sum + acc, 0) / accuracyValues.length)
+    : 0;
+
+  return {
+    totalDeviceCount,
+    totalActiveDeviceCount,
+    totalInactiveDeviceCount,
+    normalUsage,
+    underUsage,
+    normalAccuracy,
+    belowAverageAccuracy,
+    normalAccuracyPercentage,
+    minimumTTFA,
+    averageTTFA,
+    maximumTTFA,
+  };
+};
 
 type TimeRange ="all" | "7days" | "1month" | "3months";
 type ZoneSelection = "all" | string;
