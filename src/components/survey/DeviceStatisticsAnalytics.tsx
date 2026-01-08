@@ -295,21 +295,25 @@ export const DeviceStatisticsAnalytics = ({
       }
     };
 
-    // Fetch initial statistics
+    // Fetch initial statistics from device log
     const fetchStatistics = async () => {
       try {
         setLoadingStats(true);
-        const statsResponse = await apiClient.getDeviceStatistics({
+        const response = await apiClient.getDeviceActiveLog({
+          page: 1,
+          limit: 100,
           zone: selectedZone,
           startDate: null,
           endDate: null,
         });
 
-        if (statsResponse.success && statsResponse.data) {
-          setStatistics(statsResponse.data as DeviceStatisticsData);
+        if (response && response.success && response.data) {
+          // Calculate statistics from device data
+          const calculatedStats = calculateStatisticsFromDevices(response.data);
+          setStatistics(calculatedStats);
         }
       } catch (error) {
-        console.error("Error fetching device statistics:", error);
+        console.error("Error fetching device active log:", error);
       } finally {
         setLoadingStats(false);
       }
