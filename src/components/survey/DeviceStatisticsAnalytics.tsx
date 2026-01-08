@@ -154,6 +154,36 @@ export const DeviceStatisticsAnalytics = ({
     }
   };
 
+  const handleZoneChange = async (zone: string) => {
+    setSelectedZone(zone as ZoneSelection);
+    if (onZoneSelect) {
+      onZoneSelect(zone as ZoneSelection);
+    }
+
+    setLoadingDeviceLog(true);
+    try {
+      const { startDate, endDate } = getDateRange();
+      const response = await apiClient.getDeviceActiveLog({
+        page: 1,
+        limit: 10,
+        startDate,
+        endDate,
+        zone,
+      });
+
+      if (response && !response.success) {
+        toast.error("Failed to fetch device active log");
+      } else {
+        toast.success("Device log updated for selected zone");
+      }
+    } catch (error) {
+      console.error("Error fetching device active log:", error);
+      toast.error("Error fetching device active log");
+    } finally {
+      setLoadingDeviceLog(false);
+    }
+  };
+
   const handleStatItemClick = (section: string, label: string, value: string | number,summaryType: string) => {
     setSelectedSummaryType(summaryType);
 
