@@ -215,6 +215,7 @@ useEffect(() => {
       {/* Device Statistics & Analytics */}
       <DeviceStatisticsAnalytics
         onSummaryTypeSelect={setSelectedSummaryType}
+        onZoneSelect={setSelectedZone}
         selectedTime={selectedTime}
         onSelectedTimeChange={setSelectedTime}
         timeOptions={TIME_OPTIONS}
@@ -222,7 +223,7 @@ useEffect(() => {
 
       {/* Device Logs Grid */}
       <div className="grid grid-cols-1 gap-6">
-        <DeviceLogGrid summaryType={selectedSummaryType} selectedTime={selectedTime} />
+        <DeviceLogGrid summaryType={selectedSummaryType} selectedTime={selectedTime} selectedZone={selectedZone} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
