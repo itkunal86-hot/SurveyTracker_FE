@@ -130,6 +130,7 @@ app.get("/api/user/health", (req, res) => {
 
 // API routes
 app.use("/api/devices", deviceRoutes);
+app.use("/api/devices/statistics", deviceStatisticsRoutes);
 app.use("/api/pipelines", pipelineRoutes);
 app.use("/api/valves", valveRoutes);
 app.use("/api/valve-operations", valveOperationRoutes);
