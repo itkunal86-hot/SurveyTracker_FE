@@ -180,6 +180,18 @@ export const DeviceStatisticsAnalytics = ({
     setLoadingDeviceLog(true);
     try {
       const { startDate, endDate } = getDateRange();
+
+      // Fetch device statistics
+      const statsResponse = await apiClient.getDeviceStatistics({
+        zone,
+        startDate,
+        endDate,
+      });
+
+      if (statsResponse.success && statsResponse.data) {
+        setStatistics(statsResponse.data as DeviceStatisticsData);
+      }
+
       const response = await apiClient.getDeviceActiveLog({
         page: 1,
         limit: 10,
