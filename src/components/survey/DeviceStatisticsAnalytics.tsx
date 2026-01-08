@@ -139,6 +139,17 @@ export const DeviceStatisticsAnalytics = ({
         }
       })();
 
+      // Fetch device statistics
+      const statsResponse = await apiClient.getDeviceStatistics({
+        zone: selectedZone,
+        startDate,
+        endDate,
+      });
+
+      if (statsResponse.success && statsResponse.data) {
+        setStatistics(statsResponse.data as DeviceStatisticsData);
+      }
+
       const response = await apiClient.getDeviceActiveLog({
         page: 1,
         limit: 10,
