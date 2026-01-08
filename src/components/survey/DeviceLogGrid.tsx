@@ -86,8 +86,8 @@ export const DeviceLogGrid = ({ summaryType = "", selectedTime = "5", selectedZo
       const params = new URLSearchParams({
         page: String(page),
         limit: String(pagination.limit),
-        startDate,
-        endDate,
+        ...(startDate && { startDate }),
+        ...(endDate && { endDate }),
         zone: selectedZone,
         ...(summaryType && { summaryType }),
       });
