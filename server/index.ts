@@ -20,6 +20,7 @@ import { assetTypeRoutes } from "./routes/asset-types";
 import { assetPropertyRoutes } from "./routes/asset-properties";
 import { deviceLogProxyRoutes } from "./routes/device-log-proxy";
 import { deviceAlertsProxyRoutes } from "./routes/device-alerts-proxy";
+import deviceStatisticsRoutes from "./routes/device-statistics";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
