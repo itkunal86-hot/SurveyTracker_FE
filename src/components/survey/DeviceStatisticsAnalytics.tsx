@@ -104,7 +104,55 @@ export const DeviceStatisticsAnalytics = ({
   });
   const [loadingStats, setLoadingStats] = useState(false);
   const [selectedSummaryType, setSelectedSummaryType] = useState<string>("");
+  const [loadingDeviceLog, setLoadingDeviceLog] = useState(false);
 
+
+  const handleTimeRangeChange = async (value: string) => {
+    setTimeRange(value as TimeRange);
+    setLoadingDeviceLog(true);
+
+    try {
+      const { startDate, endDate } = (() => {
+        const end = new Date();
+        const start = new Date();
+
+        switch (value) {
+          case "all":
+            return { startDate: null, endDate: null };
+          case "7days":
+            start.setDate(start.getDate() - 7);
+            return { startDate: start, endDate: end };
+          case "1month":
+            start.setMonth(start.getMonth() - 1);
+            return { startDate: start, endDate: end };
+          case "3months":
+            start.setMonth(start.getMonth() - 3);
+            return { startDate: start, endDate: end };
+          default:
+            return { startDate: null, endDate: null };
+        }
+      })();
+
+      const response = await apiClient.getDeviceActiveLog({
+        page: 1,
+        limit: 10,
+        startDate,
+        endDate,
+        zone: selectedZone,
+      });
+
+      if (response && !response.success) {
+        toast.error("Failed to fetch device active log");
+      } else {
+        toast.success("Device log fetched successfully");
+      }
+    } catch (error) {
+      console.error("Error fetching device active log:", error);
+      toast.error("Error fetching device active log");
+    } finally {
+      setLoadingDeviceLog(false);
+    }
+  };
 
   const handleStatItemClick = (section: string, label: string, value: string | number,summaryType: string) => {
     setSelectedSummaryType(summaryType);
