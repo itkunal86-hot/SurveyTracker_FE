@@ -235,7 +235,7 @@ export const DeviceStatisticsAnalytics = ({
   // };
 
   useEffect(() => {
-    const fetchZones = async () => {
+    const fetchInitialData = async () => {
       try {
         setLoadingZones(true);
         const response = await apiClient.getZones({ limit: 100 });
@@ -248,7 +248,28 @@ export const DeviceStatisticsAnalytics = ({
       }
     };
 
-    fetchZones();
+    // Fetch initial statistics
+    const fetchStatistics = async () => {
+      try {
+        setLoadingStats(true);
+        const statsResponse = await apiClient.getDeviceStatistics({
+          zone: selectedZone,
+          startDate: null,
+          endDate: null,
+        });
+
+        if (statsResponse.success && statsResponse.data) {
+          setStatistics(statsResponse.data as DeviceStatisticsData);
+        }
+      } catch (error) {
+        console.error("Error fetching device statistics:", error);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+
+    fetchInitialData();
+    fetchStatistics();
   }, []);
 
   const getDateRange = () => {
