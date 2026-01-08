@@ -40,33 +40,23 @@ export const DeviceLogGrid = ({ summaryType = "", selectedTime = "5", selectedZo
   // Calculate date range based on timeRange value
   const getDateRange = (timeValue: string) => {
     const endDate = new Date();
-    const startDate = new Date();
+    let startDate = new Date();
 
-    // Time value represents last N minutes from selectedTime dropdown
-    const minutes = parseInt(timeValue, 10);
-    if (!isNaN(minutes) && minutes > 0) {
-      startDate.setMinutes(startDate.getMinutes() - minutes);
+    if (timeValue === "today") {
+      // Set start date to beginning of today
+      startDate.setHours(0, 0, 0, 0);
+    } else {
+      // Time value represents last N minutes from selectedTime dropdown
+      const minutes = parseInt(timeValue, 10);
+      if (!isNaN(minutes) && minutes > 0) {
+        startDate.setMinutes(startDate.getMinutes() - minutes);
+      }
     }
 
     return {
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString()
     };
-  };
-
-  // Convert time selection to minutes
-  const getMinutesValue = (timeValue: string): number => {
-    if (timeValue === "today") {
-      // Calculate minutes since midnight
-      const now = new Date();
-      const midnight = new Date(now);
-      midnight.setHours(0, 0, 0, 0);
-      const minutesSinceMidnight = Math.floor(
-        (now.getTime() - midnight.getTime()) / (1000 * 60)
-      );
-      return minutesSinceMidnight;
-    }
-    return parseInt(timeValue, 10);
   };
 
   // Fetch device logs
