@@ -30,12 +30,29 @@ interface DeviceLogGridProps {
   selectedZone?: string;
 }
 
-export const DeviceLogGrid = ({ summaryType = "", selectedTime = "5" }: DeviceLogGridProps) => {
+export const DeviceLogGrid = ({ summaryType = "", selectedTime = "5", selectedZone = "all" }: DeviceLogGridProps) => {
   const navigate = useNavigate();
   const [deviceLogs, setDeviceLogs] = useState<DeviceLog[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 });
+
+  // Calculate date range based on timeRange value
+  const getDateRange = (timeValue: string) => {
+    const endDate = new Date();
+    const startDate = new Date();
+
+    // Time value represents last N minutes from selectedTime dropdown
+    const minutes = parseInt(timeValue, 10);
+    if (!isNaN(minutes) && minutes > 0) {
+      startDate.setMinutes(startDate.getMinutes() - minutes);
+    }
+
+    return {
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString()
+    };
+  };
 
   // Convert time selection to minutes
   const getMinutesValue = (timeValue: string): number => {
