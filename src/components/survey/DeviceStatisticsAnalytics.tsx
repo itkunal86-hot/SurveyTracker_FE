@@ -139,6 +139,17 @@ export const DeviceStatisticsAnalytics = ({
         }
       })();
 
+      // Fetch device statistics
+      const statsResponse = await apiClient.getDeviceStatistics({
+        zone: selectedZone,
+        startDate,
+        endDate,
+      });
+
+      if (statsResponse.success && statsResponse.data) {
+        setStatistics(statsResponse.data as DeviceStatisticsData);
+      }
+
       const response = await apiClient.getDeviceActiveLog({
         page: 1,
         limit: 10,
@@ -169,6 +180,18 @@ export const DeviceStatisticsAnalytics = ({
     setLoadingDeviceLog(true);
     try {
       const { startDate, endDate } = getDateRange();
+
+      // Fetch device statistics
+      const statsResponse = await apiClient.getDeviceStatistics({
+        zone,
+        startDate,
+        endDate,
+      });
+
+      if (statsResponse.success && statsResponse.data) {
+        setStatistics(statsResponse.data as DeviceStatisticsData);
+      }
+
       const response = await apiClient.getDeviceActiveLog({
         page: 1,
         limit: 10,
@@ -212,7 +235,7 @@ export const DeviceStatisticsAnalytics = ({
   // };
 
   useEffect(() => {
-    const fetchZones = async () => {
+    const fetchInitialData = async () => {
       try {
         setLoadingZones(true);
         const response = await apiClient.getZones({ limit: 100 });
@@ -225,7 +248,28 @@ export const DeviceStatisticsAnalytics = ({
       }
     };
 
-    fetchZones();
+    // Fetch initial statistics
+    const fetchStatistics = async () => {
+      try {
+        setLoadingStats(true);
+        const statsResponse = await apiClient.getDeviceStatistics({
+          zone: selectedZone,
+          startDate: null,
+          endDate: null,
+        });
+
+        if (statsResponse.success && statsResponse.data) {
+          setStatistics(statsResponse.data as DeviceStatisticsData);
+        }
+      } catch (error) {
+        console.error("Error fetching device statistics:", error);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+
+    fetchInitialData();
+    fetchStatistics();
   }, []);
 
   const getDateRange = () => {
@@ -251,20 +295,6 @@ export const DeviceStatisticsAnalytics = ({
     return { startDate, endDate };
   };
 
-  // NOTE: API call for getdeviceactivelog is now handled exclusively by DeviceLogGrid.tsx
-  // to avoid duplicate endpoint calls. Statistics display shows default values.
-  // In the future, statistics could be:
-  // 1. Fetched via a dedicated statistics endpoint
-  // 2. Computed from DeviceLogGrid data and passed via props
-  // 3. Cached in shared state management
-
-  useEffect(() => {
-    // Statistics are initialized with default values and would be populated by:
-    // - A dedicated statistics API endpoint (preferred)
-    // - Props passed from DeviceLogGrid component
-    // - Shared state management solution
-    setLoadingStats(false);
-  }, [timeRange, selectedZone]);
 
   const usagePercentage =
     statistics.totalActiveDeviceCount > 0

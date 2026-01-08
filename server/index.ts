@@ -20,6 +20,7 @@ import { assetTypeRoutes } from "./routes/asset-types";
 import { assetPropertyRoutes } from "./routes/asset-properties";
 import { deviceLogProxyRoutes } from "./routes/device-log-proxy";
 import { deviceAlertsProxyRoutes } from "./routes/device-alerts-proxy";
+import deviceStatisticsRoutes from "./routes/device-statistics";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -128,6 +129,8 @@ app.get("/api/user/health", (req, res) => {
 });
 
 // API routes
+// Register more specific routes before less specific ones
+app.use("/api/devices/statistics", deviceStatisticsRoutes);
 app.use("/api/devices", deviceRoutes);
 app.use("/api/pipelines", pipelineRoutes);
 app.use("/api/valves", valveRoutes);

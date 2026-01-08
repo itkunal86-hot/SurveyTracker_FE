@@ -2982,6 +2982,76 @@ class ApiClient {
     }
   }
 
+  // Device Statistics endpoint
+  async getDeviceStatistics(params?: {
+    zone?: string;
+    startDate?: Date | null;
+    endDate?: Date | null;
+  }): Promise<ApiResponse<{
+    totalDeviceCount: number;
+    totalActiveDeviceCount: number;
+    totalInactiveDeviceCount: number;
+    normalUsage: number;
+    underUsage: number;
+    normalAccuracy: number;
+    belowAverageAccuracy: number;
+    normalAccuracyPercentage: number;
+    minimumTTFA: number;
+    averageTTFA: number;
+    maximumTTFA: number;
+  }>> {
+    const sp = new URLSearchParams();
+
+    if (params?.zone && params.zone !== "all") {
+      sp.append("zone", params.zone);
+    }
+
+    if (params?.startDate) {
+      const startDateStr = params.startDate instanceof Date
+        ? params.startDate.toISOString()
+        : String(params.startDate);
+      sp.append("startDate", startDateStr);
+    }
+
+    if (params?.endDate) {
+      const endDateStr = params.endDate instanceof Date
+        ? params.endDate.toISOString()
+        : String(params.endDate);
+      sp.append("endDate", endDateStr);
+    }
+
+    const q = sp.toString();
+
+    try {
+      const raw: any = await this.request<any>(`/devices/statistics${q ? `?${q}` : ""}`);
+      return {
+        success: (raw?.status_code ?? 200) >= 200 && (raw?.status_code ?? 200) < 300,
+        data: raw?.data ?? {},
+        message: raw?.message,
+        timestamp: raw?.timestamp ?? new Date().toISOString(),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        data: {
+          totalDeviceCount: 0,
+          totalActiveDeviceCount: 0,
+          totalInactiveDeviceCount: 0,
+          normalUsage: 0,
+          underUsage: 0,
+          normalAccuracy: 0,
+          belowAverageAccuracy: 0,
+          normalAccuracyPercentage: 0,
+          minimumTTFA: 0,
+          averageTTFA: 0,
+          maximumTTFA: 0,
+        },
+        message: "Failed to fetch device statistics",
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
   // Survey entries summary by device and date
   async getAssetPropertyEntriesByDevice(params: { deviceId: string | number; entryDate: string | Date }): Promise<{ snapshots: any[]; raw: any; }> {
     const { deviceId, entryDate } = params;
