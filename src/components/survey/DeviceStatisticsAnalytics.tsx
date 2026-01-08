@@ -295,20 +295,6 @@ export const DeviceStatisticsAnalytics = ({
     return { startDate, endDate };
   };
 
-  // NOTE: API call for getdeviceactivelog is now handled exclusively by DeviceLogGrid.tsx
-  // to avoid duplicate endpoint calls. Statistics display shows default values.
-  // In the future, statistics could be:
-  // 1. Fetched via a dedicated statistics endpoint
-  // 2. Computed from DeviceLogGrid data and passed via props
-  // 3. Cached in shared state management
-
-  useEffect(() => {
-    // Statistics are initialized with default values and would be populated by:
-    // - A dedicated statistics API endpoint (preferred)
-    // - Props passed from DeviceLogGrid component
-    // - Shared state management solution
-    setLoadingStats(false);
-  }, [timeRange, selectedZone]);
 
   const usagePercentage =
     statistics.totalActiveDeviceCount > 0
