@@ -254,9 +254,9 @@ useEffect(() => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="font-medium text-sm">{alert.instrument}</p>
-                          <Badge variant={(String(alert.severity || '').toLowerCase() === 'critical') ? 'destructive' : 'secondary'} className="text-xs">
+                          {/* <Badge variant={(String(alert.severity || '').toLowerCase() === 'critical') ? 'destructive' : 'secondary'} className="text-xs">
                             {String(alert.severity || '').toLowerCase() || 'info'}
-                          </Badge>
+                          </Badge> */}
                         </div>
                         <p className="text-xs text-muted-foreground line-clamp-2">{alert.message}</p>
                         <div className="flex items-center gap-3 mt-1 text-xs flex-wrap">

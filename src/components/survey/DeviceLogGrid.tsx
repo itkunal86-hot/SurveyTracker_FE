@@ -62,7 +62,7 @@ export const DeviceLogGrid = ({ summaryType = "", selectedTime = "5" }: DeviceLo
       const params = new URLSearchParams({
         page: String(page),
         limit: String(pagination.limit),
-        minutes: String(minutes),
+        //minutes: String(minutes),
         ...(summaryType && { summaryType }),
       });
 
@@ -271,7 +271,7 @@ export const DeviceLogGrid = ({ summaryType = "", selectedTime = "5" }: DeviceLo
               <TableRow>
                 <TableHead>Device ID</TableHead>
                 <TableHead>Name</TableHead>
-                <TableHead>Type</TableHead>
+                {/* <TableHead>Type</TableHead> */}
                 <TableHead>Initial Location</TableHead>
                 <TableHead>Current Location</TableHead>
                 <TableHead>Survey Count</TableHead>
@@ -301,7 +301,7 @@ export const DeviceLogGrid = ({ summaryType = "", selectedTime = "5" }: DeviceLo
                   <TableRow key={log.id}>
                     <TableCell className="font-medium">{log.id}</TableCell>
                     <TableCell>{log.name}</TableCell>
-                    <TableCell className="text-sm">{log.type}</TableCell>
+                    {/* <TableCell className="text-sm">{log.type}</TableCell> */}
                     <TableCell className="text-sm">{log.location}</TableCell>
                     <TableCell className="text-sm">{log.currentLocation}</TableCell>
                     <TableCell className="text-sm">{log.surveyCount}</TableCell>

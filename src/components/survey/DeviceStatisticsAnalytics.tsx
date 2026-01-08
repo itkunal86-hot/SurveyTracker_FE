@@ -34,10 +34,11 @@ interface DeviceStatisticsData {
   maximumTTFA: number;
 }
 
-type TimeRange = "7days" | "1month" | "3months";
+type TimeRange ="all" | "7days" | "1month" | "3months";
 type ZoneSelection = "all" | string;
 
 const TIME_RANGE_OPTIONS = [
+  { value: "all", label: "Select" },
   { value: "7days", label: "Last 7 Days" },
   { value: "1month", label: "Last 1 Month" },
   { value: "3months", label: "Last 3 Months" },
@@ -84,7 +85,7 @@ export const DeviceStatisticsAnalytics = ({
   onSelectedTimeChange,
   timeOptions = []
 }: DeviceStatisticsAnalyticsProps) => {
-  const [timeRange, setTimeRange] = useState<TimeRange>("7days");
+  const [timeRange, setTimeRange] = useState<TimeRange>("all");
   const [selectedZone, setSelectedZone] = useState<ZoneSelection>("all");
   const [zones, setZones] = useState<Zone[]>([]);
   const [loadingZones, setLoadingZones] = useState(true);
@@ -144,10 +145,14 @@ export const DeviceStatisticsAnalytics = ({
   }, []);
 
   const getDateRange = () => {
-    const endDate = new Date();
-    const startDate = new Date();
+    var endDate = new Date();
+    var startDate = new Date();
 
     switch (timeRange) {
+       case "all":
+        startDate= null;
+        endDate=null;
+        break;
       case "7days":
         startDate.setDate(startDate.getDate() - 7);
         break;
@@ -171,11 +176,11 @@ export const DeviceStatisticsAnalytics = ({
         const params = new URLSearchParams({
           page: "1",
           limit: "10",
-          minutes: "5",
+          //minutes: "5",
           summaryType: "",
           zone: selectedZone === "all" ? "" : selectedZone,
-          startDate: startDate.toISOString().split("T")[0],
-          endDate: endDate.toISOString().split("T")[0]
+          startDate:startDate != null ? startDate.toISOString().split("T")[0] : "",
+          endDate:endDate != null ? endDate.toISOString().split("T")[0] : ""
         });
 
         const response = await fetch(
@@ -288,7 +293,7 @@ export const DeviceStatisticsAnalytics = ({
                   </div>
                 ) : zones.length > 0 ? (
                   zones.map((zone) => (
-                    <SelectItem key={zone.id} value={zone.id}>
+                    <SelectItem key={zone.name} value={zone.name}>
                       {zone.name}
                     </SelectItem>
                   ))
