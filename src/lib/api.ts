@@ -2815,6 +2815,173 @@ class ApiClient {
     }
   }
 
+  // Device Active Log endpoint - used for DeviceStatisticsAnalytics
+  async getDeviceActiveLog(params?: {
+    page?: number;
+    limit?: number;
+    startDate?: Date | null;
+    endDate?: Date | null;
+    zone?: string;
+  }): Promise<PaginatedResponse<Device>> {
+    const sp = new URLSearchParams();
+    if (params?.page) sp.append("page", String(params.page));
+    if (params?.limit) sp.append("limit", String(params.limit));
+
+    // Format dates if provided
+    if (params?.startDate) {
+      const startDateStr = params.startDate instanceof Date
+        ? params.startDate.toISOString()
+        : String(params.startDate);
+      sp.append("startDate", startDateStr);
+    }
+    if (params?.endDate) {
+      const endDateStr = params.endDate instanceof Date
+        ? params.endDate.toISOString()
+        : String(params.endDate);
+      sp.append("endDate", endDateStr);
+    }
+
+    if (params?.zone && params.zone !== "all") {
+      sp.append("zone", params.zone);
+    }
+
+    const q = sp.toString();
+
+    const fetchAndMap = async (raw: any) => {
+      const timestamp = raw?.timestamp || new Date().toISOString();
+
+      const rawItems = Array.isArray(raw?.data?.items)
+        ? raw.data.items
+        : Array.isArray(raw?.data?.data)
+          ? raw.data.data
+          : Array.isArray(raw?.data)
+            ? raw.data
+            : Array.isArray(raw)
+              ? raw
+              : [];
+
+      const normalizeStatus = (val: any): Device["status"] => {
+        const s = String(val || "").toUpperCase();
+        if (s === "ONLINE" || s === "CONNECTED") return "ACTIVE";
+        if (s === "OFFLINE" || s === "DISCONNECTED") return "INACTIVE";
+        if (s === "MAINTENANCE" || s === "SERVICE") return "MAINTENANCE";
+        if (s === "ERROR" || s === "FAULT") return "ERROR";
+        const allowed = new Set(["ACTIVE", "INACTIVE", "MAINTENANCE", "ERROR"]);
+        return (allowed.has(s) ? (s as Device["status"]) : "ACTIVE");
+      };
+
+      const mapped: Device[] = rawItems.map((it: any) => {
+        const fallbackId = (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function")
+          ? crypto.randomUUID()
+          : `${Date.now()}`;
+
+        const id = String(
+          it.id ?? it.ID ?? it.deviceId ?? it.DeviceId ?? it.device_id ?? it.instrumentId ?? it.InstrumentId ?? fallbackId
+        );
+        const name = String(
+          it.name ?? it.Name ?? it.deviceName ?? it.DeviceName ?? it.instrument ?? it.Instrument ?? id
+        );
+        const type = String(
+          it.type ?? it.Type ?? it.deviceType ?? it.DeviceType ?? it.model ?? it.Model ?? it.modelName ?? it.ModelName ?? "DEVICE"
+        ).toUpperCase();
+        const status = normalizeStatus(
+          it.status ?? it.Status ?? it.state ?? it.State ?? it.connectionStatus ?? it.ConnectionStatus
+        );
+
+        const lat = Number(it.lat ?? it.latitude ?? it.Latitude ?? it.latDeg ?? it.LatDeg);
+        const lng = Number(it.lng ?? it.longitude ?? it.Longitude ?? it.lonDeg ?? it.LonDeg);
+        const coordinates = (!Number.isNaN(lat) && !Number.isNaN(lng))
+          ? { lat, lng }
+          : (it.coordinates && typeof it.coordinates.lat === "number" && typeof it.coordinates.lng === "number")
+            ? { lat: it.coordinates.lat, lng: it.coordinates.lng }
+            : { lat: 0, lng: 0 };
+
+        const batteryRaw = it.battery ?? it.Battery ?? it.batteryLevel ?? it.BatteryLevel;
+        const batteryLevel = typeof batteryRaw === "number" ? batteryRaw : (typeof batteryRaw === "string" ? Number(batteryRaw.replace(/%/g, "")) : undefined);
+
+        const lastSeen = String(
+          it.lastUpdated ?? it.LastUpdated ?? it.lastUpdate ?? it.LastSeen ?? it.lastPing ?? it.LastPing ?? it.timestamp ?? it.Timestamp ?? it.logTime ?? it.LogTime ?? ""
+        ) || undefined;
+
+        const accuracyVal = it.accuracy ?? it.Accuracy;
+        const accuracy = typeof accuracyVal === "number" ? accuracyVal : undefined;
+
+        const modelName = it.modelName ?? it.ModelName ?? undefined;
+        const serialRaw = it.serialNumber ?? it.SerialNumber ?? it.serial_no ?? it.SERIAL_NO ?? it.deviceSerial ?? it.DeviceSerial ?? it.serial ?? it.Serial ?? null;
+        const serialNumber = serialRaw != null ? String(serialRaw) : undefined;
+        const location = it.location ?? "";
+        const currentLocation = it.currentLocation ?? ""
+        const surveyCount = it.surveyCount ?? ""
+
+        return {
+          id,
+          name,
+          type,
+          status,
+          coordinates,
+          modelName: modelName != null ? String(modelName) : undefined,
+          surveyor: it.surveyor ?? it.Surveyor ?? it.user ?? it.User ?? undefined,
+          batteryLevel,
+          lastSeen,
+          accuracy,
+          serialNumber,
+          location,
+          currentLocation,
+          surveyCount
+        } as Device;
+      });
+
+      const pagination = raw?.data?.pagination || raw?.pagination || {
+        page: params?.page ?? 1,
+        limit: params?.limit ?? mapped.length,
+        total: mapped.length,
+        totalPages: 1,
+      };
+
+      return {
+        success: true,
+        data: mapped,
+        message: raw?.message,
+        timestamp,
+        pagination,
+      };
+    };
+
+    // Try direct endpoint first; if unavailable, fallback to proxy route in our dev server
+    try {
+      const raw: any = await this.request<any>(`/DeviceLog/getdeviceactivelog${q ? `?${q}` : ""}`);
+      return await fetchAndMap(raw);
+    } catch (primaryError) {
+      try {
+        const localBase = (typeof window !== "undefined" && window.location?.origin)
+          ? `${window.location.origin}/api`
+          : "/api";
+        const resp = await fetch(`${localBase}/proxy/device-log${q ? `?${q}` : ""}`, {
+          method: "GET",
+          headers: { Accept: "application/json" },
+        });
+        const text = await resp.text();
+        let rawProxy: any;
+        try { rawProxy = JSON.parse(text); } catch { rawProxy = text; }
+        return await fetchAndMap(rawProxy);
+      } catch (error) {
+        console.error("Error fetching device active log:", error);
+        return {
+          success: false,
+          data: [],
+          message: "Failed to fetch device active log",
+          timestamp: new Date().toISOString(),
+          pagination: {
+            page: params?.page ?? 1,
+            limit: params?.limit ?? 10,
+            total: 0,
+            totalPages: 0,
+          },
+        };
+      }
+    }
+  }
+
   // Survey entries summary by device and date
   async getAssetPropertyEntriesByDevice(params: { deviceId: string | number; entryDate: string | Date }): Promise<{ snapshots: any[]; raw: any; }> {
     const { deviceId, entryDate } = params;
