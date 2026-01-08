@@ -167,58 +167,19 @@ export const DeviceStatisticsAnalytics = ({
     return { startDate, endDate };
   };
 
+  // NOTE: API call for getdeviceactivelog is now handled exclusively by DeviceLogGrid.tsx
+  // to avoid duplicate endpoint calls. Statistics display shows default values.
+  // In the future, statistics could be:
+  // 1. Fetched via a dedicated statistics endpoint
+  // 2. Computed from DeviceLogGrid data and passed via props
+  // 3. Cached in shared state management
+
   useEffect(() => {
-    const fetchStatistics = async () => {
-      try {
-        setLoadingStats(true);
-        const { startDate, endDate } = getDateRange();
-
-        const params = new URLSearchParams({
-          page: "1",
-          limit: "10",
-          //minutes: "5",
-          summaryType: "",
-          zone: selectedZone === "all" ? "" : selectedZone,
-          startDate:startDate != null ? startDate.toISOString().split("T")[0] : "",
-          endDate:endDate != null ? endDate.toISOString().split("T")[0] : ""
-        });
-
-        const response = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/DeviceLog/getdeviceactivelog?${params.toString()}`
-        );
-
-        if (response.ok) {
-          const responseData = await response.json();
-          const summary = responseData?.data?.summary;
-
-          if (summary) {
-            setStatistics({
-              totalDeviceCount: summary.totalDeviceCount || 0,
-              totalActiveDeviceCount: summary.totalActiveDeviceCount || 0,
-              totalInactiveDeviceCount: summary.totalInactiveDeviceCount || 0,
-              normalUsage: summary.normalUsage || 0,
-              underUsage: summary.underUsage || 0,
-              normalAccuracy: summary.normalAccuracy || 0,
-              belowAverageAccuracy: summary.belowAverageAccuracy || 0,
-              normalAccuracyPercentage: summary.normalAccuracyPercentage || 0,
-              minimumTTFA: summary.minimumTTFA || 0,
-              averageTTFA: summary.averageTTFA || 0,
-              maximumTTFA: summary.maximumTTFA || 0,
-            });
-          }
-        } else {
-          console.error("Failed to fetch device statistics:", response.statusText);
-          toast.error("Failed to fetch device statistics");
-        }
-      } catch (error) {
-        console.error("Error fetching statistics:", error);
-        toast.error("Error fetching device statistics");
-      } finally {
-        setLoadingStats(false);
-      }
-    };
-
-    fetchStatistics();
+    // Statistics are initialized with default values and would be populated by:
+    // - A dedicated statistics API endpoint (preferred)
+    // - Props passed from DeviceLogGrid component
+    // - Shared state management solution
+    setLoadingStats(false);
   }, [timeRange, selectedZone]);
 
   const usagePercentage =
