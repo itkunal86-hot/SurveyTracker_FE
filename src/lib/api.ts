@@ -3026,7 +3026,7 @@ class ApiClient {
       const raw: any = await this.request<any>(`/devices/statistics${q ? `?${q}` : ""}`);
       return {
         success: (raw?.status_code ?? 200) >= 200 && (raw?.status_code ?? 200) < 300,
-        data: raw?.data ?? {},
+        data: raw?.data?.summary ?? raw?.data ?? {},
         message: raw?.message,
         timestamp: raw?.timestamp ?? new Date().toISOString(),
       };
