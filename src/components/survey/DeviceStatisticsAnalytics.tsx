@@ -319,7 +319,7 @@ export const DeviceStatisticsAnalytics = ({
       }
     };
 
-    //fetchInitialData();
+    fetchZones();
     fetchStatistics();
   }, []);
 
