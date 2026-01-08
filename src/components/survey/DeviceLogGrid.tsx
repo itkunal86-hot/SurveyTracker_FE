@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Wifi, WifiOff, Battery, Activity, RefreshCw, BarChart3 } from "lucide-react";
+import { Wifi, WifiOff, Battery, Activity, RefreshCw, BarChart3, ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_PATH } from "@/lib/api";
 
@@ -353,10 +353,51 @@ export const DeviceLogGrid = ({ summaryType = "", selectedTime = "5" }: DeviceLo
         </div>
 
         {!isLoading && deviceLogs.length > 0 && (
-          <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
-            <span>
-              Showing {deviceLogs.length} of {pagination.total} logs
+          <div className="mt-6 flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">
+              Showing page {pagination.page} of {Math.ceil(pagination.total / pagination.limit)} ({pagination.total} total logs)
             </span>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fetchDeviceLogs(pagination.page - 1)}
+                disabled={isLoading || pagination.page === 1}
+                className="flex items-center gap-1"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Previous
+              </Button>
+
+              <div className="flex items-center gap-1">
+                <span className="text-sm font-medium">Page</span>
+                <input
+                  type="number"
+                  min="1"
+                  max={Math.ceil(pagination.total / pagination.limit)}
+                  value={pagination.page}
+                  onChange={(e) => {
+                    const pageNum = Math.max(1, Math.min(parseInt(e.target.value) || 1, Math.ceil(pagination.total / pagination.limit)));
+                    fetchDeviceLogs(pageNum);
+                  }}
+                  className="w-12 px-2 py-1 border rounded text-center text-sm"
+                  disabled={isLoading}
+                />
+                <span className="text-sm text-muted-foreground">of {Math.ceil(pagination.total / pagination.limit)}</span>
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fetchDeviceLogs(pagination.page + 1)}
+                disabled={isLoading || pagination.page >= Math.ceil(pagination.total / pagination.limit)}
+                className="flex items-center gap-1"
+              >
+                Next
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         )}
       </CardContent>
