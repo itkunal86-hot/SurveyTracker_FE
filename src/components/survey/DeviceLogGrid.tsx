@@ -45,6 +45,21 @@ export const DeviceLogGrid = ({ summaryType = "", selectedTime = "5", selectedZo
     if (timeValue === "today") {
       // Set start date to beginning of today
       startDate.setHours(0, 0, 0, 0);
+    } else if (timeValue === "7days") {
+      // Last 7 days
+      startDate.setDate(startDate.getDate() - 7);
+    } else if (timeValue === "1month") {
+      // Last 1 month
+      startDate.setMonth(startDate.getMonth() - 1);
+    } else if (timeValue === "3months") {
+      // Last 3 months
+      startDate.setMonth(startDate.getMonth() - 3);
+    } else if (timeValue === "all") {
+      // All data - set to null or very old date
+      return {
+        startDate: null,
+        endDate: null
+      };
     } else {
       // Time value represents last N minutes from selectedTime dropdown
       const minutes = parseInt(timeValue, 10);
