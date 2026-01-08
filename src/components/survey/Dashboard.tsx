@@ -26,6 +26,7 @@ export const SurveyDashboard = () => {
   const [loadingStats, setLoadingStats] = useState(true);
   const [selectedSummaryType, setSelectedSummaryType] = useState<string>("");
   const [selectedTime, setSelectedTime] = useState("5");
+  const [selectedZone, setSelectedZone] = useState<string>("all");
 
   // ✅ Fetch smId (Survey ID) from localStorage
   // const smId = localStorage.getItem("activeSurveyId");
@@ -214,6 +215,7 @@ useEffect(() => {
       {/* Device Statistics & Analytics */}
       <DeviceStatisticsAnalytics
         onSummaryTypeSelect={setSelectedSummaryType}
+        onZoneSelect={setSelectedZone}
         selectedTime={selectedTime}
         onSelectedTimeChange={setSelectedTime}
         timeOptions={TIME_OPTIONS}
@@ -221,7 +223,7 @@ useEffect(() => {
 
       {/* Device Logs Grid */}
       <div className="grid grid-cols-1 gap-6">
-        <DeviceLogGrid summaryType={selectedSummaryType} selectedTime={selectedTime} />
+        <DeviceLogGrid summaryType={selectedSummaryType} selectedTime={selectedTime} selectedZone={selectedZone} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

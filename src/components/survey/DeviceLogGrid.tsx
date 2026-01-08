@@ -30,26 +30,33 @@ interface DeviceLogGridProps {
   selectedZone?: string;
 }
 
-export const DeviceLogGrid = ({ summaryType = "", selectedTime = "5" }: DeviceLogGridProps) => {
+export const DeviceLogGrid = ({ summaryType = "", selectedTime = "5", selectedZone = "all" }: DeviceLogGridProps) => {
   const navigate = useNavigate();
   const [deviceLogs, setDeviceLogs] = useState<DeviceLog[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 });
 
-  // Convert time selection to minutes
-  const getMinutesValue = (timeValue: string): number => {
+  // Calculate date range based on timeRange value
+  const getDateRange = (timeValue: string) => {
+    const endDate = new Date();
+    let startDate = new Date();
+
     if (timeValue === "today") {
-      // Calculate minutes since midnight
-      const now = new Date();
-      const midnight = new Date(now);
-      midnight.setHours(0, 0, 0, 0);
-      const minutesSinceMidnight = Math.floor(
-        (now.getTime() - midnight.getTime()) / (1000 * 60)
-      );
-      return minutesSinceMidnight;
+      // Set start date to beginning of today
+      startDate.setHours(0, 0, 0, 0);
+    } else {
+      // Time value represents last N minutes from selectedTime dropdown
+      const minutes = parseInt(timeValue, 10);
+      if (!isNaN(minutes) && minutes > 0) {
+        startDate.setMinutes(startDate.getMinutes() - minutes);
+      }
     }
-    return parseInt(timeValue, 10);
+
+    return {
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString()
+    };
   };
 
   // Fetch device logs
@@ -58,11 +65,15 @@ export const DeviceLogGrid = ({ summaryType = "", selectedTime = "5" }: DeviceLo
       setIsLoading(true);
       setError(null);
 
-      const minutes = getMinutesValue(selectedTime);
+      // Get date range for the selected time
+      const { startDate, endDate } = getDateRange(selectedTime);
+
       const params = new URLSearchParams({
         page: String(page),
         limit: String(pagination.limit),
-        //minutes: String(minutes),
+        startDate,
+        endDate,
+        zone: selectedZone,
         ...(summaryType && { summaryType }),
       });
 
@@ -175,10 +186,10 @@ export const DeviceLogGrid = ({ summaryType = "", selectedTime = "5" }: DeviceLo
     }
   };
 
-  // Fetch on component mount and when time selection or summaryType changes
+  // Fetch on component mount and when time selection, summaryType, or zone changes
   useEffect(() => {
     fetchDeviceLogs(1);
-  }, [selectedTime, summaryType]);
+  }, [selectedTime, summaryType, selectedZone]);
 
   const getBatteryColor = (battery?: number) => {
     if (battery === undefined) return "text-muted-foreground";
