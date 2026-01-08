@@ -26,6 +26,7 @@ export const SurveyDashboard = () => {
   const [loadingStats, setLoadingStats] = useState(true);
   const [selectedSummaryType, setSelectedSummaryType] = useState<string>("");
   const [selectedTime, setSelectedTime] = useState("5");
+  const [selectedZone, setSelectedZone] = useState<string>("all");
 
   // ✅ Fetch smId (Survey ID) from localStorage
   // const smId = localStorage.getItem("activeSurveyId");
