@@ -109,6 +109,12 @@ export const DeviceStatisticsAnalytics = ({
 
   const handleTimeRangeChange = async (value: string) => {
     setTimeRange(value as TimeRange);
+
+    // Update parent component's selected time to trigger grid refresh
+    if (onSelectedTimeChange) {
+      onSelectedTimeChange(value);
+    }
+
     setLoadingDeviceLog(true);
 
     try {
