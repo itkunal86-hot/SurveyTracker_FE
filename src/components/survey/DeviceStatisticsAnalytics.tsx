@@ -314,12 +314,8 @@ export const DeviceStatisticsAnalytics = ({
           <div className="w-48">
             <Select
               value={selectedZone}
-              onValueChange={(zone) => {
-                setSelectedZone(zone as ZoneSelection);
-                if (onZoneSelect) {
-                  onZoneSelect(zone as ZoneSelection);
-                }
-              }}
+              onValueChange={handleZoneChange}
+              disabled={loadingDeviceLog || loadingZones}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select zone" />
