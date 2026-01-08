@@ -235,29 +235,22 @@ export const DeviceStatisticsAnalytics = ({
     try {
       const { startDate, endDate } = getDateRange();
 
-      // Fetch device statistics
-      const statsResponse = await apiClient.getDeviceStatistics({
-        zone,
-        startDate,
-        endDate,
-      });
-
-      if (statsResponse.success && statsResponse.data) {
-        setStatistics(statsResponse.data as DeviceStatisticsData);
-      }
-
+      // Fetch device active log and calculate statistics from it
       const response = await apiClient.getDeviceActiveLog({
         page: 1,
-        limit: 10,
+        limit: 100,
         startDate,
         endDate,
         zone,
       });
 
-      if (response && !response.success) {
-        toast.error("Failed to fetch device active log");
+      if (response && response.success && response.data) {
+        // Calculate statistics from device data
+        const calculatedStats = calculateStatisticsFromDevices(response.data);
+        setStatistics(calculatedStats);
+        toast.success("Device statistics updated for selected zone");
       } else {
-        toast.success("Device log updated for selected zone");
+        toast.error("Failed to fetch device active log");
       }
     } catch (error) {
       console.error("Error fetching device active log:", error);
