@@ -75,11 +75,15 @@ export const DeviceLogGrid = ({ summaryType = "", selectedTime = "5", selectedZo
       setIsLoading(true);
       setError(null);
 
-      const minutes = getMinutesValue(selectedTime);
+      // Get date range for the selected time
+      const { startDate, endDate } = getDateRange(selectedTime);
+
       const params = new URLSearchParams({
         page: String(page),
         limit: String(pagination.limit),
-        //minutes: String(minutes),
+        startDate,
+        endDate,
+        zone: selectedZone,
         ...(summaryType && { summaryType }),
       });
 
