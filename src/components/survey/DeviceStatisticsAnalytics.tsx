@@ -268,7 +268,7 @@ export const DeviceStatisticsAnalytics = ({
             </div>
           )}
           <div className="w-48">
-            <Select value={timeRange} onValueChange={(value) => setTimeRange(value as TimeRange)}>
+            <Select value={timeRange} onValueChange={handleTimeRangeChange} disabled={loadingDeviceLog}>
               <SelectTrigger>
                 <SelectValue placeholder="Select time range" />
               </SelectTrigger>
