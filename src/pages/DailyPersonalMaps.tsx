@@ -985,7 +985,7 @@ const handleExportXML = async () => {
 
             {/* Date Selection */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Select Date</label>
+              <label className="text-sm font-medium">Select Date Range</label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -996,7 +996,7 @@ const handleExportXML = async () => {
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {selectedDate ? format(selectedDate, "PPP") : "Pick a date"}
+                    {selectedDate ? format(selectedDate, "PPP") : "Start date"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -1075,7 +1075,7 @@ const handleExportXML = async () => {
         </div>
 
         {/* Summary Panel */}
-        <div className="space-y-6">
+        {/* <div className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
@@ -1173,7 +1173,7 @@ const handleExportXML = async () => {
               </CardContent>
             </Card>
           )}
-        </div>
+        </div> */}
       </div>
 
       {/* Detailed Survey Activity Log */}

@@ -540,9 +540,9 @@ export const DeviceStatus = () => {
                       {getStatusIcon(device.status)}
                       <div>
                         <p className="font-medium">{device.name}</p>
-                        <p className="text-sm text-muted-foreground">
+                        {/* <p className="text-sm text-muted-foreground">
                           {device.id}
-                        </p>
+                        </p> */}
                       </div>
                     </div>
                   </TableCell>
