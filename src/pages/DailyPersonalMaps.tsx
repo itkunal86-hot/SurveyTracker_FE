@@ -1092,7 +1092,7 @@ const handleExportXML = async () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-[500px]">
+              <div className="h-[600px]">
                 <LeafletMap
                   devices={[]}
                   pipelines={mapPipelines}
