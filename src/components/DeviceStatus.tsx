@@ -124,8 +124,14 @@ export const DeviceStatus = () => {
   // Get total pages from pagination info
   const totalPages = devicesResponse?.pagination?.totalPages || 1;
   const totalDevices = devicesResponse?.pagination?.total || 0;
-
+// Table functionality
+  const { tableConfig, sortedAndPaginatedData } = useTable(
+    filteredDevices,
+    10,
+    "name",
+  );
   const handleRefresh = () => {
+    setMinutesFilter(Number(5));
     refetch();
   };
 
@@ -433,14 +439,14 @@ export const DeviceStatus = () => {
                 >
                   Device
                 </SortableTableHead>
-                <SortableTableHead
+                {/* <SortableTableHead
                   sortKey="type"
                   currentSortKey={tableConfig.sortConfig.key}
                   sortDirection={tableConfig.sortConfig.direction}
                   onSort={tableConfig.handleSort}
                 >
                   Type
-                </SortableTableHead>
+                </SortableTableHead> */}
                  <SortableTableHead
                   sortKey="location"
                   currentSortKey={tableConfig.sortConfig.key}
@@ -473,14 +479,14 @@ export const DeviceStatus = () => {
                 >
                   Serial Number
                 </SortableTableHead>
-                {/* <SortableTableHead
+                <SortableTableHead
                   sortKey="status"
                   currentSortKey={tableConfig.sortConfig.key}
                   sortDirection={tableConfig.sortConfig.direction}
                   onSort={tableConfig.handleSort}
                 >
                   Status
-                </SortableTableHead> */}
+                </SortableTableHead>
                 <SortableTableHead
                   sortKey="surveyor"
                   currentSortKey={tableConfig.sortConfig.key}
@@ -540,14 +546,14 @@ export const DeviceStatus = () => {
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>{device.type}</TableCell>
+                  {/* <TableCell>{device.type}</TableCell> */}
                   <TableCell>{device.location}</TableCell>
                   <TableCell>{device.currentLocation}</TableCell>
                   <TableCell>{device.surveyCount}</TableCell>
                   <TableCell className="font-mono text-sm">
                     {device.serialNumber || "N/A"}
                   </TableCell>
-                  {/* <TableCell>
+                  <TableCell>
                     <Badge className={getStatusColor(device.status)}>
                       {device.status === "ACTIVE"
                         ? "active"
@@ -559,7 +565,7 @@ export const DeviceStatus = () => {
                               ? "offline"
                               : device.status}
                     </Badge>
-                  </TableCell> */}
+                  </TableCell>
                   <TableCell>
                     {device.surveyor ? (
                       <div className="flex items-center space-x-2">
@@ -577,13 +583,13 @@ export const DeviceStatus = () => {
                                     ? device.surveyor
                                     : device.surveyor.name}
                                 </p>
-                                <p className="text-xs text-muted-foreground">
+                                {/* <p className="text-xs text-muted-foreground">
                                   {typeof device.surveyor === "string"
                                     ? "+1-555-0123"
                                     : device.surveyor.phone}
-                                </p>
+                                </p> */}
                               </div>
-                              <ExternalLink className="w-3 h-3 opacity-50" />
+                              {/* <ExternalLink className="w-3 h-3 opacity-50" /> */}
                             </div>
                           </Button>
                         </div>

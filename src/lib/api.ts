@@ -2794,7 +2794,7 @@ class ApiClient {
 
     // Try direct endpoint first; if unavailable, fallback to proxy route in our dev server
     try {
-      const raw: any = await this.request<any>(`/DeviceLog/getdevicelog${q ? `?${q}` : ""}`);
+      const raw: any = await this.request<any>(`/DeviceLog/getdevicecurrentlog${q ? `?${q}` : ""}`);
       return await fetchAndMap(raw);
     } catch (primaryError) {
       try {
