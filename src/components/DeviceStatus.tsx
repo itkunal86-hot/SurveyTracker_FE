@@ -401,17 +401,20 @@ export const DeviceStatus = () => {
                 />
               </div>
             </div>
-            {/* <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={minutesFilter.toString()} onValueChange={(value) => {
+              setMinutesFilter(Number(value));
+              setCurrentPage(1);
+            }}>
               <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filter by status" />
+                <SelectValue placeholder="Select time window" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="offline">Offline</SelectItem>
-                <SelectItem value="maintenance">Maintenance</SelectItem>
+                <SelectItem value="5">Last 5 Minutes</SelectItem>
+                <SelectItem value="15">Last 15 Minutes</SelectItem>
+                <SelectItem value="30">Last 30 Minutes</SelectItem>
+                <SelectItem value="1440">Today</SelectItem>
               </SelectContent>
-            </Select> */}
+            </Select>
           </div>
         </CardContent>
       </Card>
