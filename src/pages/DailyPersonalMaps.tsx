@@ -965,7 +965,7 @@ const handleExportXML = async () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Device Selection */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Device Name</label>
