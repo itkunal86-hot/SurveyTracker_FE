@@ -2673,11 +2673,12 @@ class ApiClient {
     }
   }
   // Device Log endpoint - used for Device Status Grid
-  async getDeviceLogs(params?: { page?: number; limit?: number; status?: string; surveyId?: string; }): Promise<PaginatedResponse<Device>> {
+  async getDeviceLogs(params?: { page?: number; limit?: number; status?: string; surveyId?: string; mintues?: number; }): Promise<PaginatedResponse<Device>> {
     const sp = new URLSearchParams();
     if (params?.page) sp.append("page", String(params.page));
     if (params?.limit) sp.append("limit", String(params.limit));
     if (params?.status) sp.append("status", params.status);
+    if (params?.mintues) sp.append("mintues", String(params.mintues));
     // Pass surveyId if available (from params or persisted selection)
     const storedSurveyId = (() => {
       try {

@@ -56,6 +56,8 @@ interface ExtendedDevice extends Omit<Device, 'surveyor'> {
 export const DeviceStatus = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [minutesFilter, setMinutesFilter] = useState<number>(5);
+  const [currentPage, setCurrentPage] = useState(1);
   const navigate = useNavigate();
 
   const {
@@ -63,7 +65,7 @@ export const DeviceStatus = () => {
     isLoading,
     error,
     refetch,
-  } = useDeviceLogs({ limit: 100 });
+  } = useDeviceLogs({ page: currentPage, limit: 10, mintues: minutesFilter });
 
   // Transform API data to match component interface
   const devices: ExtendedDevice[] = useMemo(() => {
@@ -119,12 +121,9 @@ export const DeviceStatus = () => {
     });
   }, [devices, searchTerm, statusFilter]);
 
-  // Table functionality
-  const { tableConfig, sortedAndPaginatedData } = useTable(
-    filteredDevices,
-    10,
-    "name",
-  );
+  // Get total pages from pagination info
+  const totalPages = devicesResponse?.pagination?.totalPages || 1;
+  const totalDevices = devicesResponse?.pagination?.total || 0;
 
   const handleRefresh = () => {
     refetch();
@@ -399,17 +398,20 @@ export const DeviceStatus = () => {
                 />
               </div>
             </div>
-            {/* <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={minutesFilter.toString()} onValueChange={(value) => {
+              setMinutesFilter(Number(value));
+              setCurrentPage(1);
+            }}>
               <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filter by status" />
+                <SelectValue placeholder="Select time window" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="offline">Offline</SelectItem>
-                <SelectItem value="maintenance">Maintenance</SelectItem>
+                <SelectItem value="5">Last 5 Minutes</SelectItem>
+                <SelectItem value="15">Last 15 Minutes</SelectItem>
+                <SelectItem value="30">Last 30 Minutes</SelectItem>
+                <SelectItem value="1440">Today</SelectItem>
               </SelectContent>
-            </Select> */}
+            </Select>
           </div>
         </CardContent>
       </Card>
@@ -525,7 +527,7 @@ export const DeviceStatus = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedAndPaginatedData.map((device) => (
+              {devices.map((device) => (
                 <TableRow key={device.id}>
                   <TableCell>
                     <div className="flex items-center space-x-3">
@@ -620,19 +622,48 @@ export const DeviceStatus = () => {
             </TableBody>
           </Table>
 
-          <div className="mt-4">
-            <Pagination
-              config={tableConfig.paginationConfig}
-              onPageChange={tableConfig.setCurrentPage}
-              onPageSizeChange={tableConfig.setPageSize}
-              onFirstPage={tableConfig.goToFirstPage}
-              onLastPage={tableConfig.goToLastPage}
-              onNextPage={tableConfig.goToNextPage}
-              onPreviousPage={tableConfig.goToPreviousPage}
-              canGoNext={tableConfig.canGoNext}
-              canGoPrevious={tableConfig.canGoPrevious}
-              pageSizeOptions={[5, 10, 20, 50]}
-            />
+          <div className="mt-4 flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              Showing page {currentPage} of {totalPages} ({totalDevices} total devices)
+            </div>
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1 || isLoading}
+              >
+                Previous
+              </Button>
+              <div className="flex items-center space-x-2">
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(page => {
+                    const delta = 2;
+                    return Math.abs(page - currentPage) <= delta || page === 1 || page === totalPages;
+                  })
+                  .map((page, idx, arr) => (
+                    <div key={page}>
+                      {idx > 0 && arr[idx - 1] !== page - 1 && <span className="px-1">...</span>}
+                      <Button
+                        variant={page === currentPage ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCurrentPage(page)}
+                        disabled={isLoading}
+                      >
+                        {page}
+                      </Button>
+                    </div>
+                  ))}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages || isLoading}
+              >
+                Next
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
