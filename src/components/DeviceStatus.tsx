@@ -399,7 +399,7 @@ export const DeviceStatus = () => {
                 />
               </div>
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            {/* <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
@@ -409,7 +409,7 @@ export const DeviceStatus = () => {
                 <SelectItem value="offline">Offline</SelectItem>
                 <SelectItem value="maintenance">Maintenance</SelectItem>
               </SelectContent>
-            </Select>
+            </Select> */}
           </div>
         </CardContent>
       </Card>
