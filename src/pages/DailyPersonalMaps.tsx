@@ -315,6 +315,7 @@ export const DailyPersonalMaps = () => {
   const [searchParams] = useSearchParams();
   const [selectedDevice, setSelectedDevice] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<Date>();
+  const [selectedEndDate, setSelectedEndDate] = useState<Date>();
   const [isLoading, setIsLoading] = useState(false);
   const [surveyData, setSurveyData] = useState<SurveyDataDynamic | null>(null);
   const [devices, setDevices] = useState<Device[]>([]);
