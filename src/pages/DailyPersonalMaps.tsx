@@ -1048,8 +1048,7 @@ const handleExportXML = async () => {
             </div>
 
             {/* Load Button */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium invisible">Load</label>
+            <div className="space-y-2 flex flex-col justify-end">
               <Button
                 onClick={() => handleLoadSurveyData()}
                 disabled={!canLoadData || isLoading}
