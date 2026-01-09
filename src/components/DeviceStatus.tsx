@@ -56,6 +56,8 @@ interface ExtendedDevice extends Omit<Device, 'surveyor'> {
 export const DeviceStatus = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [minutesFilter, setMinutesFilter] = useState<number>(5);
+  const [currentPage, setCurrentPage] = useState(1);
   const navigate = useNavigate();
 
   const {
@@ -63,7 +65,7 @@ export const DeviceStatus = () => {
     isLoading,
     error,
     refetch,
-  } = useDeviceLogs({ limit: 100 });
+  } = useDeviceLogs({ page: currentPage, limit: 10, mintues: minutesFilter });
 
   // Transform API data to match component interface
   const devices: ExtendedDevice[] = useMemo(() => {
