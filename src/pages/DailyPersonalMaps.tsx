@@ -433,15 +433,16 @@ export const DailyPersonalMaps = () => {
 
   // Devices are loaded from API based on selected survey
 
-  const handleLoadSurveyData = async (deviceId?: string, date?: Date) => {
+  const handleLoadSurveyData = async (deviceId?: string, date?: Date, endDate?: Date) => {
     const targetDevice = deviceId || selectedDevice;
     const targetDate = date || selectedDate;
+    const targetEndDate = endDate || selectedEndDate;
 
     if (!targetDevice || !targetDate) return;
 
     setIsLoading(true);
     try {
-      const resp = await apiClient.getAssetPropertyEntriesByDevice({ deviceId: targetDevice, entryDate: targetDate });
+      const resp = await apiClient.getAssetPropertyEntriesByDevice({ deviceId: targetDevice, entryDate: targetDate, endDate: targetEndDate });
       const snapshots = Array.isArray(resp.snapshots) ? resp.snapshots : [];
 
       const raw = (resp as any)?.raw;
