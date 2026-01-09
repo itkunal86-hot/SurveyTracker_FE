@@ -3053,9 +3053,9 @@ class ApiClient {
     }
   }
 
-  // Survey entries summary by device and date
-  async getAssetPropertyEntriesByDevice(params: { deviceId: string | number; entryDate: string | Date }): Promise<{ snapshots: any[]; raw: any; }> {
-    const { deviceId, entryDate } = params;
+  // Survey entries summary by device and date range
+  async getAssetPropertyEntriesByDevice(params: { deviceId: string | number; entryDate: string | Date; endDate?: string | Date }): Promise<{ snapshots: any[]; raw: any; }> {
+    const { deviceId, entryDate, endDate } = params;
 
     const formatDate = (d: string | Date): string => {
       if (typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
@@ -3070,6 +3070,9 @@ class ApiClient {
     const sp = new URLSearchParams();
     sp.append("deviceId", String(deviceId));
     sp.append("entryDate", formatDate(entryDate));
+    if (endDate) {
+      sp.append("endDate", formatDate(endDate));
+    }
 
     try {
       const raw: any = await this.request<any>(`/AssetProperties/summary/EntriesByDevice?${sp.toString()}`);

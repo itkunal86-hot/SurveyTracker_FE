@@ -315,6 +315,7 @@ export const DailyPersonalMaps = () => {
   const [searchParams] = useSearchParams();
   const [selectedDevice, setSelectedDevice] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<Date>();
+  const [selectedEndDate, setSelectedEndDate] = useState<Date>();
   const [isLoading, setIsLoading] = useState(false);
   const [surveyData, setSurveyData] = useState<SurveyDataDynamic | null>(null);
   const [devices, setDevices] = useState<Device[]>([]);
@@ -432,15 +433,16 @@ export const DailyPersonalMaps = () => {
 
   // Devices are loaded from API based on selected survey
 
-  const handleLoadSurveyData = async (deviceId?: string, date?: Date) => {
+  const handleLoadSurveyData = async (deviceId?: string, date?: Date, endDate?: Date) => {
     const targetDevice = deviceId || selectedDevice;
     const targetDate = date || selectedDate;
+    const targetEndDate = endDate || selectedEndDate;
 
     if (!targetDevice || !targetDate) return;
 
     setIsLoading(true);
     try {
-      const resp = await apiClient.getAssetPropertyEntriesByDevice({ deviceId: targetDevice, entryDate: targetDate });
+      const resp = await apiClient.getAssetPropertyEntriesByDevice({ deviceId: targetDevice, entryDate: targetDate, endDate: targetEndDate });
       const snapshots = Array.isArray(resp.snapshots) ? resp.snapshots : [];
 
       const raw = (resp as any)?.raw;
@@ -963,7 +965,7 @@ const handleExportXML = async () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Device Selection */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Device Name</label>
@@ -983,9 +985,9 @@ const handleExportXML = async () => {
               </div>
             </div>
 
-            {/* Date Selection */}
+            {/* Date Selection - Start Date */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Select Date Range</label>
+              <label className="text-sm font-medium">Start Date</label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -996,7 +998,7 @@ const handleExportXML = async () => {
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {selectedDate ? format(selectedDate, "PPP") : "Start date"}
+                    {selectedDate ? format(selectedDate, "PPP") : "Select date"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -1014,9 +1016,39 @@ const handleExportXML = async () => {
               </Popover>
             </div>
 
-            {/* Load Button */}
+            {/* Date Selection - End Date */}
             <div className="space-y-2">
-              <label className="text-sm font-medium invisible">Load</label>
+              <label className="text-sm font-medium">End Date</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !selectedEndDate && "text-muted-foreground",
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {selectedEndDate ? format(selectedEndDate, "PPP") : "Select date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={selectedEndDate}
+                    onSelect={setSelectedEndDate}
+                    disabled={(date) =>
+                      date > new Date() || date < new Date("2020-01-01")
+                    }
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Load Button */}
+            <div className="space-y-2 flex flex-col justify-end">
               <Button
                 onClick={() => handleLoadSurveyData()}
                 disabled={!canLoadData || isLoading}
@@ -1044,9 +1076,9 @@ const handleExportXML = async () => {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         {/* Map View */}
-        <div className="lg:col-span-2">
+        <div className="w-full">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
@@ -1060,7 +1092,7 @@ const handleExportXML = async () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-[500px]">
+              <div className="h-[600px]">
                 <LeafletMap
                   devices={[]}
                   pipelines={mapPipelines}
