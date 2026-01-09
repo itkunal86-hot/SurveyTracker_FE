@@ -527,7 +527,7 @@ export const DeviceStatus = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedAndPaginatedData.map((device) => (
+              {devices.map((device) => (
                 <TableRow key={device.id}>
                   <TableCell>
                     <div className="flex items-center space-x-3">
