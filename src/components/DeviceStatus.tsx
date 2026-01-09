@@ -121,12 +121,9 @@ export const DeviceStatus = () => {
     });
   }, [devices, searchTerm, statusFilter]);
 
-  // Table functionality
-  const { tableConfig, sortedAndPaginatedData } = useTable(
-    filteredDevices,
-    10,
-    "name",
-  );
+  // Get total pages from pagination info
+  const totalPages = devicesResponse?.pagination?.totalPages || 1;
+  const totalDevices = devicesResponse?.pagination?.total || 0;
 
   const handleRefresh = () => {
     refetch();
