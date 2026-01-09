@@ -622,19 +622,48 @@ export const DeviceStatus = () => {
             </TableBody>
           </Table>
 
-          <div className="mt-4">
-            <Pagination
-              config={tableConfig.paginationConfig}
-              onPageChange={tableConfig.setCurrentPage}
-              onPageSizeChange={tableConfig.setPageSize}
-              onFirstPage={tableConfig.goToFirstPage}
-              onLastPage={tableConfig.goToLastPage}
-              onNextPage={tableConfig.goToNextPage}
-              onPreviousPage={tableConfig.goToPreviousPage}
-              canGoNext={tableConfig.canGoNext}
-              canGoPrevious={tableConfig.canGoPrevious}
-              pageSizeOptions={[5, 10, 20, 50]}
-            />
+          <div className="mt-4 flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              Showing page {currentPage} of {totalPages} ({totalDevices} total devices)
+            </div>
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1 || isLoading}
+              >
+                Previous
+              </Button>
+              <div className="flex items-center space-x-2">
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(page => {
+                    const delta = 2;
+                    return Math.abs(page - currentPage) <= delta || page === 1 || page === totalPages;
+                  })
+                  .map((page, idx, arr) => (
+                    <div key={page}>
+                      {idx > 0 && arr[idx - 1] !== page - 1 && <span className="px-1">...</span>}
+                      <Button
+                        variant={page === currentPage ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCurrentPage(page)}
+                        disabled={isLoading}
+                      >
+                        {page}
+                      </Button>
+                    </div>
+                  ))}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages || isLoading}
+              >
+                Next
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
