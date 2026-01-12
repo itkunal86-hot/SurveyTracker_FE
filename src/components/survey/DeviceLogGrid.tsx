@@ -364,7 +364,7 @@ export const DeviceLogGrid = ({ summaryType = "", selectedTime = "5", selectedZo
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => navigate("/daily-personal-maps")}
+                        onClick={() => navigate(`/survey-details?deviceLogId=${log.id}`)}
                         className="flex items-center gap-2"
                       >
                         <BarChart3 className="w-4 h-4" />
