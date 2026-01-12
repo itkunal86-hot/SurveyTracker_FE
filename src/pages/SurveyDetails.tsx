@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,10 +22,65 @@ import {
   RefreshCw,
   ChevronLeft,
   ChevronRight,
+  MapPin,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { API_BASE_PATH } from "@/lib/api";
+import { LeafletMap } from "@/components/LeafletMap";
+
+interface CoordinatePoint {
+  lat: number;
+  lng: number;
+  elevation?: number;
+}
+
+const parseMaybeNumber = (value: unknown): number | null => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string") {
+    const sanitized = value.trim().replace(/[^0-9.+-]/g, "");
+    if (!sanitized) return null;
+    const parsed = Number(sanitized);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+};
+
+const extractCoordinateFromString = (coordinateString: string): CoordinatePoint | null => {
+  if (!coordinateString || coordinateString === "-") return null;
+
+  const numericParts = coordinateString
+    .split(/[,;\s]+/)
+    .map((part) => parseMaybeNumber(part))
+    .filter((part): part is number => part != null);
+
+  if (numericParts.length >= 2) {
+    const [lat, lng, elevation] = numericParts;
+    return {
+      lat,
+      lng,
+      ...(elevation != null ? { elevation } : {}),
+    };
+  }
+
+  const matches = coordinateString.match(/-?\d+(\.\d+)?/g);
+  if (matches && matches.length >= 2) {
+    const lat = parseMaybeNumber(matches[0]);
+    const lng = parseMaybeNumber(matches[1]);
+    if (lat != null && lng != null) {
+      const elevation = matches[2] ? parseMaybeNumber(matches[2]) : null;
+      return {
+        lat,
+        lng,
+        ...(elevation != null ? { elevation } : {}),
+      };
+    }
+  }
+
+  return null;
+};
 
 interface SurveyActivityEntry {
   id?: string;
@@ -161,6 +216,48 @@ export const SurveyDetails = () => {
 
   const totalPages = Math.ceil(pagination.total / pagination.limit);
 
+  // Build map data from survey entries
+  const mapData = useMemo(() => {
+    const validEntries = entries
+      .map((entry) => {
+        const coords = extractCoordinateFromString(entry.coordinates || "");
+        return coords ? { coords, entry } : null;
+      })
+      .filter((item): item is { coords: CoordinatePoint; entry: SurveyActivityEntry } => item !== null);
+
+    if (validEntries.length === 0) {
+      return { devices: [], pipelines: [] };
+    }
+
+    // Build pipeline coordinates from all valid entries
+    const pipelineCoordinates = validEntries.map((item) => ({
+      lat: item.coords.lat,
+      lng: item.coords.lng,
+      ...(item.coords.elevation != null ? { elevation: item.coords.elevation } : {}),
+    }));
+
+    // Create a pipeline segment if we have at least 2 points
+    const pipelines = pipelineCoordinates.length >= 2
+      ? [
+        {
+          id: `survey-${deviceLogId || "unknown"}`,
+          name: `Survey Trail - Device Log ${deviceLogId}`,
+          diameter: 100,
+          depth: 0,
+          status: "normal" as const,
+          coordinates: pipelineCoordinates,
+        },
+      ]
+      : [];
+
+    return {
+      devices: [],
+      pipelines,
+    };
+  }, [entries, deviceLogId]);
+
+  const mapPipelines = mapData.pipelines;
+
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
@@ -265,6 +362,33 @@ export const SurveyDetails = () => {
               />
               {isLoading ? "Loading..." : "Apply Filters"}
             </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Map View */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <MapPin className="w-5 h-5 mr-2" />
+            Survey Activity Map
+            {entries.length > 0 && (
+              <Badge variant="secondary" className="ml-2">
+                {entries.length} locations
+              </Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[600px]">
+            <LeafletMap
+              devices={[]}
+              pipelines={mapPipelines}
+              valves={[]}
+              showDevices={false}
+              showPipelines={mapPipelines.length > 0}
+              showValves={false}
+            />
           </div>
         </CardContent>
       </Card>
