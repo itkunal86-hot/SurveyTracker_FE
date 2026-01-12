@@ -216,6 +216,48 @@ export const SurveyDetails = () => {
 
   const totalPages = Math.ceil(pagination.total / pagination.limit);
 
+  // Build map data from survey entries
+  const mapData = useMemo(() => {
+    const validEntries = entries
+      .map((entry) => {
+        const coords = extractCoordinateFromString(entry.coordinates || "");
+        return coords ? { coords, entry } : null;
+      })
+      .filter((item): item is { coords: CoordinatePoint; entry: SurveyActivityEntry } => item !== null);
+
+    if (validEntries.length === 0) {
+      return { devices: [], pipelines: [] };
+    }
+
+    // Build pipeline coordinates from all valid entries
+    const pipelineCoordinates = validEntries.map((item) => ({
+      lat: item.coords.lat,
+      lng: item.coords.lng,
+      ...(item.coords.elevation != null ? { elevation: item.coords.elevation } : {}),
+    }));
+
+    // Create a pipeline segment if we have at least 2 points
+    const pipelines = pipelineCoordinates.length >= 2
+      ? [
+        {
+          id: `survey-${deviceLogId || "unknown"}`,
+          name: `Survey Trail - Device Log ${deviceLogId}`,
+          diameter: 100,
+          depth: 0,
+          status: "normal" as const,
+          coordinates: pipelineCoordinates,
+        },
+      ]
+      : [];
+
+    return {
+      devices: [],
+      pipelines,
+    };
+  }, [entries, deviceLogId]);
+
+  const mapPipelines = mapData.pipelines;
+
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
