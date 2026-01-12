@@ -29,6 +29,59 @@ import { cn } from "@/lib/utils";
 import { API_BASE_PATH } from "@/lib/api";
 import { LeafletMap } from "@/components/LeafletMap";
 
+interface CoordinatePoint {
+  lat: number;
+  lng: number;
+  elevation?: number;
+}
+
+const parseMaybeNumber = (value: unknown): number | null => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string") {
+    const sanitized = value.trim().replace(/[^0-9.+-]/g, "");
+    if (!sanitized) return null;
+    const parsed = Number(sanitized);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+};
+
+const extractCoordinateFromString = (coordinateString: string): CoordinatePoint | null => {
+  if (!coordinateString || coordinateString === "-") return null;
+
+  const numericParts = coordinateString
+    .split(/[,;\s]+/)
+    .map((part) => parseMaybeNumber(part))
+    .filter((part): part is number => part != null);
+
+  if (numericParts.length >= 2) {
+    const [lat, lng, elevation] = numericParts;
+    return {
+      lat,
+      lng,
+      ...(elevation != null ? { elevation } : {}),
+    };
+  }
+
+  const matches = coordinateString.match(/-?\d+(\.\d+)?/g);
+  if (matches && matches.length >= 2) {
+    const lat = parseMaybeNumber(matches[0]);
+    const lng = parseMaybeNumber(matches[1]);
+    if (lat != null && lng != null) {
+      const elevation = matches[2] ? parseMaybeNumber(matches[2]) : null;
+      return {
+        lat,
+        lng,
+        ...(elevation != null ? { elevation } : {}),
+      };
+    }
+  }
+
+  return null;
+};
+
 interface SurveyActivityEntry {
   id?: string;
   time: string;
