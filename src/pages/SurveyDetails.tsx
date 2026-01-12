@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,10 +22,12 @@ import {
   RefreshCw,
   ChevronLeft,
   ChevronRight,
+  MapPin,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { API_BASE_PATH } from "@/lib/api";
+import { LeafletMap } from "@/components/LeafletMap";
 
 interface SurveyActivityEntry {
   id?: string;
