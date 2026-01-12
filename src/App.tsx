@@ -9,6 +9,7 @@ import { ApiStatusProvider } from "@/contexts/ApiStatusContext";
 import SpatialFeaturesManagement from "./components/SpatialFeaturesManagement";
 import Index from "./pages/Index";
 import DailyPersonalMapsPage from "./pages/DailyPersonalMapsPage";
+import SurveyDetailsPage from "./pages/SurveyDetailsPage";
 import { Analytics } from "./pages/Analytics";
 import Admin from "./pages/Admin";
 import PipelineOperations from "./pages/PipelineOperations";
