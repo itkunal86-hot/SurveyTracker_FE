@@ -366,6 +366,33 @@ export const SurveyDetails = () => {
         </CardContent>
       </Card>
 
+      {/* Map View */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <MapPin className="w-5 h-5 mr-2" />
+            Survey Activity Map
+            {entries.length > 0 && (
+              <Badge variant="secondary" className="ml-2">
+                {entries.length} locations
+              </Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[600px]">
+            <LeafletMap
+              devices={[]}
+              pipelines={mapPipelines}
+              valves={[]}
+              showDevices={false}
+              showPipelines={mapPipelines.length > 0}
+              showValves={false}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Data Table */}
       <Card>
         <CardHeader>
