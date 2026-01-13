@@ -84,6 +84,7 @@ const extractCoordinateFromString = (coordinateString: string): CoordinatePoint 
 
 interface SurveyActivityEntry {
   id?: string;
+  name:string;
   time: string;
   activity: string;
   surveyorName?: string;
@@ -156,6 +157,7 @@ export const SurveyDetails = () => {
       // Map API response to our interface
       const mappedEntries: SurveyActivityEntry[] = rawItems.map((item: any, index: number) => ({
         id: String(item.ShId ?? item.ID ?? `entry-${index}`),
+        name:String(item.deviceName ?? ""),
         time: String(item.timestamp ?? "-"),
         activity: String(item.action ?? item.Activity ?? item.activityType ?? item.ActivityType ?? "-"),
         surveyorName: String(item.performedBy ?? item.SurveyorName ?? item.surveyor ?? item.Surveyor ?? "-"),
@@ -313,7 +315,8 @@ export const SurveyDetails = () => {
 
   const mapPipelines = mapData.pipelines;
   const mapDevices = mapData.devices;
-  console.log(mapDevices)
+   //const deviceName = mapData.devices;
+  console.log(entries)
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
@@ -339,7 +342,7 @@ export const SurveyDetails = () => {
             <div className="space-y-2">
               <label className="text-sm font-medium">Device Log ID</label>
               <div className="rounded-md border border-input bg-background px-3 py-2">
-                <span className="text-sm font-medium text-foreground">{deviceLogId || "Not specified"}</span>
+                <span className="text-sm font-medium text-foreground">{entries[0]?.name || "Not specified"}</span>
               </div>
             </div>
 
