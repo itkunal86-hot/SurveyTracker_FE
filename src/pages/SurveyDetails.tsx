@@ -223,7 +223,17 @@ export const SurveyDetails = () => {
     if (accuracy === undefined) return "-";
     return `${accuracy}%`;
   };
-
+  const normalizeDeviceStatus = (value: unknown): "active" | "offline" | "maintenance" | "error" => {
+    if (typeof value === "number") {
+      if (value <= 0) return "offline";
+      if (value === 2) return "maintenance";
+    }
+    const text = typeof value === "string" ? value.toLowerCase() : "";
+    if (text.includes("maint")) return "maintenance";
+    if (text.includes("error") || text.includes("fault") || text.includes("critical") || text.includes("alarm")) return "error";
+    if (text.includes("inactive") || text.includes("offline") || text.includes("lost") || text.includes("disconnect")) return "offline";
+    return "active";
+  };
   const totalPages = Math.ceil(pagination.total / pagination.limit);
 
   // Build map data from survey entries
@@ -238,13 +248,50 @@ export const SurveyDetails = () => {
     if (validEntries.length === 0) {
       return { devices: [], pipelines: [] };
     }
+ 
+    const lastEntry = entries[entries.length - 1];
+    const rawDeviceStatus =
+      lastEntry.deviceStatus ??
+      lastEntry.status ??
+      lastEntry.activityStatus ??
+      lastEntry.operationalStatus;
+    const deviceStatus = normalizeDeviceStatus(rawDeviceStatus);
+    const lastTimestamp = lastEntry.timestamp;
+    const fallbackPing =
+      lastEntry.lastKnown ??
+      lastEntry.lastSync ??
+      lastEntry.entryTime ??
+      lastEntry.entryDate ??
+      "";
+    const lastPing = lastTimestamp
+      ? format(lastTimestamp, "PPpp")
+      : fallbackPing
+        ? String(fallbackPing)
+        : "Latest recorded position";
+    const batteryCandidate = parseMaybeNumber(
+      lastEntry.batteryLevel ?? lastEntry.battery ?? lastEntry.battery_percentage,
+    );
 
-    // Build pipeline coordinates from all valid entries
+    const devices = [
+      {
+        id: deviceLogId || "selected-device",
+        name: `Survey Trail - Device Log ${deviceLogId}`,
+        lat: lastEntry.lat,
+        lng: lastEntry.lng,
+        status: deviceStatus,
+        lastPing,
+        //type: selectedDeviceType,
+        batteryLevel: batteryCandidate ?? undefined,
+      },
+    ];
+
+   // Build pipeline coordinates from all valid entries
     const pipelineCoordinates = validEntries.map((item) => ({
       lat: item.coords.lat,
       lng: item.coords.lng,
       ...(item.coords.elevation != null ? { elevation: item.coords.elevation } : {}),
     }));
+
 
     // Create a pipeline segment if we have at least 2 points
     const pipelines = pipelineCoordinates.length >= 2
@@ -261,13 +308,14 @@ export const SurveyDetails = () => {
       : [];
 
     return {
-      devices: [],
+      devices,
       pipelines,
     };
   }, [entries, deviceLogId]);
 
   const mapPipelines = mapData.pipelines;
-
+  const mapDevices = mapData.devices;
+  console.log(mapDevices)
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
@@ -392,10 +440,10 @@ export const SurveyDetails = () => {
         <CardContent>
           <div className="h-[600px]">
             <LeafletMap
-              devices={[]}
+              devices={mapDevices}
               pipelines={mapPipelines}
               valves={[]}
-              showDevices={false}
+              showDevices={mapDevices.length > 0}
               showPipelines={mapPipelines.length > 0}
               showValves={false}
             />
