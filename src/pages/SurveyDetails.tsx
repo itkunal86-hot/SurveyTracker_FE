@@ -248,50 +248,48 @@ export const SurveyDetails = () => {
     if (validEntries.length === 0) {
       return { devices: [], pipelines: [] };
     }
- 
-    const lastEntry = entries[entries.length - 1];
-    const rawDeviceStatus =
-      lastEntry.deviceStatus ??
-      lastEntry.status ??
-      lastEntry.activityStatus ??
-      lastEntry.operationalStatus;
-    const deviceStatus = normalizeDeviceStatus(rawDeviceStatus);
-    const lastTimestamp = lastEntry.timestamp;
-    const fallbackPing =
-      lastEntry.lastKnown ??
-      lastEntry.lastSync ??
-      lastEntry.entryTime ??
-      lastEntry.entryDate ??
-      "";
-    const lastPing = lastTimestamp
-      ? format(lastTimestamp, "PPpp")
-      : fallbackPing
-        ? String(fallbackPing)
-        : "Latest recorded position";
-    const batteryCandidate = parseMaybeNumber(
-      lastEntry.batteryLevel ?? lastEntry.battery ?? lastEntry.battery_percentage,
-    );
 
-    const devices = [
-      {
-        id: deviceLogId || "selected-device",
-        name: `Survey Trail - Device Log ${deviceLogId}`,
-        lat: lastEntry.lat,
-        lng: lastEntry.lng,
+    // Create a device for each entry with coordinates
+    const devices = validEntries.map((item, index) => {
+      const rawDeviceStatus =
+        item.entry.deviceStatus ??
+        item.entry.status ??
+        item.entry.activityStatus ??
+        item.entry.operationalStatus;
+      const deviceStatus = normalizeDeviceStatus(rawDeviceStatus);
+      const timestamp = item.entry.timestamp;
+      const fallbackPing =
+        item.entry.lastKnown ??
+        item.entry.lastSync ??
+        item.entry.entryTime ??
+        item.entry.entryDate ??
+        "";
+      const lastPing = timestamp
+        ? format(new Date(timestamp), "PPpp")
+        : fallbackPing
+          ? String(fallbackPing)
+          : "Latest recorded position";
+      const batteryCandidate = parseMaybeNumber(
+        item.entry.batteryLevel ?? item.entry.battery ?? item.entry.battery_percentage,
+      );
+
+      return {
+        id: item.entry.id || `device-${index}`,
+        name: `Survey Point ${index + 1} - ${item.entry.activity || "N/A"}`,
+        lat: item.coords.lat,
+        lng: item.coords.lng,
         status: deviceStatus,
         lastPing,
-        //type: selectedDeviceType,
         batteryLevel: batteryCandidate ?? undefined,
-      },
-    ];
+      };
+    });
 
-   // Build pipeline coordinates from all valid entries
+    // Build pipeline coordinates from all valid entries
     const pipelineCoordinates = validEntries.map((item) => ({
       lat: item.coords.lat,
       lng: item.coords.lng,
       ...(item.coords.elevation != null ? { elevation: item.coords.elevation } : {}),
     }));
-
 
     // Create a pipeline segment if we have at least 2 points
     const pipelines = pipelineCoordinates.length >= 2
