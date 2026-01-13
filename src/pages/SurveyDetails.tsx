@@ -338,11 +338,13 @@ export const SurveyDetails = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Device Log ID Display */}
+            {/* Device Name Display */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Device Log ID</label>
+              <label className="text-sm font-medium">Device Name</label>
               <div className="rounded-md border border-input bg-background px-3 py-2">
-                <span className="text-sm font-medium text-foreground">{entries[0]?.name || "Not specified"}</span>
+                <span className="text-sm font-medium text-foreground">
+                  {entries[0]?.deviceName || entries[0]?.name || (deviceLogId ? `Device ${deviceLogId}` : "Loading...")}
+                </span>
               </div>
             </div>
 
