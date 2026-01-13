@@ -119,10 +119,14 @@ export const SurveyDetails = () => {
       const params = new URLSearchParams({
         deviceLogId,
         page: String(page),
+        // limit: String(pagination.limit),
+        // ...(startDate && { startDate: startDate.toISOString().split('T')[0] }),
+        // ...(endDate && { endDate: endDate.toISOString().split('T')[0] }),
         limit: String(pagination.limit),
-        ...(startDate && { startDate: startDate.toISOString().split('T')[0] }),
-        ...(endDate && { endDate: endDate.toISOString().split('T')[0] }),
+        ...(startDate && { startDate: formatDateOnly(startDate) }),
+        ...(endDate && { endDate: formatDateOnly(endDate) }),
       });
+
 
       const response = await fetch(
         `${API_BASE_PATH}/AssetProperties/summary/EntriesByDeviceLog?${params.toString()}`,
@@ -151,13 +155,13 @@ export const SurveyDetails = () => {
 
       // Map API response to our interface
       const mappedEntries: SurveyActivityEntry[] = rawItems.map((item: any, index: number) => ({
-        id: String(item.id ?? item.ID ?? `entry-${index}`),
-        time: String(item.time ?? item.Time ?? item.timestamp ?? item.Timestamp ?? "-"),
-        activity: String(item.activity ?? item.Activity ?? item.activityType ?? item.ActivityType ?? "-"),
-        surveyorName: String(item.surveyorName ?? item.SurveyorName ?? item.surveyor ?? item.Surveyor ?? "-"),
-        date: String(item.date ?? item.Date ?? item.entryDate ?? item.EntryDate ?? "-"),
+        id: String(item.ShId ?? item.ID ?? `entry-${index}`),
+        time: String(item.timestamp ?? "-"),
+        activity: String(item.action ?? item.Activity ?? item.activityType ?? item.ActivityType ?? "-"),
+        surveyorName: String(item.performedBy ?? item.SurveyorName ?? item.surveyor ?? item.Surveyor ?? "-"),
+        date: String(item.timestamp ?? item.Date ?? item.entryDate ?? item.EntryDate ?? "-"),
         accuracy: Number(item.accuracy ?? item.Accuracy ?? item.accuracyPercent ?? 0) || undefined,
-        coordinates: String(item.coordinates ?? item.Coordinates ?? item.coords ?? item.Coords ?? "-"),
+        coordinates: String(item.coordinates ?? "-"),
         ...item, // Include all other fields
       }));
 
@@ -174,6 +178,12 @@ export const SurveyDetails = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+  const formatDateOnly = (date) => {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
   };
 
   // Fetch on component mount and when parameters change

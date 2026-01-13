@@ -10,6 +10,7 @@ import { API_BASE_PATH } from "@/lib/api";
 
 interface DeviceLog {
   id: string;
+  deviceLogId:string;
   name: string;
   type?: string;
   status: string;
@@ -30,7 +31,7 @@ interface DeviceLogGridProps {
   selectedZone?: string;
 }
 
-export const DeviceLogGrid = ({ summaryType = "", selectedTime = "5", selectedZone = "all" }: DeviceLogGridProps) => {
+export const DeviceLogGrid = ({ summaryType = "", selectedTime = "all", selectedZone = "all" }: DeviceLogGridProps) => {
   const navigate = useNavigate();
   const [deviceLogs, setDeviceLogs] = useState<DeviceLog[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -39,7 +40,7 @@ export const DeviceLogGrid = ({ summaryType = "", selectedTime = "5", selectedZo
 
   // Calculate date range based on timeRange value
   const getDateRange = (timeValue: string) => {
-    const endDate = new Date();
+    let endDate = new Date();
     let startDate = new Date();
 
     if (timeValue === "today") {
@@ -56,10 +57,7 @@ export const DeviceLogGrid = ({ summaryType = "", selectedTime = "5", selectedZo
       startDate.setMonth(startDate.getMonth() - 3);
     } else if (timeValue === "all") {
       // All data - set to null or very old date
-      return {
-        startDate: null,
-        endDate: null
-      };
+      return { startDate: null, endDate: null };
     } else {
       // Time value represents last N minutes from selectedTime dropdown
       const minutes = parseInt(timeValue, 10);
@@ -135,6 +133,11 @@ export const DeviceLogGrid = ({ summaryType = "", selectedTime = "5", selectedZo
             item.device_id ??
             item.instrumentId ??
             item.InstrumentId ??
+            `device-${Date.now()}`
+        ),
+         deviceLogId: String(
+          item.deviceLogId ??
+            item.dlId ??
             `device-${Date.now()}`
         ),
         name: String(
@@ -364,7 +367,7 @@ export const DeviceLogGrid = ({ summaryType = "", selectedTime = "5", selectedZo
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => navigate(`/survey-details?deviceLogId=${log.id}`)}
+                        onClick={() => navigate(`/survey-details?deviceLogId=${log.deviceLogId}`)}
                         className="flex items-center gap-2"
                       >
                         <BarChart3 className="w-4 h-4" />
