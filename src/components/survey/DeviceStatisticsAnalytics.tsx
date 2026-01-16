@@ -26,6 +26,7 @@ interface DeviceStatisticsData {
   totalInactiveDeviceCount: number;
   normalUsage: number;
   underUsage: number;
+  normalUsagePercent:0,
   normalAccuracy: number;
   belowAverageAccuracy: number;
   normalAccuracyPercentage: number;
@@ -35,7 +36,7 @@ interface DeviceStatisticsData {
 }
 
 // Helper function to calculate statistics from device log data
-const calculateStatisticsFromDevices = (devices: Device[]): DeviceStatisticsData => {
+const calculateStatisticsFromDevices = (devices: any): DeviceStatisticsData => {
   if (!devices || devices.length === 0) {
     return {
       totalDeviceCount: 0,
@@ -43,6 +44,7 @@ const calculateStatisticsFromDevices = (devices: Device[]): DeviceStatisticsData
       totalInactiveDeviceCount: 0,
       normalUsage: 0,
       underUsage: 0,
+      normalUsagePercent:0,
       normalAccuracy: 0,
       belowAverageAccuracy: 0,
       normalAccuracyPercentage: 0,
@@ -52,40 +54,47 @@ const calculateStatisticsFromDevices = (devices: Device[]): DeviceStatisticsData
     };
   }
 
-  const totalDeviceCount = devices.length;
-  const totalActiveDeviceCount = devices.filter(d => d.status === "ACTIVE").length;
-  const totalInactiveDeviceCount = devices.filter(d => d.status === "INACTIVE").length;
+  const totalDeviceCount = devices.totalDeviceCount;
+  const totalActiveDeviceCount = devices.totalActiveDeviceCount;
+  const totalInactiveDeviceCount = devices.totalInactiveDeviceCount;
 
   // Usage classification based on battery level
   const BATTERY_THRESHOLD = 50; // Battery % threshold for normal usage
-  const normalUsage = devices.filter(d => d.batteryLevel !== undefined && d.batteryLevel >= BATTERY_THRESHOLD).length;
-  const underUsage = devices.filter(d => d.batteryLevel !== undefined && d.batteryLevel < BATTERY_THRESHOLD).length;
+  const normalUsage =devices.normalUsage;
+  const underUsage = devices.underUsage;
+  const normalUsagePercent = devices.normalUsagePercent;
 
   // Accuracy classification
-  const ACCURACY_THRESHOLD = 10; // Accuracy threshold in meters
-  const accuracyValues = devices
-    .map(d => d.accuracy)
-    .filter((acc) => acc !== undefined && typeof acc === "number") as number[];
-
-  const normalAccuracy = accuracyValues.filter(acc => acc <= ACCURACY_THRESHOLD).length;
-  const belowAverageAccuracy = accuracyValues.filter(acc => acc > ACCURACY_THRESHOLD).length;
-  const normalAccuracyPercentage = accuracyValues.length > 0
-    ? Math.round((normalAccuracy / accuracyValues.length) * 100)
-    : 0;
+  // const ACCURACY_THRESHOLD = 10; // Accuracy threshold in meters
+  // const accuracyValues = devices
+  //   .map(d => d.accuracy)
+  //   .filter((acc) => acc !== undefined && typeof acc === "number") as number[];
+  
+  //const normalAccuracy = accuracyValues.filter(acc => acc <= ACCURACY_THRESHOLD).length;
+  const normalAccuracy =devices.normalAccuracy;
+  //const belowAverageAccuracy = accuracyValues.filter(acc => acc > ACCURACY_THRESHOLD).length;
+  const belowAverageAccuracy = devices.underUsage;
+  // const normalAccuracyPercentage = accuracyValues.length > 0
+  //   ? Math.round((normalAccuracy / accuracyValues.length) * 100)
+  //   : 0;
+  const normalAccuracyPercentage = devices.normalAccuracyPercentage 
 
   // Time to Achieve Accuracy (represented by accuracy values in meters/minutes)
-  const minimumTTFA = accuracyValues.length > 0 ? Math.min(...accuracyValues) : 0;
-  const maximumTTFA = accuracyValues.length > 0 ? Math.max(...accuracyValues) : 0;
-  const averageTTFA = accuracyValues.length > 0
-    ? Math.round(accuracyValues.reduce((sum, acc) => sum + acc, 0) / accuracyValues.length)
-    : 0;
-
+  // const minimumTTFA = accuracyValues.length > 0 ? Math.min(...accuracyValues) : 0;
+  // const maximumTTFA = accuracyValues.length > 0 ? Math.max(...accuracyValues) : 0;
+  // const averageTTFA = accuracyValues.length > 0
+  //   ? Math.round(accuracyValues.reduce((sum, acc) => sum + acc, 0) / accuracyValues.length)
+  //   : 0;
+  const minimumTTFA = devices.minimumTTFA;
+  const maximumTTFA =devices.maximumTTFA;
+  const averageTTFA =devices.averageTTFA;
   return {
     totalDeviceCount,
     totalActiveDeviceCount,
     totalInactiveDeviceCount,
     normalUsage,
     underUsage,
+    normalUsagePercent,
     normalAccuracy,
     belowAverageAccuracy,
     normalAccuracyPercentage,
@@ -99,7 +108,6 @@ type TimeRange ="all" | "7days" | "1month" | "3months";
 type ZoneSelection = "all" | string;
 
 const TIME_RANGE_OPTIONS = [
-  { value: "all", label: "Select" },
   { value: "7days", label: "Last 7 Days" },
   { value: "1month", label: "Last 1 Month" },
   { value: "3months", label: "Last 3 Months" },
@@ -142,11 +150,11 @@ interface DeviceStatisticsAnalyticsProps {
 export const DeviceStatisticsAnalytics = ({
   onSummaryTypeSelect,
   onZoneSelect,
-  selectedTime = "",
+  selectedTime = "7days",
   onSelectedTimeChange,
   timeOptions = []
 }: DeviceStatisticsAnalyticsProps) => {
-  const [timeRange, setTimeRange] = useState<TimeRange>("all");
+  const [timeRange, setTimeRange] = useState<TimeRange>("7days");
   const [selectedZone, setSelectedZone] = useState<ZoneSelection>("all");
   const [zones, setZones] = useState<Zone[]>([]);
   const [loadingZones, setLoadingZones] = useState(true);
@@ -156,6 +164,7 @@ export const DeviceStatisticsAnalytics = ({
     totalInactiveDeviceCount: 0,
     normalUsage: 0,
     underUsage: 0,
+    normalUsagePercent:0,
     normalAccuracy: 0,
     belowAverageAccuracy: 0,
     normalAccuracyPercentage: 0,
@@ -211,7 +220,8 @@ export const DeviceStatisticsAnalytics = ({
 
       if (response && response.success && response.data) {
         // Calculate statistics from device data
-        const calculatedStats = calculateStatisticsFromDevices(response.data);
+        console.log(response)
+        const calculatedStats = calculateStatisticsFromDevices(response.summery);
         setStatistics(calculatedStats);
         toast.success("Device statistics updated successfully");
       } else {
@@ -246,7 +256,7 @@ export const DeviceStatisticsAnalytics = ({
 
       if (response && response.success && response.data) {
         // Calculate statistics from device data
-        const calculatedStats = calculateStatisticsFromDevices(response.data);
+        const calculatedStats = calculateStatisticsFromDevices(response.summery);
         setStatistics(calculatedStats);
         toast.success("Device statistics updated for selected zone");
       } else {
@@ -299,17 +309,37 @@ export const DeviceStatisticsAnalytics = ({
     const fetchStatistics = async () => {
       try {
         setLoadingStats(true);
+        const { startDate, endDate } = (() => {
+        const end = new Date();
+        const start = new Date();
+
+        switch (selectedTime) {
+          case "all":
+            return { startDate: null, endDate: null };
+          case "7days":
+            start.setDate(start.getDate() - 7);
+            return { startDate: start, endDate: end };
+          case "1month":
+            start.setMonth(start.getMonth() - 1);
+            return { startDate: start, endDate: end };
+          case "3months":
+            start.setMonth(start.getMonth() - 3);
+            return { startDate: start, endDate: end };
+          default:
+            return { startDate: null, endDate: null };
+        }
+      })();
         const response = await apiClient.getDeviceActiveLog({
           page: 1,
           limit: 100,
           zone: selectedZone,
-          startDate: null,
-          endDate: null,
+          startDate: startDate,
+          endDate: endDate,
         });
 
         if (response && response.success && response.data) {
           // Calculate statistics from device data
-          const calculatedStats = calculateStatisticsFromDevices(response.data);
+          const calculatedStats = calculateStatisticsFromDevices(response.summery);
           setStatistics(calculatedStats);
         }
       } catch (error) {

@@ -44,6 +44,7 @@ export interface ApiResponse<T> {
   data: T;
   message?: string;
   timestamp: string;
+  summery?:{}
 }
 
 export interface PaginatedResponse<T> extends ApiResponse<T[]> {
@@ -128,6 +129,7 @@ export interface Device {
   currentLocation?: string;
   location?: string;
   surveyCount?: string;
+  summery:{}
 }
 
 export interface DeviceCreateUpdate {
@@ -2942,6 +2944,7 @@ class ApiClient {
       return {
         success: true,
         data: mapped,
+        summery:raw?.data?.summary,
         message: raw?.message,
         timestamp,
         pagination,

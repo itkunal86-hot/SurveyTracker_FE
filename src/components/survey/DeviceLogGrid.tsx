@@ -23,6 +23,7 @@ interface DeviceLog {
   currentLocation?: string;
   location?: string;
   surveyCount?: string;
+  uniqueId:string;
 }
 
 interface DeviceLogGridProps {
@@ -31,7 +32,7 @@ interface DeviceLogGridProps {
   selectedZone?: string;
 }
 
-export const DeviceLogGrid = ({ summaryType = "", selectedTime = "all", selectedZone = "all" }: DeviceLogGridProps) => {
+export const DeviceLogGrid = ({ summaryType = "", selectedTime = "7days", selectedZone = "all" }: DeviceLogGridProps) => {
   const navigate = useNavigate();
   const [deviceLogs, setDeviceLogs] = useState<DeviceLog[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -187,6 +188,7 @@ export const DeviceLogGrid = ({ summaryType = "", selectedTime = "all", selected
         currentLocation: item.currentLocation  ?? undefined,
         location: item.location  ?? undefined,
         surveyCount: item.surveyCount ?? undefined,
+        uniqueId:item.uniqueId ?? undefined,
       }));
 
       setDeviceLogs(mapped);
@@ -327,7 +329,7 @@ export const DeviceLogGrid = ({ summaryType = "", selectedTime = "all", selected
                 </TableRow>
               ) : (
                 deviceLogs.map((log) => (
-                  <TableRow key={log.id}>
+                  <TableRow key={log.uniqueId}>
                     <TableCell className="font-medium">{log.id}</TableCell>
                     <TableCell>{log.name}</TableCell>
                     {/* <TableCell className="text-sm">{log.type}</TableCell> */}

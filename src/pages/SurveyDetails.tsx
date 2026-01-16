@@ -343,7 +343,7 @@ export const SurveyDetails = () => {
               <label className="text-sm font-medium">Device Name</label>
               <div className="rounded-md border border-input bg-background px-3 py-2">
                 <span className="text-sm font-medium text-foreground">
-                  {entries[0]?.deviceName || entries[0]?.name || (deviceLogId ? `Device ${deviceLogId}` : "Loading...")}
+                  {entries[0]?.deviceName || entries[0]?.name ||  "Loading..."}
                 </span>
               </div>
             </div>
