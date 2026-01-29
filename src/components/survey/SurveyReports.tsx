@@ -12,8 +12,8 @@ import type { Device } from "@/lib/api";
 
 const REPORT_FORMATS = [
   { value: "excel", label: "Excel" },
-  // { value: "pdf", label: "PDF" },
-  // { value: "csv", label: "CSV" },
+  { value: "pdf", label: "PDF" },
+  { value: "csv", label: "CSV" },
 ];
 
 export const SurveyReports = () => {
@@ -158,7 +158,8 @@ export const SurveyReports = () => {
 
       // Generate filename with current timestamp
       const timestamp = new Date().toISOString().replace(/[:.]/g, "").slice(0, -5);
-      link.download = `DeviceReport_${timestamp}.xlsx`;
+     
+      link.download =reportFormat == "excel" ? `DeviceReport_${timestamp}.xlsx` : reportFormat == "pdf" ? `DeviceReport_${timestamp}.pdf` : `DeviceReport_${timestamp}.csv`;
 
       document.body.appendChild(link);
       link.click();
