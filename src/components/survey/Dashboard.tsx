@@ -217,11 +217,21 @@ useEffect(() => {
         selectedTime={selectedTime}
         onSelectedTimeChange={setSelectedTime}
         timeOptions={TIME_OPTIONS}
+        onCustomDateRangeChange={(startDate, endDate) => {
+          setCustomStartDate(startDate);
+          setCustomEndDate(endDate);
+        }}
       />
 
       {/* Device Logs Grid */}
       <div className="grid grid-cols-1 gap-6">
-        <DeviceLogGrid summaryType={selectedSummaryType} selectedTime={selectedTime} selectedZone={selectedZone} />
+        <DeviceLogGrid
+          summaryType={selectedSummaryType}
+          selectedTime={selectedTime}
+          selectedZone={selectedZone}
+          customStartDate={customStartDate}
+          customEndDate={customEndDate}
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
