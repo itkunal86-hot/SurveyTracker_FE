@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiClient, type Setting } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
@@ -19,10 +20,11 @@ export default function SettingsMaster() {
   const { toast } = useToast();
 
   const [form, setForm] = useState({
-    settingKey: "",
-    settingValue: "",
+    timePeriod: "",
+    textValue: "",
+    numberValue: "",
   });
-  const [errors, setErrors] = useState<{ settingKey?: string; settingValue?: string }>({});
+  const [errors, setErrors] = useState<{ timePeriod?: string; textValue?: string; numberValue?: string }>({});
 
   const loadSettings = async () => {
     setLoading(true);
@@ -49,7 +51,7 @@ export default function SettingsMaster() {
 
   const resetForm = () => {
     setEditing(null);
-    setForm({ settingKey: "", settingValue: "" });
+    setForm({ timePeriod: "", textValue: "", numberValue: "" });
     setErrors({});
     setIsDialogOpen(false);
   };
@@ -61,8 +63,9 @@ export default function SettingsMaster() {
 
   const validate = () => {
     const e: typeof errors = {};
-    if (!form.settingKey.trim()) e.settingKey = "Setting Key is required";
-    if (!form.settingValue.trim()) e.settingValue = "Setting Value is required";
+    if (!form.timePeriod.trim()) e.timePeriod = "Time Period is required";
+    if (!form.textValue.trim()) e.textValue = "Text Value is required";
+    if (!form.numberValue.trim()) e.numberValue = "Number Value is required";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -70,9 +73,12 @@ export default function SettingsMaster() {
   const onSubmit = async () => {
     if (!validate()) return;
 
+    const settingKey = form.timePeriod.trim();
+    const settingValue = `${form.timePeriod}=${form.numberValue.trim()},TEXT=${form.textValue.trim()}`;
+
     const payload = {
-      settingKey: form.settingKey.trim(),
-      settingValue: form.settingValue.trim(),
+      settingKey,
+      settingValue,
     };
 
     let response;
@@ -105,10 +111,16 @@ export default function SettingsMaster() {
   };
 
   const onEdit = (item: Setting) => {
+    // Parse the settingValue: "MONTH=3,TEXT=Last 3 months"
+    const parts = item.settingValue.split(",");
+    const timePeriodPart = parts[0]?.split("=")[1] || "";
+    const textPart = parts[1]?.split("=").slice(1).join("=") || "";
+
     setEditing(item);
     setForm({
-      settingKey: item.settingKey,
-      settingValue: item.settingValue,
+      timePeriod: item.settingKey,
+      numberValue: timePeriodPart,
+      textValue: textPart,
     });
     setIsDialogOpen(true);
   };
@@ -165,28 +177,47 @@ export default function SettingsMaster() {
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="space-y-2">
-                    <Label htmlFor="settingKey">Setting Key *</Label>
-                    <Input 
-                      id="settingKey" 
-                      value={form.settingKey} 
-                      onChange={(e) => setForm({ ...form, settingKey: e.target.value })}
+                    <Label htmlFor="timePeriod">Time Period *</Label>
+                    <Select
+                      value={form.timePeriod}
+                      onValueChange={(value) => setForm({ ...form, timePeriod: value })}
                       disabled={editing !== null}
-                      placeholder="e.g., APP_TIMEOUT"
-                      className={errors.settingKey ? "border-destructive" : ""} 
-                    />
-                    {errors.settingKey && <p className="text-sm text-destructive">{errors.settingKey}</p>}
+                    >
+                      <SelectTrigger className={errors.timePeriod ? "border-destructive" : ""}>
+                        <SelectValue placeholder="Select time period" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="MONTH">MONTH</SelectItem>
+                        <SelectItem value="DAYS">DAYS</SelectItem>
+                        <SelectItem value="HOURS">HOURS</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {errors.timePeriod && <p className="text-sm text-destructive">{errors.timePeriod}</p>}
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="settingValue">Setting Value *</Label>
-                    <Input 
-                      id="settingValue" 
-                      value={form.settingValue} 
-                      onChange={(e) => setForm({ ...form, settingValue: e.target.value })}
-                      placeholder="e.g., 3000"
-                      className={errors.settingValue ? "border-destructive" : ""} 
+                    <Label htmlFor="numberValue">Number Value *</Label>
+                    <Input
+                      id="numberValue"
+                      type="number"
+                      value={form.numberValue}
+                      onChange={(e) => setForm({ ...form, numberValue: e.target.value })}
+                      placeholder="e.g., 3, 7, 2"
+                      className={errors.numberValue ? "border-destructive" : ""}
                     />
-                    {errors.settingValue && <p className="text-sm text-destructive">{errors.settingValue}</p>}
+                    {errors.numberValue && <p className="text-sm text-destructive">{errors.numberValue}</p>}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="textValue">Text Value *</Label>
+                    <Input
+                      id="textValue"
+                      value={form.textValue}
+                      onChange={(e) => setForm({ ...form, textValue: e.target.value })}
+                      placeholder="e.g., Last 3 months, Last 7 Days, Last 2 hours"
+                      className={errors.textValue ? "border-destructive" : ""}
+                    />
+                    {errors.textValue && <p className="text-sm text-destructive">{errors.textValue}</p>}
                   </div>
                 </div>
                 <DialogFooter>
