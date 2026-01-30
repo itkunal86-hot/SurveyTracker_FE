@@ -290,6 +290,21 @@ export interface AssetProperty {
   updatedAt: string;
 }
 
+export interface Setting {
+  id?: string;
+  settingKey: string;
+  settingValue: string;
+  performedBy?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface SettingCreateUpdate {
+  settingKey: string;
+  settingValue: string;
+  performedBy?: number;
+}
+
 export interface ValveOperation {
   id: string;
   valveId: string;
@@ -3106,6 +3121,171 @@ class ApiClient {
       return { snapshots, raw };
     } catch (error) {
       return { snapshots: [], raw: null };
+    }
+  }
+
+  // Settings endpoints
+  async getSettings(params?: { page?: number; limit?: number }): Promise<PaginatedResponse<Setting>> {
+    const sp = new URLSearchParams();
+    if (params?.page) sp.append("page", String(params.page));
+    if (params?.limit) sp.append("limit", String(params.limit));
+    const q = sp.toString();
+
+    try {
+      const raw: any = await this.request<any>(`/Settings/getsetting${q ? `?${q}` : ""}`);
+      const timestamp = raw?.timestamp || new Date().toISOString();
+
+      const rawItems = Array.isArray(raw?.data?.items)
+        ? raw.data.items
+        : Array.isArray(raw?.data?.data)
+          ? raw.data.data
+          : Array.isArray(raw?.data)
+            ? raw.data
+            : Array.isArray(raw)
+              ? raw
+              : [];
+
+      const mapped: Setting[] = rawItems.map((it: any) => {
+        const fallbackId = (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function")
+          ? crypto.randomUUID()
+          : `${Date.now()}`;
+
+        return {
+          id: String(it.id ?? it.ID ?? it.settingId ?? it.SettingId ?? fallbackId),
+          settingKey: String(it.settingKey ?? it.SettingKey ?? ""),
+          settingValue: String(it.settingValue ?? it.SettingValue ?? ""),
+          performedBy: Number(it.performedBy ?? it.PerformedBy ?? 0) || undefined,
+          createdAt: it.createdAt ?? it.CreatedAt ?? it.created_at ?? timestamp,
+          updatedAt: it.updatedAt ?? it.UpdatedAt ?? it.updated_at ?? "",
+        } as Setting;
+      });
+
+      const pagination = raw?.data?.pagination || {
+        page: params?.page ?? 1,
+        limit: params?.limit ?? mapped.length,
+        total: mapped.length,
+        totalPages: 1,
+      };
+
+      return {
+        success: (raw?.status_code ?? 200) >= 200 && (raw?.status_code ?? 200) < 300,
+        data: mapped,
+        message: raw?.message,
+        timestamp,
+        pagination,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        data: [],
+        message: "Failed to load settings",
+        timestamp: new Date().toISOString(),
+        pagination: { page: params?.page ?? 1, limit: params?.limit ?? 0, total: 0, totalPages: 0 },
+      };
+    }
+  }
+
+  async createSetting(payload: SettingCreateUpdate): Promise<ApiResponse<Setting>> {
+    const sessionData = sessionStorage.getItem("currentUser");
+    let performedBy: number | null = null;
+
+    if (sessionData) {
+      const parsed = JSON.parse(sessionData);
+      performedBy = parsed?.userData?.udId ?? null;
+    }
+
+    const body: any = {
+      settingKey: payload.settingKey,
+      settingValue: payload.settingValue,
+      performedBy: performedBy ?? payload.performedBy ?? 0,
+    };
+
+    try {
+      const response = await this.request<any>("/Settings/createsetting", {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+
+      return {
+        success: (response?.status_code ?? 200) >= 200 && (response?.status_code ?? 200) < 300,
+        message: response?.message ?? "Setting created successfully",
+        data: response?.data ?? null,
+        timestamp: response?.timestamp ?? new Date().toISOString(),
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error?.message ?? "Failed to create setting",
+        data: null,
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
+  async updateSetting(settingKey: string, payload: Partial<SettingCreateUpdate>): Promise<ApiResponse<Setting>> {
+    const sessionData = sessionStorage.getItem("currentUser");
+    let performedBy: number | null = null;
+
+    if (sessionData) {
+      const parsed = JSON.parse(sessionData);
+      performedBy = parsed?.userData?.udId ?? null;
+    }
+
+    const body: any = {
+      ...(payload.settingValue !== undefined && { settingValue: payload.settingValue }),
+      ...(performedBy !== null && { performedBy }),
+      ...(payload.performedBy !== undefined && { performedBy: payload.performedBy }),
+    };
+
+    try {
+      const response = await this.request<any>(
+        `/Settings/updatesetting?settingKey=${encodeURIComponent(settingKey)}`,
+        {
+          method: "PUT",
+          body: JSON.stringify(body),
+        }
+      );
+
+      return {
+        success:
+          (response?.status_code ?? 200) >= 200 &&
+          (response?.status_code ?? 200) < 300,
+        message: response?.message ?? "Setting updated successfully",
+        data: response?.data ?? null,
+        timestamp: response?.timestamp ?? new Date().toISOString(),
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error?.message ?? "Failed to update setting",
+        data: null,
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
+  async deleteSetting(settingKey: string): Promise<ApiResponse<void>> {
+    try {
+      const response = await this.request<any>(
+        `/Settings/deletesetting?settingKey=${encodeURIComponent(settingKey)}`,
+        { method: "DELETE" }
+      );
+
+      return {
+        success:
+          (response?.status_code ?? 200) >= 200 &&
+          (response?.status_code ?? 200) < 300,
+        message: response?.message ?? "Setting deleted successfully",
+        data: undefined,
+        timestamp: response?.timestamp ?? new Date().toISOString(),
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error?.message ?? "Failed to delete setting",
+        data: undefined,
+        timestamp: new Date().toISOString(),
+      };
     }
   }
 }
