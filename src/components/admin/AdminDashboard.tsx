@@ -281,6 +281,10 @@ export default function AdminDashboard() {
           <AssetPropertyManagement />
         </TabsContent>
 
+        <TabsContent value="settings">
+          <SettingsMaster />
+        </TabsContent>
+
         <TabsContent value="history">
           <SurveyHistoryLog />
         </TabsContent>
