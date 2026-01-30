@@ -175,7 +175,7 @@ export const DeviceStatisticsAnalytics = () => {
     };
 
     fetchTimeRangeOptions();
-  }, [timeRange]);
+  }, []);
 
   const getDateRange = () => {
     const endDate = new Date();
