@@ -159,7 +159,8 @@ export const DeviceStatisticsAnalytics = ({
   onZoneSelect,
   selectedTime = "7days",
   onSelectedTimeChange,
-  timeOptions = []
+  timeOptions = [],
+  onCustomDateRangeChange
 }: DeviceStatisticsAnalyticsProps) => {
   const [timeRange, setTimeRange] = useState<TimeRange>("7days");
   const [selectedZone, setSelectedZone] = useState<ZoneSelection>("all");
@@ -184,6 +185,8 @@ export const DeviceStatisticsAnalytics = ({
   const [loadingStats, setLoadingStats] = useState(false);
   const [selectedSummaryType, setSelectedSummaryType] = useState<string>("");
   const [loadingDeviceLog, setLoadingDeviceLog] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
 
 
   // const handleTimeRangeChange = async (value: string) => {
