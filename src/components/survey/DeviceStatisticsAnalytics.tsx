@@ -606,7 +606,7 @@ export const DeviceStatisticsAnalytics = ({
             Time-based operational overview of GNSS devices
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-3 items-center">
           {/* {timeOptions.length > 0 && (
             <div className="w-48">
               <Select value={selectedTime} onValueChange={(value) => onSelectedTimeChange?.(value)}>
@@ -623,23 +623,59 @@ export const DeviceStatisticsAnalytics = ({
               </Select>
             </div>
           )} */}
-          <div className="w-48">
+          <div className="flex items-center gap-2">
+            {!showCalendar ? (
+              <div className="w-48">
+                {/* <Select value={timeRange}  onValueChange={setTimeRange}  disabled={loadingDeviceLog}> */}
 
-            {/* <Select value={timeRange}  onValueChange={setTimeRange}  disabled={loadingDeviceLog}> */}
+                <Select value={timeRange} onValueChange={handleTimeRangeChange} disabled={loadingDeviceLog}>
 
-            <Select value={timeRange} onValueChange={handleTimeRangeChange} disabled={loadingDeviceLog}>
-
-              <SelectTrigger>
-                <SelectValue placeholder={loadingTimeRanges ? "Loading..." : "Select time range"} />
-              </SelectTrigger>
-              <SelectContent>
-                {timeRangeOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  <SelectTrigger>
+                    <SelectValue placeholder={loadingTimeRanges ? "Loading..." : "Select time range"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {timeRangeOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      disabled={loadingDeviceLog}
+                      className="w-48"
+                    >
+                      {dateRange.from && dateRange.to
+                        ? `${dateRange.from.toLocaleDateString()} - ${dateRange.to.toLocaleDateString()}`
+                        : "Select date range"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="end">
+                    <Calendar
+                      mode="range"
+                      selected={dateRange}
+                      onSelect={handleDateRangeChange}
+                      disabled={(date) => date > new Date()}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            )}
+            <Toggle
+              pressed={showCalendar}
+              onPressedChange={setShowCalendar}
+              className="px-3"
+              title="Toggle between dropdown and calendar view"
+            >
+              <span className="text-xs font-medium">📅 Calendar</span>
+            </Toggle>
           </div>
           <div className="w-48">
             <Select
