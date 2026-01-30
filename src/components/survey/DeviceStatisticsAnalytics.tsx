@@ -664,6 +664,7 @@ export const DeviceStatisticsAnalytics = ({
                   <PopoverContent className="w-auto p-0" align="end">
                     <Calendar
                       mode="range"
+                      numberOfMonths={2}
                       //selected={dateRange}
                       onSelect={handleDateRangeChange}
                       disabled={(date) => date > new Date()}
