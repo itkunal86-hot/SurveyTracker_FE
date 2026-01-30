@@ -9,6 +9,7 @@ import SurveyCategoriesManagement from "./SurveyCategoriesManagement";
 import SurveyManagement from "./SurveyManagement";
 import DeviceAssignmentPanel from "./DeviceAssignmentPanel";
 import DeviceMaster from "./DeviceMaster";
+import SettingsMaster from "./SettingsMaster";
 // import SurveyAttributesMaster from "./SurveyAttributesMaster";
 import SurveyHistoryLog from "./SurveyHistoryLog";
 import AssetTypeManagement from "./AssetTypeManagement";
