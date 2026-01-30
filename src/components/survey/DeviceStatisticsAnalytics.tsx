@@ -34,14 +34,16 @@ interface DeviceStatisticsData {
   maximumTTFA: number;
 }
 
-type TimeRange = "7days" | "1month" | "3months";
+type TimeRange = string;
 type ZoneSelection = "all" | string;
 
-const TIME_RANGE_OPTIONS = [
+const FALLBACK_TIME_RANGE_OPTIONS = [
   { value: "7days", label: "Last 7 Days" },
   { value: "1month", label: "Last 1 Month" },
   { value: "3months", label: "Last 3 Months" },
 ];
+
+const SURVEY_POINT_THRESHOLD = 100;
 
 interface StatItemProps {
   label: string;
