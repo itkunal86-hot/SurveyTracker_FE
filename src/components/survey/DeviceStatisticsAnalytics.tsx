@@ -186,7 +186,8 @@ export const DeviceStatisticsAnalytics = ({
   const [selectedSummaryType, setSelectedSummaryType] = useState<string>("");
   const [loadingDeviceLog, setLoadingDeviceLog] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
-  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
 
 
   // const handleTimeRangeChange = async (value: string) => {
@@ -331,46 +332,57 @@ export const DeviceStatisticsAnalytics = ({
     toast.success(`${section}: ${label} = ${value}`);
   };
 
- const handleDateRangeChange = async (range: { from?: Date; to?: Date }) => {
-  const updatedRange = {
-    from: range.from,
-    to: range.to || new Date(), // Use selected end date, or default to today if not selected
+  const handleStartDateChange = async (selectedDate: Date | undefined) => {
+    setStartDate(selectedDate);
+
+    // If both dates are selected, fetch the data
+    if (selectedDate && endDate) {
+      await fetchDataWithDateRange(selectedDate, endDate);
+    }
   };
 
-  setDateRange(updatedRange);
+  const handleEndDateChange = async (selectedDate: Date | undefined) => {
+    setEndDate(selectedDate);
 
-  const startISO = updatedRange.from?.toISOString() ?? null;
-  const endISO = updatedRange.to.toISOString();
-
-  if (onCustomDateRangeChange) {
-    onCustomDateRangeChange(startISO, endISO);
-  }
-
-  setLoadingDeviceLog(true);
-
-  try {
-    const response = await apiClient.getDeviceActiveLog({
-      page: 1,
-      limit: 100,
-      startDate: updatedRange.from,
-      endDate: updatedRange.to,
-      zone: selectedZone,
-    });
-
-    if (response?.success && response?.data) {
-      const calculatedStats = calculateStatisticsFromDevices(response.summery);
-      setStatistics(calculatedStats);
-      toast.success("Device statistics updated with custom date range");
-    } else {
-      toast.error("Failed to fetch device active log");
+    // If both dates are selected, fetch the data
+    if (startDate && selectedDate) {
+      await fetchDataWithDateRange(startDate, selectedDate);
     }
-  } catch (error) {
-    console.error("Error fetching device active log:", error);
-    toast.error("Error fetching device active log");
-  } finally {
-    setLoadingDeviceLog(false);
-  }
-};
+  };
+
+  const fetchDataWithDateRange = async (start: Date, end: Date) => {
+    const startISO = start.toISOString();
+    const endISO = end.toISOString();
+
+    if (onCustomDateRangeChange) {
+      onCustomDateRangeChange(startISO, endISO);
+    }
+
+    setLoadingDeviceLog(true);
+
+    try {
+      const response = await apiClient.getDeviceActiveLog({
+        page: 1,
+        limit: 100,
+        startDate: start,
+        endDate: end,
+        zone: selectedZone,
+      });
+
+      if (response?.success && response?.data) {
+        const calculatedStats = calculateStatisticsFromDevices(response.summery);
+        setStatistics(calculatedStats);
+        toast.success("Device statistics updated with custom date range");
+      } else {
+        toast.error("Failed to fetch device active log");
+      }
+    } catch (error) {
+      console.error("Error fetching device active log:", error);
+      toast.error("Error fetching device active log");
+    } finally {
+      setLoadingDeviceLog(false);
+    }
+  };
 
   // const handleStatItemClick = (summaryType: string) => {
   //   setSelectedSummaryType(summaryType);
@@ -654,19 +666,36 @@ export const DeviceStatisticsAnalytics = ({
                     <Button
                       variant="outline"
                       disabled={loadingDeviceLog}
-                      className="w-48"
+                      className="w-40"
                     >
-                      {dateRange.from && dateRange.to
-                        ? `${dateRange.from.toLocaleDateString()} - ${dateRange.to.toLocaleDateString()}`
-                        : "Select date range"}
+                      {startDate ? startDate.toLocaleDateString() : "Start Date"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="end">
                     <Calendar
-                      mode="range"
-                      numberOfMonths={2}
-                      //selected={dateRange}
-                      onSelect={handleDateRangeChange}
+                      mode="single"
+                      selected={startDate}
+                      onSelect={handleStartDateChange}
+                      disabled={(date) => date > new Date() || (endDate ? date > endDate : false)}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      disabled={loadingDeviceLog}
+                      className="w-40"
+                    >
+                      {endDate ? endDate.toLocaleDateString() : "End Date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="end">
+                    <Calendar
+                      mode="single"
+                      selected={endDate}
+                      onSelect={handleEndDateChange}
                       disabled={(date) => date > new Date()}
                       initialFocus
                     />
