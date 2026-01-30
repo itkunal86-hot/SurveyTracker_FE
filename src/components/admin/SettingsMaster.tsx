@@ -177,28 +177,47 @@ export default function SettingsMaster() {
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="space-y-2">
-                    <Label htmlFor="settingKey">Setting Key *</Label>
-                    <Input 
-                      id="settingKey" 
-                      value={form.settingKey} 
-                      onChange={(e) => setForm({ ...form, settingKey: e.target.value })}
+                    <Label htmlFor="timePeriod">Time Period *</Label>
+                    <Select
+                      value={form.timePeriod}
+                      onValueChange={(value) => setForm({ ...form, timePeriod: value })}
                       disabled={editing !== null}
-                      placeholder="e.g., APP_TIMEOUT"
-                      className={errors.settingKey ? "border-destructive" : ""} 
-                    />
-                    {errors.settingKey && <p className="text-sm text-destructive">{errors.settingKey}</p>}
+                    >
+                      <SelectTrigger className={errors.timePeriod ? "border-destructive" : ""}>
+                        <SelectValue placeholder="Select time period" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="MONTH">MONTH</SelectItem>
+                        <SelectItem value="DAYS">DAYS</SelectItem>
+                        <SelectItem value="HOURS">HOURS</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {errors.timePeriod && <p className="text-sm text-destructive">{errors.timePeriod}</p>}
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="settingValue">Setting Value *</Label>
-                    <Input 
-                      id="settingValue" 
-                      value={form.settingValue} 
-                      onChange={(e) => setForm({ ...form, settingValue: e.target.value })}
-                      placeholder="e.g., 3000"
-                      className={errors.settingValue ? "border-destructive" : ""} 
+                    <Label htmlFor="numberValue">Number Value *</Label>
+                    <Input
+                      id="numberValue"
+                      type="number"
+                      value={form.numberValue}
+                      onChange={(e) => setForm({ ...form, numberValue: e.target.value })}
+                      placeholder="e.g., 3, 7, 2"
+                      className={errors.numberValue ? "border-destructive" : ""}
                     />
-                    {errors.settingValue && <p className="text-sm text-destructive">{errors.settingValue}</p>}
+                    {errors.numberValue && <p className="text-sm text-destructive">{errors.numberValue}</p>}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="textValue">Text Value *</Label>
+                    <Input
+                      id="textValue"
+                      value={form.textValue}
+                      onChange={(e) => setForm({ ...form, textValue: e.target.value })}
+                      placeholder="e.g., Last 3 months, Last 7 Days, Last 2 hours"
+                      className={errors.textValue ? "border-destructive" : ""}
+                    />
+                    {errors.textValue && <p className="text-sm text-destructive">{errors.textValue}</p>}
                   </div>
                 </div>
                 <DialogFooter>
