@@ -186,7 +186,8 @@ export const DeviceStatisticsAnalytics = ({
   const [selectedSummaryType, setSelectedSummaryType] = useState<string>("");
   const [loadingDeviceLog, setLoadingDeviceLog] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
-  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
 
 
   // const handleTimeRangeChange = async (value: string) => {
