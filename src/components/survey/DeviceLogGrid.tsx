@@ -125,8 +125,18 @@ export const DeviceLogGrid = ({
       setIsLoading(true);
       setError(null);
 
-      // Get date range for the selected time
-      const { startDate, endDate } = getDateRangeFromValue(selectedTime);
+      // Use custom dates if available, otherwise use selectedTime
+      let startDate: string | null = null;
+      let endDate: string | null = null;
+
+      if (customStartDate && customEndDate) {
+        startDate = customStartDate;
+        endDate = customEndDate;
+      } else {
+        const dateRange = getDateRangeFromValue(selectedTime);
+        startDate = dateRange.startDate;
+        endDate = dateRange.endDate;
+      }
 
       const params = new URLSearchParams({
         page: String(page),
