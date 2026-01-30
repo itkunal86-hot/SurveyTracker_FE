@@ -18,6 +18,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { API_BASE_PATH, apiClient, type Zone, type Device } from "@/lib/api";
 import { toast } from "sonner";
+import { Toggle } from "@/components/ui/toggle";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
 
 
 interface DeviceStatisticsData {
@@ -147,6 +151,7 @@ interface DeviceStatisticsAnalyticsProps {
   selectedTime?: string;
   onSelectedTimeChange?: (time: string) => void;
   timeOptions?: TimeOption[];
+  onCustomDateRangeChange?: (startDate: string | null, endDate: string | null) => void;
 }
 
 export const DeviceStatisticsAnalytics = ({
@@ -154,7 +159,8 @@ export const DeviceStatisticsAnalytics = ({
   onZoneSelect,
   selectedTime = "7days",
   onSelectedTimeChange,
-  timeOptions = []
+  timeOptions = [],
+  onCustomDateRangeChange
 }: DeviceStatisticsAnalyticsProps) => {
   const [timeRange, setTimeRange] = useState<TimeRange>("7days");
   const [selectedZone, setSelectedZone] = useState<ZoneSelection>("all");
@@ -179,6 +185,8 @@ export const DeviceStatisticsAnalytics = ({
   const [loadingStats, setLoadingStats] = useState(false);
   const [selectedSummaryType, setSelectedSummaryType] = useState<string>("");
   const [loadingDeviceLog, setLoadingDeviceLog] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
 
 
   // const handleTimeRangeChange = async (value: string) => {
@@ -321,6 +329,43 @@ export const DeviceStatisticsAnalytics = ({
     }
 
     toast.success(`${section}: ${label} = ${value}`);
+  };
+
+  const handleDateRangeChange = async (range: { from?: Date; to?: Date }) => {
+    setDateRange(range);
+
+    const startISO = range.from ? range.from.toISOString() : null;
+    const endISO = range.to ? range.to.toISOString() : null;
+
+    if (onCustomDateRangeChange) {
+      onCustomDateRangeChange(startISO, endISO);
+    }
+
+    setLoadingDeviceLog(true);
+
+    try {
+      const response = await apiClient.getDeviceActiveLog({
+        page: 1,
+        limit: 100,
+        startDate: range.from,
+        endDate: range.to,
+        zone: selectedZone,
+      });
+
+      if (response?.success && response?.data) {
+        console.log(response);
+        const calculatedStats = calculateStatisticsFromDevices(response.summery);
+        setStatistics(calculatedStats);
+        toast.success("Device statistics updated with custom date range");
+      } else {
+        toast.error("Failed to fetch device active log");
+      }
+    } catch (error) {
+      console.error("Error fetching device active log:", error);
+      toast.error("Error fetching device active log");
+    } finally {
+      setLoadingDeviceLog(false);
+    }
   };
   // const handleStatItemClick = (summaryType: string) => {
   //   setSelectedSummaryType(summaryType);
@@ -561,7 +606,7 @@ export const DeviceStatisticsAnalytics = ({
             Time-based operational overview of GNSS devices
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-3 items-center">
           {/* {timeOptions.length > 0 && (
             <div className="w-48">
               <Select value={selectedTime} onValueChange={(value) => onSelectedTimeChange?.(value)}>
@@ -578,23 +623,59 @@ export const DeviceStatisticsAnalytics = ({
               </Select>
             </div>
           )} */}
-          <div className="w-48">
+          <div className="flex items-center gap-2">
+            {!showCalendar ? (
+              <div className="w-48">
+                {/* <Select value={timeRange}  onValueChange={setTimeRange}  disabled={loadingDeviceLog}> */}
 
-            {/* <Select value={timeRange}  onValueChange={setTimeRange}  disabled={loadingDeviceLog}> */}
+                <Select value={timeRange} onValueChange={handleTimeRangeChange} disabled={loadingDeviceLog}>
 
-            <Select value={timeRange} onValueChange={handleTimeRangeChange} disabled={loadingDeviceLog}>
-
-              <SelectTrigger>
-                <SelectValue placeholder={loadingTimeRanges ? "Loading..." : "Select time range"} />
-              </SelectTrigger>
-              <SelectContent>
-                {timeRangeOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  <SelectTrigger>
+                    <SelectValue placeholder={loadingTimeRanges ? "Loading..." : "Select time range"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {timeRangeOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      disabled={loadingDeviceLog}
+                      className="w-48"
+                    >
+                      {dateRange.from && dateRange.to
+                        ? `${dateRange.from.toLocaleDateString()} - ${dateRange.to.toLocaleDateString()}`
+                        : "Select date range"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="end">
+                    <Calendar
+                      mode="range"
+                      selected={dateRange}
+                      onSelect={handleDateRangeChange}
+                      disabled={(date) => date > new Date()}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            )}
+            <Toggle
+              pressed={showCalendar}
+              onPressedChange={setShowCalendar}
+              className="px-3"
+              title="Toggle between dropdown and calendar view"
+            >
+              <span className="text-xs font-medium">📅 Calendar</span>
+            </Toggle>
           </div>
           <div className="w-48">
             <Select

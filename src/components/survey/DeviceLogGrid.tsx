@@ -30,9 +30,17 @@ interface DeviceLogGridProps {
   summaryType?: string;
   selectedTime?: string;
   selectedZone?: string;
+  customStartDate?: string | null;
+  customEndDate?: string | null;
 }
 
-export const DeviceLogGrid = ({ summaryType = "", selectedTime = "7days", selectedZone = "all" }: DeviceLogGridProps) => {
+export const DeviceLogGrid = ({
+  summaryType = "",
+  selectedTime = "7days",
+  selectedZone = "all",
+  customStartDate = null,
+  customEndDate = null
+}: DeviceLogGridProps) => {
   const navigate = useNavigate();
   const [deviceLogs, setDeviceLogs] = useState<DeviceLog[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -117,8 +125,18 @@ export const DeviceLogGrid = ({ summaryType = "", selectedTime = "7days", select
       setIsLoading(true);
       setError(null);
 
-      // Get date range for the selected time
-      const { startDate, endDate } = getDateRangeFromValue(selectedTime);
+      // Use custom dates if available, otherwise use selectedTime
+      let startDate: string | null = null;
+      let endDate: string | null = null;
+
+      if (customStartDate && customEndDate) {
+        startDate = customStartDate;
+        endDate = customEndDate;
+      } else {
+        const dateRange = getDateRangeFromValue(selectedTime);
+        startDate = dateRange.startDate;
+        endDate = dateRange.endDate;
+      }
 
       const params = new URLSearchParams({
         page: String(page),
@@ -244,10 +262,10 @@ export const DeviceLogGrid = ({ summaryType = "", selectedTime = "7days", select
     }
   };
 
-  // Fetch on component mount and when time selection, summaryType, or zone changes
+  // Fetch on component mount and when time selection, summaryType, zone, or custom dates change
   useEffect(() => {
     fetchDeviceLogs(1);
-  }, [selectedTime, summaryType, selectedZone]);
+  }, [selectedTime, summaryType, selectedZone, customStartDate, customEndDate]);
 
   const getBatteryColor = (battery?: number) => {
     if (battery === undefined) return "text-muted-foreground";

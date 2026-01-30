@@ -27,6 +27,8 @@ export const SurveyDashboard = () => {
   const [selectedSummaryType, setSelectedSummaryType] = useState<string>("");
   const [selectedTime, setSelectedTime] = useState("7days");
   const [selectedZone, setSelectedZone] = useState<string>("all");
+  const [customStartDate, setCustomStartDate] = useState<string | null>(null);
+  const [customEndDate, setCustomEndDate] = useState<string | null>(null);
 
   // ✅ Fetch smId (Survey ID) from localStorage
   // const smId = localStorage.getItem("activeSurveyId");
@@ -215,11 +217,21 @@ useEffect(() => {
         selectedTime={selectedTime}
         onSelectedTimeChange={setSelectedTime}
         timeOptions={TIME_OPTIONS}
+        onCustomDateRangeChange={(startDate, endDate) => {
+          setCustomStartDate(startDate);
+          setCustomEndDate(endDate);
+        }}
       />
 
       {/* Device Logs Grid */}
       <div className="grid grid-cols-1 gap-6">
-        <DeviceLogGrid summaryType={selectedSummaryType} selectedTime={selectedTime} selectedZone={selectedZone} />
+        <DeviceLogGrid
+          summaryType={selectedSummaryType}
+          selectedTime={selectedTime}
+          selectedZone={selectedZone}
+          customStartDate={customStartDate}
+          customEndDate={customEndDate}
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
