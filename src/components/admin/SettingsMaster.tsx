@@ -73,9 +73,12 @@ export default function SettingsMaster() {
   const onSubmit = async () => {
     if (!validate()) return;
 
+    const settingKey = form.timePeriod.trim();
+    const settingValue = `${form.timePeriod}=${form.numberValue.trim()},TEXT=${form.textValue.trim()}`;
+
     const payload = {
-      settingKey: form.settingKey.trim(),
-      settingValue: form.settingValue.trim(),
+      settingKey,
+      settingValue,
     };
 
     let response;
