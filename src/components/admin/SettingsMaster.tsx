@@ -63,8 +63,9 @@ export default function SettingsMaster() {
 
   const validate = () => {
     const e: typeof errors = {};
-    if (!form.settingKey.trim()) e.settingKey = "Setting Key is required";
-    if (!form.settingValue.trim()) e.settingValue = "Setting Value is required";
+    if (!form.timePeriod.trim()) e.timePeriod = "Time Period is required";
+    if (!form.textValue.trim()) e.textValue = "Text Value is required";
+    if (!form.numberValue.trim()) e.numberValue = "Number Value is required";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
