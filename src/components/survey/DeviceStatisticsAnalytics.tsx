@@ -334,7 +334,7 @@ export const DeviceStatisticsAnalytics = ({
  const handleDateRangeChange = async (range: { from?: Date; to?: Date }) => {
   const updatedRange = {
     from: range.from,
-    to: new Date(), // 👈 always now
+    to: range.to || new Date(), // Use selected end date, or default to today if not selected
   };
 
   setDateRange(updatedRange);
