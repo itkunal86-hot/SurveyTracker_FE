@@ -40,37 +40,75 @@ export const DeviceLogGrid = ({ summaryType = "", selectedTime = "7days", select
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 });
 
   // Calculate date range based on timeRange value
-  const getDateRange = (timeValue: string) => {
-    let endDate = new Date();
-    let startDate = new Date();
+  // const getDateRange = (timeValue: string) => {
+  //   let endDate = new Date();
+  //   let startDate = new Date();
 
-    if (timeValue === "today") {
-      // Set start date to beginning of today
-      startDate.setHours(0, 0, 0, 0);
-    } else if (timeValue === "7days") {
-      // Last 7 days
-      startDate.setDate(startDate.getDate() - 7);
-    } else if (timeValue === "1month") {
-      // Last 1 month
-      startDate.setMonth(startDate.getMonth() - 1);
-    } else if (timeValue === "3months") {
-      // Last 3 months
-      startDate.setMonth(startDate.getMonth() - 3);
-    } else if (timeValue === "all") {
-      // All data - set to null or very old date
+  //   if (timeValue === "today") {
+  //     // Set start date to beginning of today
+  //     startDate.setHours(0, 0, 0, 0);
+  //   } else if (timeValue === "7days") {
+  //     // Last 7 days
+  //     startDate.setDate(startDate.getDate() - 7);
+  //   } else if (timeValue === "1month") {
+  //     // Last 1 month
+  //     startDate.setMonth(startDate.getMonth() - 1);
+  //   } else if (timeValue === "3months") {
+  //     // Last 3 months
+  //     startDate.setMonth(startDate.getMonth() - 3);
+  //   } else if (timeValue === "all") {
+  //     // All data - set to null or very old date
+  //     return { startDate: null, endDate: null };
+  //   } else {
+  //     // Time value represents last N minutes from selectedTime dropdown
+  //     const minutes = parseInt(timeValue, 10);
+  //     if (!isNaN(minutes) && minutes > 0) {
+  //       startDate.setMinutes(startDate.getMinutes() - minutes);
+  //     }
+  //   }
+
+  //   return {
+  //     startDate: startDate.toISOString(),
+  //     endDate: endDate.toISOString()
+  //   };
+  // };
+  const getDateRangeFromValue = (value: string) => {
+    if (value === "all") {
       return { startDate: null, endDate: null };
-    } else {
-      // Time value represents last N minutes from selectedTime dropdown
-      const minutes = parseInt(timeValue, 10);
-      if (!isNaN(minutes) && minutes > 0) {
-        startDate.setMinutes(startDate.getMinutes() - minutes);
-      }
     }
 
-    return {
+    const endDate = new Date();
+    const startDate = new Date();
+
+    // Expected formats: "5-Days", "3-Months", "1-Days"
+    const [amountStr, unitRaw] = value.split("-");
+    const amount = parseInt(amountStr, 10);
+
+    if (isNaN(amount)) {
+      return { startDate: null, endDate: null };
+    }
+
+    const unit = unitRaw?.toLowerCase();
+
+    switch (unit) {
+      case "day":
+      case "days":
+        startDate.setDate(startDate.getDate() - amount);
+        break;
+
+      case "month":
+      case "months":
+        startDate.setMonth(startDate.getMonth() - amount);
+        break;
+
+      default:
+        return { startDate: null, endDate: null };
+    }
+     return {
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString()
     };
+   // return { startDate, endDate };
   };
 
   // Fetch device logs
@@ -80,7 +118,7 @@ export const DeviceLogGrid = ({ summaryType = "", selectedTime = "7days", select
       setError(null);
 
       // Get date range for the selected time
-      const { startDate, endDate } = getDateRange(selectedTime);
+      const { startDate, endDate } = getDateRangeFromValue(selectedTime);
 
       const params = new URLSearchParams({
         page: String(page),

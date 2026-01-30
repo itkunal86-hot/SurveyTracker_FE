@@ -26,7 +26,7 @@ interface DeviceStatisticsData {
   totalInactiveDeviceCount: number;
   normalUsage: number;
   underUsage: number;
-  normalUsagePercent:0,
+  normalUsagePercent: 0,
   normalAccuracy: number;
   belowAverageAccuracy: number;
   normalAccuracyPercentage: number;
@@ -44,7 +44,7 @@ const calculateStatisticsFromDevices = (devices: any): DeviceStatisticsData => {
       totalInactiveDeviceCount: 0,
       normalUsage: 0,
       underUsage: 0,
-      normalUsagePercent:0,
+      normalUsagePercent: 0,
       normalAccuracy: 0,
       belowAverageAccuracy: 0,
       normalAccuracyPercentage: 0,
@@ -60,7 +60,7 @@ const calculateStatisticsFromDevices = (devices: any): DeviceStatisticsData => {
 
   // Usage classification based on battery level
   const BATTERY_THRESHOLD = 50; // Battery % threshold for normal usage
-  const normalUsage =devices.normalUsage;
+  const normalUsage = devices.normalUsage;
   const underUsage = devices.underUsage;
   const normalUsagePercent = devices.normalUsagePercent;
 
@@ -69,15 +69,15 @@ const calculateStatisticsFromDevices = (devices: any): DeviceStatisticsData => {
   // const accuracyValues = devices
   //   .map(d => d.accuracy)
   //   .filter((acc) => acc !== undefined && typeof acc === "number") as number[];
-  
+
   //const normalAccuracy = accuracyValues.filter(acc => acc <= ACCURACY_THRESHOLD).length;
-  const normalAccuracy =devices.normalAccuracy;
+  const normalAccuracy = devices.normalAccuracy;
   //const belowAverageAccuracy = accuracyValues.filter(acc => acc > ACCURACY_THRESHOLD).length;
   const belowAverageAccuracy = devices.underUsage;
   // const normalAccuracyPercentage = accuracyValues.length > 0
   //   ? Math.round((normalAccuracy / accuracyValues.length) * 100)
   //   : 0;
-  const normalAccuracyPercentage = devices.normalAccuracyPercentage 
+  const normalAccuracyPercentage = devices.normalAccuracyPercentage
 
   // Time to Achieve Accuracy (represented by accuracy values in meters/minutes)
   // const minimumTTFA = accuracyValues.length > 0 ? Math.min(...accuracyValues) : 0;
@@ -86,8 +86,8 @@ const calculateStatisticsFromDevices = (devices: any): DeviceStatisticsData => {
   //   ? Math.round(accuracyValues.reduce((sum, acc) => sum + acc, 0) / accuracyValues.length)
   //   : 0;
   const minimumTTFA = devices.minimumTTFA;
-  const maximumTTFA =devices.maximumTTFA;
-  const averageTTFA =devices.averageTTFA;
+  const maximumTTFA = devices.maximumTTFA;
+  const averageTTFA = devices.averageTTFA;
   return {
     totalDeviceCount,
     totalActiveDeviceCount,
@@ -104,7 +104,7 @@ const calculateStatisticsFromDevices = (devices: any): DeviceStatisticsData => {
   };
 };
 
-type TimeRange ="all" | "7days" | "1month" | "3months";
+type TimeRange = "all" | "7days" | "1month" | "3months";
 type ZoneSelection = "all" | string;
 
 const FALLBACK_TIME_RANGE_OPTIONS = [
@@ -160,7 +160,7 @@ export const DeviceStatisticsAnalytics = ({
   const [selectedZone, setSelectedZone] = useState<ZoneSelection>("all");
   const [zones, setZones] = useState<Zone[]>([]);
   const [loadingZones, setLoadingZones] = useState(true);
-  const [timeRangeOptions, setTimeRangeOptions] = useState<TimeRangeOption[]>(FALLBACK_TIME_RANGE_OPTIONS);
+  const [timeRangeOptions, setTimeRangeOptions] = useState<TimeOption[]>(FALLBACK_TIME_RANGE_OPTIONS);
   const [loadingTimeRanges, setLoadingTimeRanges] = useState(true);
   const [statistics, setStatistics] = useState<DeviceStatisticsData>({
     totalDeviceCount: 0,
@@ -168,7 +168,7 @@ export const DeviceStatisticsAnalytics = ({
     totalInactiveDeviceCount: 0,
     normalUsage: 0,
     underUsage: 0,
-    normalUsagePercent:0,
+    normalUsagePercent: 0,
     normalAccuracy: 0,
     belowAverageAccuracy: 0,
     normalAccuracyPercentage: 0,
@@ -181,10 +181,68 @@ export const DeviceStatisticsAnalytics = ({
   const [loadingDeviceLog, setLoadingDeviceLog] = useState(false);
 
 
+  // const handleTimeRangeChange = async (value: string) => {
+
+  //   setTimeRange(value as TimeRange);
+
+  //   // Update parent component's selected time to trigger grid refresh
+  //   if (onSelectedTimeChange) {
+  //     onSelectedTimeChange(value);
+  //   }
+
+  //   setLoadingDeviceLog(true);
+
+  //   try {
+  //     const { startDate, endDate } = (() => {
+  //       const end = new Date();
+  //       const start = new Date();
+
+  //       switch (value) {
+  //         case "all":
+  //           return { startDate: null, endDate: null };
+  //         case "7days":
+  //           start.setDate(start.getDate() - 7);
+  //           return { startDate: start, endDate: end };
+  //         case "1month":
+  //           start.setMonth(start.getMonth() - 1);
+  //           return { startDate: start, endDate: end };
+  //         case "3months":
+  //           start.setMonth(start.getMonth() - 3);
+  //           return { startDate: start, endDate: end };
+  //         default:
+  //           return { startDate: null, endDate: null };
+  //       }
+  //     })();
+
+  //     // Fetch device active log and calculate statistics from it
+  //     const response = await apiClient.getDeviceActiveLog({
+  //       page: 1,
+  //       limit: 100,
+  //       startDate,
+  //       endDate,
+  //       zone: selectedZone,
+  //     });
+
+  //     if (response && response.success && response.data) {
+  //       // Calculate statistics from device data
+  //       console.log(response)
+  //       const calculatedStats = calculateStatisticsFromDevices(response.summery);
+  //       setStatistics(calculatedStats);
+  //       toast.success("Device statistics updated successfully");
+  //     } else {
+  //       toast.error("Failed to fetch device active log");
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching device active log:", error);
+  //     toast.error("Error fetching device active log");
+  //   } finally {
+  //     setLoadingDeviceLog(false);
+  //   }
+  // };
+
   const handleTimeRangeChange = async (value: string) => {
     setTimeRange(value as TimeRange);
 
-    // Update parent component's selected time to trigger grid refresh
     if (onSelectedTimeChange) {
       onSelectedTimeChange(value);
     }
@@ -192,28 +250,8 @@ export const DeviceStatisticsAnalytics = ({
     setLoadingDeviceLog(true);
 
     try {
-      const { startDate, endDate } = (() => {
-        const end = new Date();
-        const start = new Date();
+      const { startDate, endDate } = getDateRangeFromValue(value);
 
-        switch (value) {
-          case "all":
-            return { startDate: null, endDate: null };
-          case "7days":
-            start.setDate(start.getDate() - 7);
-            return { startDate: start, endDate: end };
-          case "1month":
-            start.setMonth(start.getMonth() - 1);
-            return { startDate: start, endDate: end };
-          case "3months":
-            start.setMonth(start.getMonth() - 3);
-            return { startDate: start, endDate: end };
-          default:
-            return { startDate: null, endDate: null };
-        }
-      })();
-
-      // Fetch device active log and calculate statistics from it
       const response = await apiClient.getDeviceActiveLog({
         page: 1,
         limit: 100,
@@ -222,9 +260,8 @@ export const DeviceStatisticsAnalytics = ({
         zone: selectedZone,
       });
 
-      if (response && response.success && response.data) {
-        // Calculate statistics from device data
-        console.log(response)
+      if (response?.success && response?.data) {
+        console.log(response);
         const calculatedStats = calculateStatisticsFromDevices(response.summery);
         setStatistics(calculatedStats);
         toast.success("Device statistics updated successfully");
@@ -238,6 +275,7 @@ export const DeviceStatisticsAnalytics = ({
       setLoadingDeviceLog(false);
     }
   };
+
 
   const handleZoneChange = async (zone: string) => {
     setSelectedZone(zone as ZoneSelection);
@@ -274,7 +312,7 @@ export const DeviceStatisticsAnalytics = ({
     }
   };
 
-  const handleStatItemClick = (section: string, label: string, value: string | number,summaryType: string) => {
+  const handleStatItemClick = (section: string, label: string, value: string | number, summaryType: string) => {
     setSelectedSummaryType(summaryType);
 
     // Notify parent component to refresh DeviceLogGrid with new summaryType
@@ -314,25 +352,25 @@ export const DeviceStatisticsAnalytics = ({
       try {
         setLoadingStats(true);
         const { startDate, endDate } = (() => {
-        const end = new Date();
-        const start = new Date();
+          const end = new Date();
+          const start = new Date();
 
-        switch (selectedTime) {
-          case "all":
-            return { startDate: null, endDate: null };
-          case "7days":
-            start.setDate(start.getDate() - 7);
-            return { startDate: start, endDate: end };
-          case "1month":
-            start.setMonth(start.getMonth() - 1);
-            return { startDate: start, endDate: end };
-          case "3months":
-            start.setMonth(start.getMonth() - 3);
-            return { startDate: start, endDate: end };
-          default:
-            return { startDate: null, endDate: null };
-        }
-      })();
+          switch (selectedTime) {
+            case "all":
+              return { startDate: null, endDate: null };
+            case "7days":
+              start.setDate(start.getDate() - 7);
+              return { startDate: start, endDate: end };
+            case "1month":
+              start.setMonth(start.getMonth() - 1);
+              return { startDate: start, endDate: end };
+            case "3months":
+              start.setMonth(start.getMonth() - 3);
+              return { startDate: start, endDate: end };
+            default:
+              return { startDate: null, endDate: null };
+          }
+        })();
         const response = await apiClient.getDeviceActiveLog({
           page: 1,
           limit: 100,
@@ -359,63 +397,73 @@ export const DeviceStatisticsAnalytics = ({
 
   useEffect(() => {
     const fetchTimeRangeOptions = async () => {
+      debugger
       try {
         setLoadingTimeRanges(true);
+
         const response = await fetch(
           "https://localhost:7215/api/Settings/getsetting?limit=200"
         );
 
-        if (response.ok) {
-          const data = await response.json();
-          const settings = data?.data?.data || [];
+        if (!response.ok) {
+          throw new Error(response.statusText);
+        }
 
-          // Filter for SETTING_DAY_DDL_FILTTER and parse the options
-          const daySettings = settings.filter(
-            (s: any) => s.settingKey === "SETTING_DAY_DDL_FILTTER"
-          );
+        const data = await response.json();
+        const settings = data?.data?.data || [];
 
-          if (daySettings.length > 0) {
-            const options: TimeRangeOption[] = daySettings.map((setting: any) => {
-              const settingValue = setting.settingValue || "";
-              // Parse "DAYS=1,TEXT=Yesterday" format
-              const daysMatch = settingValue.match(/DAYS=(\d+)/);
-              const textMatch = settingValue.match(/TEXT=([^,]+)/);
+        const daySettings = settings.filter(
+          (s: any) => s.settingKey === "SETTING_DAY_DDL_FILTTER"
+        );
 
-              const days = daysMatch ? daysMatch[1] : "7";
-              const label = textMatch ? textMatch[1] : `Last ${days} Days`;
-              const value = `${days}days`;
+        if (daySettings.length > 0) {
+          const options: TimeOption[] = daySettings.map((setting: any) => {
+            const settingValue = setting.settingValue || "";
 
-              return { value, label };
+            // 🔹 Split by comma → ["DAYS=7", "TEXT=Last 7 Days"]
+            const parts = settingValue.split(",");
+
+            const parsed: Record<string, string> = {};
+
+            parts.forEach((part: string) => {
+              const [key, value] = part.split("=");
+              if (key && value) {
+                parsed[key.trim().toUpperCase()] = value.trim();
+              }
             });
 
-            setTimeRangeOptions(options);
-            // Set initial timeRange to the first option
-            if (options.length > 0 && !timeRange) {
-              setTimeRange(options[0].value);
-            }
-          } else {
-            setTimeRangeOptions(FALLBACK_TIME_RANGE_OPTIONS);
-            if (!timeRange) {
-              setTimeRange(FALLBACK_TIME_RANGE_OPTIONS[0].value);
-            }
-          }
+            // Determine unit dynamically (DAYS / MONTHS)
+            const unit = parsed["DAYS"]
+              ? "days"
+              : parsed["MONTH"]
+                ? "months"
+                : "days";
+
+            const amount =
+              parsed["DAYS"] ||
+              parsed["MONTH"] ||
+              "7";
+
+            const label =
+              parsed["TEXT"] || `Last ${amount} ${unit}`;
+
+            const value = `${amount}-${unit}`;
+
+            return { value, label };
+          });
+
+          setTimeRangeOptions(options);
         } else {
-          console.error("Failed to fetch time range settings:", response.statusText);
           setTimeRangeOptions(FALLBACK_TIME_RANGE_OPTIONS);
-          if (!timeRange) {
-            setTimeRange(FALLBACK_TIME_RANGE_OPTIONS[0].value);
-          }
         }
       } catch (error) {
         console.error("Error fetching time range options:", error);
         setTimeRangeOptions(FALLBACK_TIME_RANGE_OPTIONS);
-        if (!timeRange) {
-          setTimeRange(FALLBACK_TIME_RANGE_OPTIONS[0].value);
-        }
       } finally {
         setLoadingTimeRanges(false);
       }
     };
+
 
     fetchTimeRangeOptions();
   }, []);
@@ -425,9 +473,9 @@ export const DeviceStatisticsAnalytics = ({
     var startDate = new Date();
 
     switch (timeRange) {
-       case "all":
-        startDate= null;
-        endDate=null;
+      case "all":
+        startDate = null;
+        endDate = null;
         break;
       case "7days":
         startDate.setDate(startDate.getDate() - 7);
@@ -438,6 +486,41 @@ export const DeviceStatisticsAnalytics = ({
       case "3months":
         startDate.setMonth(startDate.getMonth() - 3);
         break;
+    }
+
+    return { startDate, endDate };
+  };
+  const getDateRangeFromValue = (value: string) => {
+    if (value === "all") {
+      return { startDate: null, endDate: null };
+    }
+
+    const endDate = new Date();
+    const startDate = new Date();
+
+    // Expected formats: "5-Days", "3-Months", "1-Days"
+    const [amountStr, unitRaw] = value.split("-");
+    const amount = parseInt(amountStr, 10);
+
+    if (isNaN(amount)) {
+      return { startDate: null, endDate: null };
+    }
+
+    const unit = unitRaw?.toLowerCase();
+
+    switch (unit) {
+      case "day":
+      case "days":
+        startDate.setDate(startDate.getDate() - amount);
+        break;
+
+      case "month":
+      case "months":
+        startDate.setMonth(startDate.getMonth() - amount);
+        break;
+
+      default:
+        return { startDate: null, endDate: null };
     }
 
     return { startDate, endDate };
@@ -461,8 +544,8 @@ export const DeviceStatisticsAnalytics = ({
   const usagePercentage =
     statistics.totalActiveDeviceCount > 0
       ? Math.round(
-          (statistics.normalUsage / statistics.totalActiveDeviceCount) * 100
-        )
+        (statistics.normalUsage / statistics.totalActiveDeviceCount) * 100
+      )
       : statistics.normalUsage > 0
         ? 100
         : 0;
@@ -497,9 +580,9 @@ export const DeviceStatisticsAnalytics = ({
           )} */}
           <div className="w-48">
 
-            <Select value={timeRange} onValueChange={setTimeRange}>
+            {/* <Select value={timeRange}  onValueChange={setTimeRange}  disabled={loadingDeviceLog}> */}
 
-<!--             <Select value={timeRange} onValueChange={handleTimeRangeChange} disabled={loadingDeviceLog}> -->
+            <Select value={timeRange} onValueChange={handleTimeRangeChange} disabled={loadingDeviceLog}>
 
               <SelectTrigger>
                 <SelectValue placeholder={loadingTimeRanges ? "Loading..." : "Select time range"} />
@@ -561,21 +644,21 @@ export const DeviceStatisticsAnalytics = ({
                 value={statistics.totalDeviceCount}
                 color="text-blue-600"
                 icon={<Zap className="h-3 w-3 text-blue-500" />}
-                onClick={() => handleStatItemClick("Device Status","Total Devices",`${statistics.totalDeviceCount}m`,"totalDevice")}
+                onClick={() => handleStatItemClick("Device Status", "Total Devices", `${statistics.totalDeviceCount}m`, "totalDevice")}
               />
               <StatItem
                 label="Active Devices"
                 value={statistics.totalActiveDeviceCount}
                 color="text-green-600"
                 icon={<Activity className="h-3 w-3 text-green-500" />}
-                onClick={() => handleStatItemClick("Device Status","Active Devices",`${statistics.totalActiveDeviceCount}m`,"activeDevice")}
+                onClick={() => handleStatItemClick("Device Status", "Active Devices", `${statistics.totalActiveDeviceCount}m`, "activeDevice")}
               />
               <StatItem
                 label="Inactive Devices"
                 value={statistics.totalInactiveDeviceCount}
                 color="text-red-600"
                 icon={<AlertCircle className="h-3 w-3 text-red-500" />}
-                onClick={() => handleStatItemClick("Device Status","Inactive Devices",`${statistics.totalInactiveDeviceCount}m`,"inactiveDevice")}
+                onClick={() => handleStatItemClick("Device Status", "Inactive Devices", `${statistics.totalInactiveDeviceCount}m`, "inactiveDevice")}
               />
             </div>
           </CardContent>
@@ -599,21 +682,21 @@ export const DeviceStatisticsAnalytics = ({
                 value={statistics.totalActiveDeviceCount}
                 color="text-blue-600"
                 icon={<Activity className="h-3 w-3 text-blue-500" />}
-                onClick={() => handleStatItemClick("Total Active Devices","Active Device",`${statistics.totalActiveDeviceCount}m`,"activeDevice")}
+                onClick={() => handleStatItemClick("Total Active Devices", "Active Device", `${statistics.totalActiveDeviceCount}m`, "activeDevice")}
               />
               <StatItem
                 label="Normal Usage"
                 value={`${statistics.normalUsage} (${usagePercentage}%)`}
                 color="text-green-600"
                 icon={<TrendingUp className="h-3 w-3 text-green-500" />}
-                onClick={() => handleStatItemClick("Total Active Devices","Normal Usage",`${statistics.normalUsage}m`,"normalUsage")}
+                onClick={() => handleStatItemClick("Total Active Devices", "Normal Usage", `${statistics.normalUsage}m`, "normalUsage")}
               />
               <StatItem
                 label="Under Usage"
                 value={statistics.underUsage}
                 color="text-yellow-600"
                 icon={<AlertCircle className="h-3 w-3 text-yellow-500" />}
-                onClick={() => handleStatItemClick("Total Active Devices","Under Usage",`${statistics.underUsage}m`,"underUsage")}
+                onClick={() => handleStatItemClick("Total Active Devices", "Under Usage", `${statistics.underUsage}m`, "underUsage")}
               />
             </div>
           </CardContent>
@@ -634,14 +717,14 @@ export const DeviceStatisticsAnalytics = ({
                 value={`${statistics.normalAccuracy} (${accuracyPercentage}%)`}
                 color="text-green-600"
                 icon={<Target className="h-3 w-3 text-green-500" />}
-                onClick={() => handleStatItemClick("Accuracy Performance","Normal Accuracy", `${statistics.normalAccuracy}m`,"normalAccuracy")}
+                onClick={() => handleStatItemClick("Accuracy Performance", "Normal Accuracy", `${statistics.normalAccuracy}m`, "normalAccuracy")}
               />
               <StatItem
                 label="Below Average Accuracy"
                 value={statistics.belowAverageAccuracy}
                 color="text-red-600"
                 icon={<AlertCircle className="h-3 w-3 text-red-500" />}
-                onClick={() => handleStatItemClick("Accuracy Performance","Under Accuracy", `${statistics.normalAccuracy}m`,"underAccuracy")}
+                onClick={() => handleStatItemClick("Accuracy Performance", "Under Accuracy", `${statistics.normalAccuracy}m`, "underAccuracy")}
               />
               <div className="mt-2 pt-2 border-t text-xs text-muted-foreground">
                 <span>Data: Trimble Mobile Manager, Access, Cloud</span>
@@ -668,21 +751,21 @@ export const DeviceStatisticsAnalytics = ({
                 value={`${statistics.minimumTTFA}m`}
                 color="text-green-600"
                 icon={<Clock className="h-3 w-3 text-green-500" />}
-                onClick={() => handleStatItemClick("Time to Achieve Accuracy", "Minimum TTFA", `${statistics.minimumTTFA}m`,"minimumTTFA")}
+                onClick={() => handleStatItemClick("Time to Achieve Accuracy", "Minimum TTFA", `${statistics.minimumTTFA}m`, "minimumTTFA")}
               />
               <StatItem
                 label="Average TTFA"
                 value={`${statistics.averageTTFA}m`}
                 color="text-blue-600"
                 icon={<Clock className="h-3 w-3 text-blue-500" />}
-                onClick={() => handleStatItemClick("Time to Achieve Accuracy", "Average TTFA", `${statistics.averageTTFA}m`,"averageTTFA")}
+                onClick={() => handleStatItemClick("Time to Achieve Accuracy", "Average TTFA", `${statistics.averageTTFA}m`, "averageTTFA")}
               />
               <StatItem
                 label="Maximum TTFA"
                 value={`${statistics.maximumTTFA}m`}
                 color="text-orange-600"
                 icon={<Clock className="h-3 w-3 text-orange-500" />}
-                onClick={() => handleStatItemClick("Time to Achieve Accuracy", "Maximum TTFA", `${statistics.maximumTTFA}m`,"maximumTTFA")}
+                onClick={() => handleStatItemClick("Time to Achieve Accuracy", "Maximum TTFA", `${statistics.maximumTTFA}m`, "maximumTTFA")}
               />
               <div className="mt-3 pt-2 border-t space-y-1">
                 <div className="flex items-center justify-between text-xs">

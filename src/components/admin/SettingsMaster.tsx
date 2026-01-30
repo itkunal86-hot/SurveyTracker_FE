@@ -85,7 +85,7 @@ export default function SettingsMaster() {
 
     try {
       if (editing) {
-        response = await apiClient.updateSetting(editing.settingKey, payload);
+        response = await apiClient.updateSetting(editing.id, payload);
       } else {
         response = await apiClient.createSetting(payload);
       }
@@ -125,7 +125,7 @@ export default function SettingsMaster() {
     setIsDialogOpen(true);
   };
 
-  const onDelete = async (settingKey: string) => {
+  const onDelete = async (settingKey: any) => {
     if (!confirm(`Are you sure you want to delete this setting?`)) return;
 
     try {
@@ -278,7 +278,7 @@ export default function SettingsMaster() {
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        onClick={() => onDelete(s.settingKey)} 
+                        onClick={() => onDelete(s.id)} 
                         className="gap-1 text-destructive hover:text-destructive"
                       >
                         <Trash2 className="h-3 w-3" />Delete

@@ -3222,10 +3222,19 @@ class ApiClient {
     }
   }
 
-  async updateSetting(settingKey: string, payload: Partial<SettingCreateUpdate>): Promise<ApiResponse<Setting>> {
+  async updateSetting(id: any, payload: Partial<SettingCreateUpdate>): Promise<ApiResponse<Setting>> {
     const sessionData = sessionStorage.getItem("currentUser");
     let performedBy: number | null = null;
+    const settingId = Number(id);
 
+    if (Number.isNaN(settingId)) {
+      return {
+        success: false,
+        message: "Invalid setting id",
+        data: null,
+        timestamp: new Date().toISOString(),
+      };
+    }
     if (sessionData) {
       const parsed = JSON.parse(sessionData);
       performedBy = parsed?.userData?.udId ?? null;
@@ -3239,7 +3248,7 @@ class ApiClient {
 
     try {
       const response = await this.request<any>(
-        `/Settings/updatesetting?settingKey=${encodeURIComponent(settingKey)}`,
+        `/Settings/updatesetting?id=${encodeURIComponent(settingId)}`,
         {
           method: "PUT",
           body: JSON.stringify(body),
@@ -3264,10 +3273,17 @@ class ApiClient {
     }
   }
 
-  async deleteSetting(settingKey: string): Promise<ApiResponse<void>> {
+  async deleteSetting(settingKey: any): Promise<ApiResponse<void>> {
     try {
+      const sessionData = sessionStorage.getItem("currentUser");
+      let performedBy: number | null = null;
+      if (sessionData) {
+        const parsed = JSON.parse(sessionData);
+        performedBy = parsed?.userData?.udId ?? null;
+      }
+
       const response = await this.request<any>(
-        `/Settings/deletesetting?settingKey=${encodeURIComponent(settingKey)}`,
+        `/Settings/deletesettingbyid?id=${encodeURIComponent(settingKey)}&performedBy=${encodeURIComponent(performedBy)}`,
         { method: "DELETE" }
       );
 
