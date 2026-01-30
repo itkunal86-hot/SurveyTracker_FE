@@ -111,10 +111,16 @@ export default function SettingsMaster() {
   };
 
   const onEdit = (item: Setting) => {
+    // Parse the settingValue: "MONTH=3,TEXT=Last 3 months"
+    const parts = item.settingValue.split(",");
+    const timePeriodPart = parts[0]?.split("=")[1] || "";
+    const textPart = parts[1]?.split("=").slice(1).join("=") || "";
+
     setEditing(item);
     setForm({
-      settingKey: item.settingKey,
-      settingValue: item.settingValue,
+      timePeriod: item.settingKey,
+      numberValue: timePeriodPart,
+      textValue: textPart,
     });
     setIsDialogOpen(true);
   };
