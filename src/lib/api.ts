@@ -290,6 +290,21 @@ export interface AssetProperty {
   updatedAt: string;
 }
 
+export interface Setting {
+  id?: string;
+  settingKey: string;
+  settingValue: string;
+  performedBy?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface SettingCreateUpdate {
+  settingKey: string;
+  settingValue: string;
+  performedBy?: number;
+}
+
 export interface ValveOperation {
   id: string;
   valveId: string;
