@@ -181,16 +181,18 @@ export const DeviceStatisticsAnalytics = () => {
     const endDate = new Date();
     const startDate = new Date();
 
-    switch (timeRange) {
-      case "7days":
-        startDate.setDate(startDate.getDate() - 7);
-        break;
-      case "1month":
-        startDate.setMonth(startDate.getMonth() - 1);
-        break;
-      case "3months":
-        startDate.setMonth(startDate.getMonth() - 3);
-        break;
+    if (timeRange.endsWith("days")) {
+      // Parse "Ndays" format (e.g., "7days" -> 7)
+      const days = parseInt(timeRange.replace("days", ""), 10);
+      if (!isNaN(days)) {
+        startDate.setDate(startDate.getDate() - days);
+      }
+    } else if (timeRange.endsWith("month")) {
+      // Parse "Nmonth" format
+      const months = parseInt(timeRange.replace("month", ""), 10);
+      if (!isNaN(months)) {
+        startDate.setMonth(startDate.getMonth() - months);
+      }
     }
 
     return { startDate, endDate };
