@@ -114,6 +114,69 @@ export const DeviceStatisticsAnalytics = () => {
     fetchZones();
   }, []);
 
+  useEffect(() => {
+    const fetchTimeRangeOptions = async () => {
+      try {
+        setLoadingTimeRanges(true);
+        const response = await fetch(
+          "https://localhost:7215/api/Settings/getsetting?limit=200"
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          const settings = data?.data?.data || [];
+
+          // Filter for SETTING_DAY_DDL_FILTTER and parse the options
+          const daySettings = settings.filter(
+            (s: any) => s.settingKey === "SETTING_DAY_DDL_FILTTER"
+          );
+
+          if (daySettings.length > 0) {
+            const options: TimeRangeOption[] = daySettings.map((setting: any) => {
+              const settingValue = setting.settingValue || "";
+              // Parse "DAYS=1,TEXT=Yesterday" format
+              const daysMatch = settingValue.match(/DAYS=(\d+)/);
+              const textMatch = settingValue.match(/TEXT=([^,]+)/);
+
+              const days = daysMatch ? daysMatch[1] : "7";
+              const label = textMatch ? textMatch[1] : `Last ${days} Days`;
+              const value = `${days}days`;
+
+              return { value, label };
+            });
+
+            setTimeRangeOptions(options);
+            // Set initial timeRange to the first option
+            if (options.length > 0 && !timeRange) {
+              setTimeRange(options[0].value);
+            }
+          } else {
+            setTimeRangeOptions(FALLBACK_TIME_RANGE_OPTIONS);
+            if (!timeRange) {
+              setTimeRange(FALLBACK_TIME_RANGE_OPTIONS[0].value);
+            }
+          }
+        } else {
+          console.error("Failed to fetch time range settings:", response.statusText);
+          setTimeRangeOptions(FALLBACK_TIME_RANGE_OPTIONS);
+          if (!timeRange) {
+            setTimeRange(FALLBACK_TIME_RANGE_OPTIONS[0].value);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching time range options:", error);
+        setTimeRangeOptions(FALLBACK_TIME_RANGE_OPTIONS);
+        if (!timeRange) {
+          setTimeRange(FALLBACK_TIME_RANGE_OPTIONS[0].value);
+        }
+      } finally {
+        setLoadingTimeRanges(false);
+      }
+    };
+
+    fetchTimeRangeOptions();
+  }, [timeRange]);
+
   const getDateRange = () => {
     const endDate = new Date();
     const startDate = new Date();
