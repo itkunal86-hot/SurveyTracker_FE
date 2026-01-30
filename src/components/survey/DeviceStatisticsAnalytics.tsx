@@ -666,19 +666,36 @@ export const DeviceStatisticsAnalytics = ({
                     <Button
                       variant="outline"
                       disabled={loadingDeviceLog}
-                      className="w-48"
+                      className="w-40"
                     >
-                      {dateRange.from && dateRange.to
-                        ? `${dateRange.from.toLocaleDateString()} - ${dateRange.to.toLocaleDateString()}`
-                        : "Select date range"}
+                      {startDate ? startDate.toLocaleDateString() : "Start Date"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="end">
                     <Calendar
-                      mode="range"
-                      numberOfMonths={2}
-                      //selected={dateRange}
-                      onSelect={handleDateRangeChange}
+                      mode="single"
+                      selected={startDate}
+                      onSelect={handleStartDateChange}
+                      disabled={(date) => date > new Date() || (endDate ? date > endDate : false)}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      disabled={loadingDeviceLog}
+                      className="w-40"
+                    >
+                      {endDate ? endDate.toLocaleDateString() : "End Date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="end">
+                    <Calendar
+                      mode="single"
+                      selected={endDate}
+                      onSelect={handleEndDateChange}
                       disabled={(date) => date > new Date()}
                       initialFocus
                     />
