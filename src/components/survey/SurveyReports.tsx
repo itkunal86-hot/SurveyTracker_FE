@@ -105,13 +105,13 @@ export const SurveyReports = () => {
       icon: <BarChart3 className="w-5 h-5" />,
       formats: ["PDF", "Excel"]
     },
-    {
-      id: "downtime",
-      name: "Downtime Report",
-      description: "Analysis of instrument downtime and maintenance needs",
-      icon: <TrendingDown className="w-5 h-5" />,
-      formats: ["PDF", "CSV"]
-    },
+    // {
+    //   id: "downtime",
+    //   name: "Downtime Report",
+    //   description: "Analysis of instrument downtime and maintenance needs",
+    //   icon: <TrendingDown className="w-5 h-5" />,
+    //   formats: ["PDF", "CSV"]
+    // },
   ];
 
   const handleGenerateDeviceReport = async () => {

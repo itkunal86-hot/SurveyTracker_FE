@@ -147,14 +147,14 @@ useEffect(() => {
       </div>
 
       {/* Top Tiles */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Instruments</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {/* <div className="text-2xl font-bold">{stats.totalInstruments}</div> */}
+           
             <div className="text-2xl font-bold">{stats.totalDevices}</div>
           </CardContent>
         </Card>
@@ -165,8 +165,7 @@ useEffect(() => {
             <div className="h-2 w-2 bg-green-500 rounded-full"></div>
           </CardHeader>
           <CardContent>
-            {/* <div className="text-2xl font-bold text-green-600">{stats.activeInstruments}</div> */}
-            <div className="text-2xl font-bold text-green-600">{stats.activeDevices}</div>
+          <div className="text-2xl font-bold text-green-600">{stats.activeDevices}</div>
           </CardContent>
         </Card>
 
@@ -176,8 +175,7 @@ useEffect(() => {
             <div className="h-2 w-2 bg-red-500 rounded-full"></div>
           </CardHeader>
           <CardContent>
-            {/* <div className="text-2xl font-bold text-red-600">{stats.inactiveInstruments}</div> */}
-            <div className="text-2xl font-bold text-red-600">{stats.inactiveDevices}</div>
+           <div className="text-2xl font-bold text-red-600">{stats.inactiveDevices}</div>
           </CardContent>
         </Card>
 
@@ -187,8 +185,7 @@ useEffect(() => {
             <MapPin className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {/* <div className="text-2xl font-bold">{stats.inGodown}</div> */}
-          </CardContent>
+           </CardContent>
         </Card>
 
         <Card>
@@ -197,11 +194,10 @@ useEffect(() => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {/* <div className="text-2xl font-bold">{stats.withSurveyors}</div> */}
             <div className="text-2xl font-bold">{stats.surveyors}</div>
           </CardContent>
         </Card>
-      </div>
+      </div> */}
 
       <div className="grid grid-cols-1 gap-6">
         {/* Heatmap Panel */}

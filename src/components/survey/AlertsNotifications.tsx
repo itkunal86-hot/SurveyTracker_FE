@@ -137,7 +137,7 @@ const handleExportAlerts = async () => {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -191,7 +191,7 @@ const handleExportAlerts = async () => {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </div> */}
 
 
       {/* Unresolved Alerts */}
@@ -232,14 +232,16 @@ const handleExportAlerts = async () => {
                             {alert.batteryLevel ?? 0}%
                           </span>
                         </div>
-                        {alert.controllerHealthStatus && (
+                        {alert.ch && (
                           <Badge variant="outline" className="text-xs">
-                            Controller: {alert.controllerHealthStatus}
+                            {/* Controller: {alert.controllerHealthStatus} */}
+                            Controller: {alert.ch}
                           </Badge>
                         )}
-                        {alert.deviceHealthStatus && (
+                        {alert.rh && (
                           <Badge variant="outline" className="text-xs">
-                            Device: {alert.deviceHealthStatus}
+                            {/* Device: {alert.deviceHealthStatus} */}
+                            Device: {alert.rh}
                           </Badge>
                         )}
                       </div>
@@ -313,14 +315,16 @@ const handleExportAlerts = async () => {
                               {alert.batteryLevel ?? 0}%
                             </span>
                           </div>
-                          {alert.controllerHealthStatus && (
+                          {alert.ch && (
                             <Badge variant="outline" className="text-xs">
-                              Controller: {alert.controllerHealthStatus}
+                              {/* Controller: {alert.controllerHealthStatus} */}
+                              Controller: {alert.ch}
                             </Badge>
                           )}
-                          {alert.deviceHealthStatus && (
+                          {alert.rh && (
                             <Badge variant="outline" className="text-xs">
-                              Device: {alert.deviceHealthStatus}
+                              {/* Device: {alert.deviceHealthStatus} */}
+                              Device: {alert.rh}
                             </Badge>
                           )}
                         </div>
