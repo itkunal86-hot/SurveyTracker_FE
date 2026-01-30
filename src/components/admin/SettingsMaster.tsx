@@ -20,10 +20,11 @@ export default function SettingsMaster() {
   const { toast } = useToast();
 
   const [form, setForm] = useState({
-    settingKey: "",
-    settingValue: "",
+    timePeriod: "",
+    textValue: "",
+    numberValue: "",
   });
-  const [errors, setErrors] = useState<{ settingKey?: string; settingValue?: string }>({});
+  const [errors, setErrors] = useState<{ timePeriod?: string; textValue?: string; numberValue?: string }>({});
 
   const loadSettings = async () => {
     setLoading(true);
