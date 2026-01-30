@@ -18,6 +18,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { API_BASE_PATH, apiClient, type Zone, type Device } from "@/lib/api";
 import { toast } from "sonner";
+import { Toggle } from "@/components/ui/toggle";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
 
 
 interface DeviceStatisticsData {
