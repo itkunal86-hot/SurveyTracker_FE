@@ -332,46 +332,57 @@ export const DeviceStatisticsAnalytics = ({
     toast.success(`${section}: ${label} = ${value}`);
   };
 
- const handleDateRangeChange = async (range: { from?: Date; to?: Date }) => {
-  const updatedRange = {
-    from: range.from,
-    to: range.to || new Date(), // Use selected end date, or default to today if not selected
+  const handleStartDateChange = async (selectedDate: Date | undefined) => {
+    setStartDate(selectedDate);
+
+    // If both dates are selected, fetch the data
+    if (selectedDate && endDate) {
+      await fetchDataWithDateRange(selectedDate, endDate);
+    }
   };
 
-  setDateRange(updatedRange);
+  const handleEndDateChange = async (selectedDate: Date | undefined) => {
+    setEndDate(selectedDate);
 
-  const startISO = updatedRange.from?.toISOString() ?? null;
-  const endISO = updatedRange.to.toISOString();
-
-  if (onCustomDateRangeChange) {
-    onCustomDateRangeChange(startISO, endISO);
-  }
-
-  setLoadingDeviceLog(true);
-
-  try {
-    const response = await apiClient.getDeviceActiveLog({
-      page: 1,
-      limit: 100,
-      startDate: updatedRange.from,
-      endDate: updatedRange.to,
-      zone: selectedZone,
-    });
-
-    if (response?.success && response?.data) {
-      const calculatedStats = calculateStatisticsFromDevices(response.summery);
-      setStatistics(calculatedStats);
-      toast.success("Device statistics updated with custom date range");
-    } else {
-      toast.error("Failed to fetch device active log");
+    // If both dates are selected, fetch the data
+    if (startDate && selectedDate) {
+      await fetchDataWithDateRange(startDate, selectedDate);
     }
-  } catch (error) {
-    console.error("Error fetching device active log:", error);
-    toast.error("Error fetching device active log");
-  } finally {
-    setLoadingDeviceLog(false);
-  }
-};
+  };
+
+  const fetchDataWithDateRange = async (start: Date, end: Date) => {
+    const startISO = start.toISOString();
+    const endISO = end.toISOString();
+
+    if (onCustomDateRangeChange) {
+      onCustomDateRangeChange(startISO, endISO);
+    }
+
+    setLoadingDeviceLog(true);
+
+    try {
+      const response = await apiClient.getDeviceActiveLog({
+        page: 1,
+        limit: 100,
+        startDate: start,
+        endDate: end,
+        zone: selectedZone,
+      });
+
+      if (response?.success && response?.data) {
+        const calculatedStats = calculateStatisticsFromDevices(response.summery);
+        setStatistics(calculatedStats);
+        toast.success("Device statistics updated with custom date range");
+      } else {
+        toast.error("Failed to fetch device active log");
+      }
+    } catch (error) {
+      console.error("Error fetching device active log:", error);
+      toast.error("Error fetching device active log");
+    } finally {
+      setLoadingDeviceLog(false);
+    }
+  };
 
   // const handleStatItemClick = (summaryType: string) => {
   //   setSelectedSummaryType(summaryType);
