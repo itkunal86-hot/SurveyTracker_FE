@@ -27,6 +27,8 @@ export const SurveyDashboard = () => {
   const [selectedSummaryType, setSelectedSummaryType] = useState<string>("");
   const [selectedTime, setSelectedTime] = useState("7days");
   const [selectedZone, setSelectedZone] = useState<string>("all");
+  const [customStartDate, setCustomStartDate] = useState<string | null>(null);
+  const [customEndDate, setCustomEndDate] = useState<string | null>(null);
 
   // ✅ Fetch smId (Survey ID) from localStorage
   // const smId = localStorage.getItem("activeSurveyId");
