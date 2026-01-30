@@ -30,6 +30,8 @@ interface DeviceLogGridProps {
   summaryType?: string;
   selectedTime?: string;
   selectedZone?: string;
+  customStartDate?: string | null;
+  customEndDate?: string | null;
 }
 
 export const DeviceLogGrid = ({ summaryType = "", selectedTime = "7days", selectedZone = "all" }: DeviceLogGridProps) => {
