@@ -66,11 +66,18 @@ const StatItem = ({ label, value, color = "text-foreground", icon, onClick }: St
   </div>
 );
 
+interface TimeRangeOption {
+  value: string;
+  label: string;
+}
+
 export const DeviceStatisticsAnalytics = () => {
-  const [timeRange, setTimeRange] = useState<TimeRange>("7days");
+  const [timeRange, setTimeRange] = useState<TimeRange>("");
   const [selectedZone, setSelectedZone] = useState<ZoneSelection>("all");
   const [zones, setZones] = useState<Zone[]>([]);
   const [loadingZones, setLoadingZones] = useState(true);
+  const [timeRangeOptions, setTimeRangeOptions] = useState<TimeRangeOption[]>(FALLBACK_TIME_RANGE_OPTIONS);
+  const [loadingTimeRanges, setLoadingTimeRanges] = useState(true);
   const [statistics, setStatistics] = useState<DeviceStatisticsData>({
     totalDeviceCount: 0,
     totalActiveDeviceCount: 0,
