@@ -4,12 +4,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Wifi, WifiOff, Battery, Activity, RefreshCw, BarChart3 } from "lucide-react";
+import { Wifi, WifiOff, Battery, Activity, RefreshCw, BarChart3, ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_PATH } from "@/lib/api";
 
 interface DeviceLog {
   id: string;
+  deviceLogId:string;
   name: string;
   type?: string;
   status: string;
@@ -22,36 +23,54 @@ interface DeviceLog {
   currentLocation?: string;
   location?: string;
   surveyCount?: string;
+  uniqueId:string;
 }
 
-const TIME_OPTIONS = [
-  { value: "5", label: "Last 5 minutes" },
-  { value: "10", label: "Last 10 minutes" },
-  { value: "30", label: "Last 30 minutes" },
-  { value: "today", label: "Today" },
-];
+interface DeviceLogGridProps {
+  summaryType?: string;
+  selectedTime?: string;
+  selectedZone?: string;
+}
 
-export const DeviceLogGrid = () => {
+export const DeviceLogGrid = ({ summaryType = "", selectedTime = "7days", selectedZone = "all" }: DeviceLogGridProps) => {
   const navigate = useNavigate();
-  const [selectedTime, setSelectedTime] = useState("5");
   const [deviceLogs, setDeviceLogs] = useState<DeviceLog[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 });
 
-  // Convert time selection to minutes
-  const getMinutesValue = (timeValue: string): number => {
+  // Calculate date range based on timeRange value
+  const getDateRange = (timeValue: string) => {
+    let endDate = new Date();
+    let startDate = new Date();
+
     if (timeValue === "today") {
-      // Calculate minutes since midnight
-      const now = new Date();
-      const midnight = new Date(now);
-      midnight.setHours(0, 0, 0, 0);
-      const minutesSinceMidnight = Math.floor(
-        (now.getTime() - midnight.getTime()) / (1000 * 60)
-      );
-      return minutesSinceMidnight;
+      // Set start date to beginning of today
+      startDate.setHours(0, 0, 0, 0);
+    } else if (timeValue === "7days") {
+      // Last 7 days
+      startDate.setDate(startDate.getDate() - 7);
+    } else if (timeValue === "1month") {
+      // Last 1 month
+      startDate.setMonth(startDate.getMonth() - 1);
+    } else if (timeValue === "3months") {
+      // Last 3 months
+      startDate.setMonth(startDate.getMonth() - 3);
+    } else if (timeValue === "all") {
+      // All data - set to null or very old date
+      return { startDate: null, endDate: null };
+    } else {
+      // Time value represents last N minutes from selectedTime dropdown
+      const minutes = parseInt(timeValue, 10);
+      if (!isNaN(minutes) && minutes > 0) {
+        startDate.setMinutes(startDate.getMinutes() - minutes);
+      }
     }
-    return parseInt(timeValue, 10);
+
+    return {
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString()
+    };
   };
 
   // Fetch device logs
@@ -60,11 +79,16 @@ export const DeviceLogGrid = () => {
       setIsLoading(true);
       setError(null);
 
-      const minutes = getMinutesValue(selectedTime);
+      // Get date range for the selected time
+      const { startDate, endDate } = getDateRange(selectedTime);
+
       const params = new URLSearchParams({
         page: String(page),
         limit: String(pagination.limit),
-        minutes: String(minutes),
+        ...(startDate && { startDate }),
+        ...(endDate && { endDate }),
+        zone: selectedZone,
+        ...(summaryType && { summaryType }),
       });
 
       const response = await fetch(
@@ -110,6 +134,11 @@ export const DeviceLogGrid = () => {
             item.device_id ??
             item.instrumentId ??
             item.InstrumentId ??
+            `device-${Date.now()}`
+        ),
+         deviceLogId: String(
+          item.deviceLogId ??
+            item.dlId ??
             `device-${Date.now()}`
         ),
         name: String(
@@ -159,6 +188,7 @@ export const DeviceLogGrid = () => {
         currentLocation: item.currentLocation  ?? undefined,
         location: item.location  ?? undefined,
         surveyCount: item.surveyCount ?? undefined,
+        uniqueId:item.uniqueId ?? undefined,
       }));
 
       setDeviceLogs(mapped);
@@ -176,10 +206,10 @@ export const DeviceLogGrid = () => {
     }
   };
 
-  // Fetch on component mount and when time selection changes
+  // Fetch on component mount and when time selection, summaryType, or zone changes
   useEffect(() => {
     fetchDeviceLogs(1);
-  }, [selectedTime]);
+  }, [selectedTime, summaryType, selectedZone]);
 
   const getBatteryColor = (battery?: number) => {
     if (battery === undefined) return "text-muted-foreground";
@@ -248,18 +278,6 @@ export const DeviceLogGrid = () => {
         <div className="flex items-center justify-between">
           <CardTitle>Device Logs</CardTitle>
           <div className="flex items-center gap-3">
-            <Select value={selectedTime} onValueChange={setSelectedTime}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Select time range" />
-              </SelectTrigger>
-              <SelectContent>
-                {TIME_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
             <Button
               variant="outline"
               size="sm"
@@ -284,7 +302,7 @@ export const DeviceLogGrid = () => {
               <TableRow>
                 <TableHead>Device ID</TableHead>
                 <TableHead>Name</TableHead>
-                <TableHead>Type</TableHead>
+                {/* <TableHead>Type</TableHead> */}
                 <TableHead>Initial Location</TableHead>
                 <TableHead>Current Location</TableHead>
                 <TableHead>Survey Count</TableHead>
@@ -311,10 +329,10 @@ export const DeviceLogGrid = () => {
                 </TableRow>
               ) : (
                 deviceLogs.map((log) => (
-                  <TableRow key={log.id}>
+                  <TableRow key={log.uniqueId}>
                     <TableCell className="font-medium">{log.id}</TableCell>
                     <TableCell>{log.name}</TableCell>
-                    <TableCell className="text-sm">{log.type}</TableCell>
+                    {/* <TableCell className="text-sm">{log.type}</TableCell> */}
                     <TableCell className="text-sm">{log.location}</TableCell>
                     <TableCell className="text-sm">{log.currentLocation}</TableCell>
                     <TableCell className="text-sm">{log.surveyCount}</TableCell>
@@ -351,7 +369,7 @@ export const DeviceLogGrid = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => navigate("/daily-personal-maps")}
+                        onClick={() => navigate(`/survey-details?deviceLogId=${log.deviceLogId}`)}
                         className="flex items-center gap-2"
                       >
                         <BarChart3 className="w-4 h-4" />
@@ -366,10 +384,51 @@ export const DeviceLogGrid = () => {
         </div>
 
         {!isLoading && deviceLogs.length > 0 && (
-          <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
-            <span>
-              Showing {deviceLogs.length} of {pagination.total} logs
+          <div className="mt-6 flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">
+              Showing page {pagination.page} of {Math.ceil(pagination.total / pagination.limit)} ({pagination.total} total logs)
             </span>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fetchDeviceLogs(pagination.page - 1)}
+                disabled={isLoading || pagination.page === 1}
+                className="flex items-center gap-1"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Previous
+              </Button>
+
+              <div className="flex items-center gap-1">
+                <span className="text-sm font-medium">Page</span>
+                <input
+                  type="number"
+                  min="1"
+                  max={Math.ceil(pagination.total / pagination.limit)}
+                  value={pagination.page}
+                  onChange={(e) => {
+                    const pageNum = Math.max(1, Math.min(parseInt(e.target.value) || 1, Math.ceil(pagination.total / pagination.limit)));
+                    fetchDeviceLogs(pageNum);
+                  }}
+                  className="w-12 px-2 py-1 border rounded text-center text-sm"
+                  disabled={isLoading}
+                />
+                <span className="text-sm text-muted-foreground">of {Math.ceil(pagination.total / pagination.limit)}</span>
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fetchDeviceLogs(pagination.page + 1)}
+                disabled={isLoading || pagination.page >= Math.ceil(pagination.total / pagination.limit)}
+                className="flex items-center gap-1"
+              >
+                Next
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         )}
       </CardContent>

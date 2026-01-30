@@ -9,6 +9,13 @@ import { useState, useEffect } from "react";
 import { useDeviceAlerts } from "@/hooks/useApiQueries";
 import { API_BASE_PATH } from "@/lib/api";
 
+const TIME_OPTIONS = [
+  { value: "5", label: "Last 5 minutes" },
+  { value: "10", label: "Last 10 minutes" },
+  { value: "30", label: "Last 30 minutes" },
+  { value: "today", label: "Today" },
+];
+
 export const SurveyDashboard = () => {
   const [stats, setStats] = useState({
     totalDevices: 0,
@@ -17,6 +24,9 @@ export const SurveyDashboard = () => {
     surveyors: 0
   });
   const [loadingStats, setLoadingStats] = useState(true);
+  const [selectedSummaryType, setSelectedSummaryType] = useState<string>("");
+  const [selectedTime, setSelectedTime] = useState("7days");
+  const [selectedZone, setSelectedZone] = useState<string>("all");
 
   // ✅ Fetch smId (Survey ID) from localStorage
   // const smId = localStorage.getItem("activeSurveyId");
@@ -137,14 +147,14 @@ useEffect(() => {
       </div>
 
       {/* Top Tiles */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Instruments</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {/* <div className="text-2xl font-bold">{stats.totalInstruments}</div> */}
+           
             <div className="text-2xl font-bold">{stats.totalDevices}</div>
           </CardContent>
         </Card>
@@ -155,8 +165,7 @@ useEffect(() => {
             <div className="h-2 w-2 bg-green-500 rounded-full"></div>
           </CardHeader>
           <CardContent>
-            {/* <div className="text-2xl font-bold text-green-600">{stats.activeInstruments}</div> */}
-            <div className="text-2xl font-bold text-green-600">{stats.activeDevices}</div>
+          <div className="text-2xl font-bold text-green-600">{stats.activeDevices}</div>
           </CardContent>
         </Card>
 
@@ -166,8 +175,7 @@ useEffect(() => {
             <div className="h-2 w-2 bg-red-500 rounded-full"></div>
           </CardHeader>
           <CardContent>
-            {/* <div className="text-2xl font-bold text-red-600">{stats.inactiveInstruments}</div> */}
-            <div className="text-2xl font-bold text-red-600">{stats.inactiveDevices}</div>
+           <div className="text-2xl font-bold text-red-600">{stats.inactiveDevices}</div>
           </CardContent>
         </Card>
 
@@ -177,8 +185,7 @@ useEffect(() => {
             <MapPin className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {/* <div className="text-2xl font-bold">{stats.inGodown}</div> */}
-          </CardContent>
+           </CardContent>
         </Card>
 
         <Card>
@@ -187,11 +194,10 @@ useEffect(() => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {/* <div className="text-2xl font-bold">{stats.withSurveyors}</div> */}
             <div className="text-2xl font-bold">{stats.surveyors}</div>
           </CardContent>
         </Card>
-      </div>
+      </div> */}
 
       <div className="grid grid-cols-1 gap-6">
         {/* Heatmap Panel */}
@@ -203,11 +209,17 @@ useEffect(() => {
       </div>
 
       {/* Device Statistics & Analytics */}
-      <DeviceStatisticsAnalytics />
+      <DeviceStatisticsAnalytics
+        onSummaryTypeSelect={setSelectedSummaryType}
+        onZoneSelect={setSelectedZone}
+        selectedTime={selectedTime}
+        onSelectedTimeChange={setSelectedTime}
+        timeOptions={TIME_OPTIONS}
+      />
 
       {/* Device Logs Grid */}
       <div className="grid grid-cols-1 gap-6">
-        <DeviceLogGrid />
+        <DeviceLogGrid summaryType={selectedSummaryType} selectedTime={selectedTime} selectedZone={selectedZone} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -240,9 +252,9 @@ useEffect(() => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="font-medium text-sm">{alert.instrument}</p>
-                          <Badge variant={(String(alert.severity || '').toLowerCase() === 'critical') ? 'destructive' : 'secondary'} className="text-xs">
+                          {/* <Badge variant={(String(alert.severity || '').toLowerCase() === 'critical') ? 'destructive' : 'secondary'} className="text-xs">
                             {String(alert.severity || '').toLowerCase() || 'info'}
-                          </Badge>
+                          </Badge> */}
                         </div>
                         <p className="text-xs text-muted-foreground line-clamp-2">{alert.message}</p>
                         <div className="flex items-center gap-3 mt-1 text-xs flex-wrap">

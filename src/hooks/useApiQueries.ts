@@ -63,7 +63,7 @@ export function useDevices(params?: {
   });
 }
 
-export function useDeviceLogs(params?: { page?: number; limit?: number; status?: string; surveyId?: string; }) {
+export function useDeviceLogs(params?: { page?: number; limit?: number; status?: string; surveyId?: string; mintues?: number; }) {
   const { currentSurvey } = useSurveyContext();
   const effectiveParams = React.useMemo(() => {
     const storedSurveyId = (() => {
@@ -77,7 +77,7 @@ export function useDeviceLogs(params?: { page?: number; limit?: number; status?:
       ...params,
       surveyId: params?.surveyId ?? currentSurvey?.id ?? storedSurveyId,
     };
-  }, [params?.page, params?.limit, params?.status, params?.surveyId, currentSurvey?.id]);
+  }, [params?.page, params?.limit, params?.status, params?.surveyId, params?.mintues, currentSurvey?.id]);
 
   return useQuery({
     queryKey: [QUERY_KEYS.deviceLogs, effectiveParams],

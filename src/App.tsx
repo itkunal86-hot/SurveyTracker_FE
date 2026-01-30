@@ -9,6 +9,7 @@ import { ApiStatusProvider } from "@/contexts/ApiStatusContext";
 import SpatialFeaturesManagement from "./components/SpatialFeaturesManagement";
 import Index from "./pages/Index";
 import DailyPersonalMapsPage from "./pages/DailyPersonalMapsPage";
+import SurveyDetailsPage from "./pages/SurveyDetailsPage";
 import { Analytics } from "./pages/Analytics";
 import Admin from "./pages/Admin";
 import PipelineOperations from "./pages/PipelineOperations";
@@ -30,6 +31,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/spatial-features" element={<SpatialFeaturesManagement />} />
               <Route path="/daily-personal-maps" element={<DailyPersonalMapsPage />} />
+              <Route path="/survey-details" element={<SurveyDetailsPage />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/pipeline-operations" element={<PipelineOperations />} />
               <Route path="/assets/:menu" element={<AssetMenus />} />

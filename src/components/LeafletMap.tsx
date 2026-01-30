@@ -536,8 +536,11 @@ export const LeafletMap = ({
         <div className="absolute top-2 left-2 z-[10002] bg-background/90 backdrop-blur-sm border border-border rounded-md px-3 py-2 text-xs text-muted-foreground">
           <div className="flex items-center space-x-1">
             <div className="w-2 h-2 bg-muted-foreground rounded-full"></div>
-            <span>
+            {/* <span>
               Pipeline, Valve & Catastrophe markers (read-only)
+            </span> */}
+             <span>
+             Survey Points (read-only)
             </span>
           </div>
         </div>

@@ -44,6 +44,7 @@ export interface ApiResponse<T> {
   data: T;
   message?: string;
   timestamp: string;
+  summery?:{}
 }
 
 export interface PaginatedResponse<T> extends ApiResponse<T[]> {
@@ -128,6 +129,7 @@ export interface Device {
   currentLocation?: string;
   location?: string;
   surveyCount?: string;
+  summery:{}
 }
 
 export interface DeviceCreateUpdate {
@@ -286,6 +288,21 @@ export interface AssetProperty {
   assetTypeId: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface Setting {
+  id?: string;
+  settingKey: string;
+  settingValue: string;
+  performedBy?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface SettingCreateUpdate {
+  settingKey: string;
+  settingValue: string;
+  performedBy?: number;
 }
 
 export interface ValveOperation {
@@ -2673,11 +2690,12 @@ class ApiClient {
     }
   }
   // Device Log endpoint - used for Device Status Grid
-  async getDeviceLogs(params?: { page?: number; limit?: number; status?: string; surveyId?: string; }): Promise<PaginatedResponse<Device>> {
+  async getDeviceLogs(params?: { page?: number; limit?: number; status?: string; surveyId?: string; mintues?: number; }): Promise<PaginatedResponse<Device>> {
     const sp = new URLSearchParams();
     if (params?.page) sp.append("page", String(params.page));
     if (params?.limit) sp.append("limit", String(params.limit));
     if (params?.status) sp.append("status", params.status);
+    if (params?.mintues) sp.append("mintues", String(params.mintues));
     // Pass surveyId if available (from params or persisted selection)
     const storedSurveyId = (() => {
       try {
@@ -2793,7 +2811,7 @@ class ApiClient {
 
     // Try direct endpoint first; if unavailable, fallback to proxy route in our dev server
     try {
-      const raw: any = await this.request<any>(`/DeviceLog/getdevicelog${q ? `?${q}` : ""}`);
+      const raw: any = await this.request<any>(`/DeviceLog/getdevicecurrentlog${q ? `?${q}` : ""}`);
       return await fetchAndMap(raw);
     } catch (primaryError) {
       try {
@@ -2815,9 +2833,247 @@ class ApiClient {
     }
   }
 
-  // Survey entries summary by device and date
-  async getAssetPropertyEntriesByDevice(params: { deviceId: string | number; entryDate: string | Date }): Promise<{ snapshots: any[]; raw: any; }> {
-    const { deviceId, entryDate } = params;
+  // Device Active Log endpoint - used for DeviceStatisticsAnalytics
+  async getDeviceActiveLog(params?: {
+    page?: number;
+    limit?: number;
+    startDate?: Date | null;
+    endDate?: Date | null;
+    zone?: string;
+  }): Promise<PaginatedResponse<Device>> {
+    const sp = new URLSearchParams();
+    if (params?.page) sp.append("page", String(params.page));
+    if (params?.limit) sp.append("limit", String(params.limit));
+
+    // Format dates if provided
+    if (params?.startDate) {
+      const startDateStr = params.startDate instanceof Date
+        ? params.startDate.toISOString()
+        : String(params.startDate);
+      sp.append("startDate", startDateStr);
+    }
+    if (params?.endDate) {
+      const endDateStr = params.endDate instanceof Date
+        ? params.endDate.toISOString()
+        : String(params.endDate);
+      sp.append("endDate", endDateStr);
+    }
+
+    if (params?.zone && params.zone !== "all") {
+      sp.append("zone", params.zone);
+    }
+
+    const q = sp.toString();
+
+    const fetchAndMap = async (raw: any) => {
+      const timestamp = raw?.timestamp || new Date().toISOString();
+
+      const rawItems = Array.isArray(raw?.data?.items)
+        ? raw.data.items
+        : Array.isArray(raw?.data?.data)
+          ? raw.data.data
+          : Array.isArray(raw?.data)
+            ? raw.data
+            : Array.isArray(raw)
+              ? raw
+              : [];
+
+      const normalizeStatus = (val: any): Device["status"] => {
+        const s = String(val || "").toUpperCase();
+        if (s === "ONLINE" || s === "CONNECTED") return "ACTIVE";
+        if (s === "OFFLINE" || s === "DISCONNECTED") return "INACTIVE";
+        if (s === "MAINTENANCE" || s === "SERVICE") return "MAINTENANCE";
+        if (s === "ERROR" || s === "FAULT") return "ERROR";
+        const allowed = new Set(["ACTIVE", "INACTIVE", "MAINTENANCE", "ERROR"]);
+        return (allowed.has(s) ? (s as Device["status"]) : "ACTIVE");
+      };
+
+      const mapped: Device[] = rawItems.map((it: any) => {
+        const fallbackId = (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function")
+          ? crypto.randomUUID()
+          : `${Date.now()}`;
+
+        const id = String(
+          it.id ?? it.ID ?? it.deviceId ?? it.DeviceId ?? it.device_id ?? it.instrumentId ?? it.InstrumentId ?? fallbackId
+        );
+        const name = String(
+          it.name ?? it.Name ?? it.deviceName ?? it.DeviceName ?? it.instrument ?? it.Instrument ?? id
+        );
+        const type = String(
+          it.type ?? it.Type ?? it.deviceType ?? it.DeviceType ?? it.model ?? it.Model ?? it.modelName ?? it.ModelName ?? "DEVICE"
+        ).toUpperCase();
+        const status = normalizeStatus(
+          it.status ?? it.Status ?? it.state ?? it.State ?? it.connectionStatus ?? it.ConnectionStatus
+        );
+
+        const lat = Number(it.lat ?? it.latitude ?? it.Latitude ?? it.latDeg ?? it.LatDeg);
+        const lng = Number(it.lng ?? it.longitude ?? it.Longitude ?? it.lonDeg ?? it.LonDeg);
+        const coordinates = (!Number.isNaN(lat) && !Number.isNaN(lng))
+          ? { lat, lng }
+          : (it.coordinates && typeof it.coordinates.lat === "number" && typeof it.coordinates.lng === "number")
+            ? { lat: it.coordinates.lat, lng: it.coordinates.lng }
+            : { lat: 0, lng: 0 };
+
+        const batteryRaw = it.battery ?? it.Battery ?? it.batteryLevel ?? it.BatteryLevel;
+        const batteryLevel = typeof batteryRaw === "number" ? batteryRaw : (typeof batteryRaw === "string" ? Number(batteryRaw.replace(/%/g, "")) : undefined);
+
+        const lastSeen = String(
+          it.lastUpdated ?? it.LastUpdated ?? it.lastUpdate ?? it.LastSeen ?? it.lastPing ?? it.LastPing ?? it.timestamp ?? it.Timestamp ?? it.logTime ?? it.LogTime ?? ""
+        ) || undefined;
+
+        const accuracyVal = it.accuracy ?? it.Accuracy;
+        const accuracy = typeof accuracyVal === "number" ? accuracyVal : undefined;
+
+        const modelName = it.modelName ?? it.ModelName ?? undefined;
+        const serialRaw = it.serialNumber ?? it.SerialNumber ?? it.serial_no ?? it.SERIAL_NO ?? it.deviceSerial ?? it.DeviceSerial ?? it.serial ?? it.Serial ?? null;
+        const serialNumber = serialRaw != null ? String(serialRaw) : undefined;
+        const location = it.location ?? "";
+        const currentLocation = it.currentLocation ?? ""
+        const surveyCount = it.surveyCount ?? ""
+
+        return {
+          id,
+          name,
+          type,
+          status,
+          coordinates,
+          modelName: modelName != null ? String(modelName) : undefined,
+          surveyor: it.surveyor ?? it.Surveyor ?? it.user ?? it.User ?? undefined,
+          batteryLevel,
+          lastSeen,
+          accuracy,
+          serialNumber,
+          location,
+          currentLocation,
+          surveyCount
+        } as Device;
+      });
+
+      const pagination = raw?.data?.pagination || raw?.pagination || {
+        page: params?.page ?? 1,
+        limit: params?.limit ?? mapped.length,
+        total: mapped.length,
+        totalPages: 1,
+      };
+
+      return {
+        success: true,
+        data: mapped,
+        summery:raw?.data?.summary,
+        message: raw?.message,
+        timestamp,
+        pagination,
+      };
+    };
+
+    // Try direct endpoint first; if unavailable, fallback to proxy route in our dev server
+    try {
+      const raw: any = await this.request<any>(`/DeviceLog/getdeviceactivelog${q ? `?${q}` : ""}`);
+      return await fetchAndMap(raw);
+    } catch (primaryError) {
+      try {
+        const localBase = (typeof window !== "undefined" && window.location?.origin)
+          ? `${window.location.origin}/api`
+          : "/api";
+        const resp = await fetch(`${localBase}/proxy/device-log${q ? `?${q}` : ""}`, {
+          method: "GET",
+          headers: { Accept: "application/json" },
+        });
+        const text = await resp.text();
+        let rawProxy: any;
+        try { rawProxy = JSON.parse(text); } catch { rawProxy = text; }
+        return await fetchAndMap(rawProxy);
+      } catch (error) {
+        console.error("Error fetching device active log:", error);
+        return {
+          success: false,
+          data: [],
+          message: "Failed to fetch device active log",
+          timestamp: new Date().toISOString(),
+          pagination: {
+            page: params?.page ?? 1,
+            limit: params?.limit ?? 10,
+            total: 0,
+            totalPages: 0,
+          },
+        };
+      }
+    }
+  }
+
+  // Device Statistics endpoint
+  async getDeviceStatistics(params?: {
+    zone?: string;
+    startDate?: Date | null;
+    endDate?: Date | null;
+  }): Promise<ApiResponse<{
+    totalDeviceCount: number;
+    totalActiveDeviceCount: number;
+    totalInactiveDeviceCount: number;
+    normalUsage: number;
+    underUsage: number;
+    normalAccuracy: number;
+    belowAverageAccuracy: number;
+    normalAccuracyPercentage: number;
+    minimumTTFA: number;
+    averageTTFA: number;
+    maximumTTFA: number;
+  }>> {
+    const sp = new URLSearchParams();
+
+    if (params?.zone && params.zone !== "all") {
+      sp.append("zone", params.zone);
+    }
+
+    if (params?.startDate) {
+      const startDateStr = params.startDate instanceof Date
+        ? params.startDate.toISOString()
+        : String(params.startDate);
+      sp.append("startDate", startDateStr);
+    }
+
+    if (params?.endDate) {
+      const endDateStr = params.endDate instanceof Date
+        ? params.endDate.toISOString()
+        : String(params.endDate);
+      sp.append("endDate", endDateStr);
+    }
+
+    const q = sp.toString();
+
+    try {
+      const raw: any = await this.request<any>(`/devices/statistics${q ? `?${q}` : ""}`);
+      return {
+        success: (raw?.status_code ?? 200) >= 200 && (raw?.status_code ?? 200) < 300,
+        data: raw?.data?.summary ?? raw?.data ?? {},
+        message: raw?.message,
+        timestamp: raw?.timestamp ?? new Date().toISOString(),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        data: {
+          totalDeviceCount: 0,
+          totalActiveDeviceCount: 0,
+          totalInactiveDeviceCount: 0,
+          normalUsage: 0,
+          underUsage: 0,
+          normalAccuracy: 0,
+          belowAverageAccuracy: 0,
+          normalAccuracyPercentage: 0,
+          minimumTTFA: 0,
+          averageTTFA: 0,
+          maximumTTFA: 0,
+        },
+        message: "Failed to fetch device statistics",
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
+  // Survey entries summary by device and date range
+  async getAssetPropertyEntriesByDevice(params: { deviceId: string | number; entryDate: string | Date; endDate?: string | Date }): Promise<{ snapshots: any[]; raw: any; }> {
+    const { deviceId, entryDate, endDate } = params;
 
     const formatDate = (d: string | Date): string => {
       if (typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
@@ -2832,6 +3088,9 @@ class ApiClient {
     const sp = new URLSearchParams();
     sp.append("deviceId", String(deviceId));
     sp.append("entryDate", formatDate(entryDate));
+    if (endDate) {
+      sp.append("endDate", formatDate(endDate));
+    }
 
     try {
       const raw: any = await this.request<any>(`/AssetProperties/summary/EntriesByDevice?${sp.toString()}`);
@@ -2862,6 +3121,171 @@ class ApiClient {
       return { snapshots, raw };
     } catch (error) {
       return { snapshots: [], raw: null };
+    }
+  }
+
+  // Settings endpoints
+  async getSettings(params?: { page?: number; limit?: number }): Promise<PaginatedResponse<Setting>> {
+    const sp = new URLSearchParams();
+    if (params?.page) sp.append("page", String(params.page));
+    if (params?.limit) sp.append("limit", String(params.limit));
+    const q = sp.toString();
+
+    try {
+      const raw: any = await this.request<any>(`/Settings/getsetting${q ? `?${q}` : ""}`);
+      const timestamp = raw?.timestamp || new Date().toISOString();
+
+      const rawItems = Array.isArray(raw?.data?.items)
+        ? raw.data.items
+        : Array.isArray(raw?.data?.data)
+          ? raw.data.data
+          : Array.isArray(raw?.data)
+            ? raw.data
+            : Array.isArray(raw)
+              ? raw
+              : [];
+
+      const mapped: Setting[] = rawItems.map((it: any) => {
+        const fallbackId = (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function")
+          ? crypto.randomUUID()
+          : `${Date.now()}`;
+
+        return {
+          id: String(it.id ?? it.ID ?? it.settingId ?? it.SettingId ?? fallbackId),
+          settingKey: String(it.settingKey ?? it.SettingKey ?? ""),
+          settingValue: String(it.settingValue ?? it.SettingValue ?? ""),
+          performedBy: Number(it.performedBy ?? it.PerformedBy ?? 0) || undefined,
+          createdAt: it.createdAt ?? it.CreatedAt ?? it.created_at ?? timestamp,
+          updatedAt: it.updatedAt ?? it.UpdatedAt ?? it.updated_at ?? "",
+        } as Setting;
+      });
+
+      const pagination = raw?.data?.pagination || {
+        page: params?.page ?? 1,
+        limit: params?.limit ?? mapped.length,
+        total: mapped.length,
+        totalPages: 1,
+      };
+
+      return {
+        success: (raw?.status_code ?? 200) >= 200 && (raw?.status_code ?? 200) < 300,
+        data: mapped,
+        message: raw?.message,
+        timestamp,
+        pagination,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        data: [],
+        message: "Failed to load settings",
+        timestamp: new Date().toISOString(),
+        pagination: { page: params?.page ?? 1, limit: params?.limit ?? 0, total: 0, totalPages: 0 },
+      };
+    }
+  }
+
+  async createSetting(payload: SettingCreateUpdate): Promise<ApiResponse<Setting>> {
+    const sessionData = sessionStorage.getItem("currentUser");
+    let performedBy: number | null = null;
+
+    if (sessionData) {
+      const parsed = JSON.parse(sessionData);
+      performedBy = parsed?.userData?.udId ?? null;
+    }
+
+    const body: any = {
+      settingKey: payload.settingKey,
+      settingValue: payload.settingValue,
+      performedBy: performedBy ?? payload.performedBy ?? 0,
+    };
+
+    try {
+      const response = await this.request<any>("/Settings/createsetting", {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+
+      return {
+        success: (response?.status_code ?? 200) >= 200 && (response?.status_code ?? 200) < 300,
+        message: response?.message ?? "Setting created successfully",
+        data: response?.data ?? null,
+        timestamp: response?.timestamp ?? new Date().toISOString(),
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error?.message ?? "Failed to create setting",
+        data: null,
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
+  async updateSetting(settingKey: string, payload: Partial<SettingCreateUpdate>): Promise<ApiResponse<Setting>> {
+    const sessionData = sessionStorage.getItem("currentUser");
+    let performedBy: number | null = null;
+
+    if (sessionData) {
+      const parsed = JSON.parse(sessionData);
+      performedBy = parsed?.userData?.udId ?? null;
+    }
+
+    const body: any = {
+      ...(payload.settingValue !== undefined && { settingValue: payload.settingValue }),
+      ...(performedBy !== null && { performedBy }),
+      ...(payload.performedBy !== undefined && { performedBy: payload.performedBy }),
+    };
+
+    try {
+      const response = await this.request<any>(
+        `/Settings/updatesetting?settingKey=${encodeURIComponent(settingKey)}`,
+        {
+          method: "PUT",
+          body: JSON.stringify(body),
+        }
+      );
+
+      return {
+        success:
+          (response?.status_code ?? 200) >= 200 &&
+          (response?.status_code ?? 200) < 300,
+        message: response?.message ?? "Setting updated successfully",
+        data: response?.data ?? null,
+        timestamp: response?.timestamp ?? new Date().toISOString(),
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error?.message ?? "Failed to update setting",
+        data: null,
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
+  async deleteSetting(settingKey: string): Promise<ApiResponse<void>> {
+    try {
+      const response = await this.request<any>(
+        `/Settings/deletesetting?settingKey=${encodeURIComponent(settingKey)}`,
+        { method: "DELETE" }
+      );
+
+      return {
+        success:
+          (response?.status_code ?? 200) >= 200 &&
+          (response?.status_code ?? 200) < 300,
+        message: response?.message ?? "Setting deleted successfully",
+        data: undefined,
+        timestamp: response?.timestamp ?? new Date().toISOString(),
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error?.message ?? "Failed to delete setting",
+        data: undefined,
+        timestamp: new Date().toISOString(),
+      };
     }
   }
 }
