@@ -233,6 +233,7 @@ useEffect(() => {
           selectedZone={selectedZone}
           customStartDate={customStartDate}
           customEndDate={customEndDate}
+          selectedDeviceIds={selectedDeviceIds}
         />
       </div>
 
