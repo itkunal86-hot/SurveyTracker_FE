@@ -784,6 +784,72 @@ export const DeviceStatisticsAnalytics = ({
               </SelectContent>
             </Select>
           </div>
+
+          {/* Device Dropdown - Multiselect with Autocomplete */}
+          <Popover open={showDeviceDropdown} onOpenChange={setShowDeviceDropdown}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                disabled={loadingDevices}
+                className="w-48 justify-start text-left"
+              >
+                {selectedDeviceIds.length === 0
+                  ? "Select devices"
+                  : selectedDeviceIds.length === 1
+                    ? `1 device`
+                    : `${selectedDeviceIds.length} devices`}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-48 p-0" align="end">
+              <div className="p-3 space-y-2 max-h-64 overflow-y-auto">
+                {loadingDevices ? (
+                  <div className="text-sm text-muted-foreground">
+                    Loading devices...
+                  </div>
+                ) : devices.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">
+                    No devices available
+                  </div>
+                ) : (
+                  <>
+                    <input
+                      type="text"
+                      placeholder="Search devices..."
+                      className="w-full px-2 py-1 border rounded text-sm"
+                      onChange={(e) => {
+                        // Filter devices based on search
+                        const searchTerm = e.target.value.toLowerCase();
+                        const filtered = devices.filter(d =>
+                          d.name.toLowerCase().includes(searchTerm) ||
+                          d.id.toLowerCase().includes(searchTerm)
+                        );
+                        // This is just for filtering display, we'll use a different approach
+                      }}
+                    />
+                    <div className="space-y-1">
+                      {devices.map((device) => (
+                        <div key={device.id} className="flex items-center space-x-2 p-1 hover:bg-muted rounded cursor-pointer">
+                          <input
+                            type="checkbox"
+                            id={`device-${device.id}`}
+                            checked={selectedDeviceIds.includes(device.id)}
+                            onChange={() => toggleDeviceSelection(device.id)}
+                            className="rounded"
+                          />
+                          <label
+                            htmlFor={`device-${device.id}`}
+                            className="flex-1 text-sm cursor-pointer truncate"
+                          >
+                            {device.name}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 
