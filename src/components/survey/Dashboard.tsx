@@ -222,6 +222,7 @@ useEffect(() => {
           setCustomStartDate(startDate);
           setCustomEndDate(endDate);
         }}
+        onDeviceSelect={setSelectedDeviceIds}
       />
 
       {/* Device Logs Grid */}
