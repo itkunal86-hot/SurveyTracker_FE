@@ -2864,6 +2864,11 @@ class ApiClient {
       sp.append("zone", params.zone);
     }
 
+    // Add device IDs as comma-separated list if provided
+    if (params?.deviceIds && params.deviceIds.length > 0) {
+      sp.append("deviceIds", params.deviceIds.join(","));
+    }
+
     const q = sp.toString();
 
     const fetchAndMap = async (raw: any) => {
