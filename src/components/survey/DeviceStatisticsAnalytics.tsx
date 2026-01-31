@@ -282,6 +282,7 @@ export const DeviceStatisticsAnalytics = ({
         startDate,
         endDate,
         zone: zoneParam,
+        deviceIds: selectedDeviceIds.length > 0 ? selectedDeviceIds : undefined,
       });
 
       if (response?.success && response?.data) {
@@ -303,19 +304,23 @@ export const DeviceStatisticsAnalytics = ({
 
   const updateZones = async (newZones: string[]) => {
     setSelectedZones(newZones);
+
+    // Prepare zone parameter - send comma-separated zone names or "all" if selected
+    let zoneParam: string;
+    if (newZones.length === 1 && newZones[0] === "all") {
+      zoneParam = "all";
+    } else {
+      zoneParam = newZones.join(",");
+    }
+
+    // Always pass a string to the parent component
     if (onZoneSelect) {
-      onZoneSelect(newZones.length === 1 && newZones[0] === "all" ? "all" : newZones);
+      onZoneSelect(zoneParam);
     }
 
     setLoadingDeviceLog(true);
     try {
       const { startDate, endDate } = getDateRange();
-
-      // Prepare zone parameter - send comma-separated zone names or skip if "all" is selected
-      let zoneParam: string | undefined;
-      if (newZones.length > 0 && !(newZones.length === 1 && newZones[0] === "all")) {
-        zoneParam = newZones.join(",");
-      }
 
       // Fetch device active log and calculate statistics from it
       const response = await apiClient.getDeviceActiveLog({
@@ -323,7 +328,7 @@ export const DeviceStatisticsAnalytics = ({
         limit: 100,
         startDate,
         endDate,
-        zone: zoneParam,
+        zone: zoneParam === "all" ? undefined : zoneParam,
         deviceIds: selectedDeviceIds.length > 0 ? selectedDeviceIds : undefined,
       });
 
@@ -848,34 +853,41 @@ export const DeviceStatisticsAnalytics = ({
                       onChange={(e) => setZoneSearchTerm(e.target.value)}
                     />
                     <div className="space-y-1">
-                      <div className="flex items-center space-x-2 p-1 hover:bg-muted rounded cursor-pointer">
+                      <div
+                        className="flex items-center space-x-2 p-1 hover:bg-muted rounded cursor-pointer"
+                        onClick={() => updateZones(["all"])}
+                      >
                         <input
                           type="checkbox"
                           id="zone-all"
                           checked={selectedZones.length === 1 && selectedZones[0] === "all"}
                           onChange={() => updateZones(["all"])}
-                          className="rounded"
+                          className="rounded pointer-events-none"
                         />
                         <label
                           htmlFor="zone-all"
-                          className="flex-1 text-sm cursor-pointer font-semibold"
+                          className="flex-1 text-sm cursor-pointer font-semibold pointer-events-none"
                         >
                           All Zones
                         </label>
                       </div>
                       {filteredZones.map((zone) => (
-                        <div key={zone.name} className="flex items-center space-x-2 p-1 hover:bg-muted rounded cursor-pointer">
+                        <div
+                          key={zone.name}
+                          className="flex items-center space-x-2 p-1 hover:bg-muted rounded cursor-pointer"
+                          onClick={() => !( selectedZones.length === 1 && selectedZones[0] === "all") && toggleZoneSelection(zone.name)}
+                        >
                           <input
                             type="checkbox"
                             id={`zone-${zone.name}`}
                             checked={selectedZones.includes(zone.name)}
                             onChange={() => toggleZoneSelection(zone.name)}
                             disabled={selectedZones.length === 1 && selectedZones[0] === "all"}
-                            className="rounded"
+                            className="rounded pointer-events-none"
                           />
                           <label
                             htmlFor={`zone-${zone.name}`}
-                            className="flex-1 text-sm cursor-pointer truncate"
+                            className="flex-1 text-sm cursor-pointer truncate pointer-events-none"
                           >
                             {zone.name}
                           </label>
