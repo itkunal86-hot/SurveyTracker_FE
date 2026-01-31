@@ -296,15 +296,21 @@ export const DeviceStatisticsAnalytics = ({
   };
 
 
-  const handleZoneChange = async (zone: string) => {
-    setSelectedZone(zone as ZoneSelection);
+  const handleZoneChange = async (zones: string[]) => {
+    setSelectedZones(zones);
     if (onZoneSelect) {
-      onZoneSelect(zone as ZoneSelection);
+      onZoneSelect(zones.length === 1 && zones[0] === "all" ? "all" : zones);
     }
 
     setLoadingDeviceLog(true);
     try {
       const { startDate, endDate } = getDateRange();
+
+      // Prepare zone parameter - send comma-separated zone names or skip if "all" is selected
+      let zoneParam: string | undefined;
+      if (zones.length > 0 && !(zones.length === 1 && zones[0] === "all")) {
+        zoneParam = zones.join(",");
+      }
 
       // Fetch device active log and calculate statistics from it
       const response = await apiClient.getDeviceActiveLog({
@@ -312,7 +318,7 @@ export const DeviceStatisticsAnalytics = ({
         limit: 100,
         startDate,
         endDate,
-        zone,
+        zone: zoneParam,
         deviceIds: selectedDeviceIds.length > 0 ? selectedDeviceIds : undefined,
       });
 
@@ -320,7 +326,7 @@ export const DeviceStatisticsAnalytics = ({
         // Calculate statistics from device data
         const calculatedStats = calculateStatisticsFromDevices(response.summery);
         setStatistics(calculatedStats);
-        toast.success("Device statistics updated for selected zone");
+        toast.success(`Device statistics updated for selected zone${zones.length > 1 ? 's' : ''}`);
       } else {
         toast.error("Failed to fetch device active log");
       }
@@ -330,6 +336,26 @@ export const DeviceStatisticsAnalytics = ({
     } finally {
       setLoadingDeviceLog(false);
     }
+  };
+
+  const toggleZoneSelection = (zoneName: string) => {
+    setSelectedZones(prev => {
+      if (zoneName === "all") {
+        // If "all" is selected, clear other selections
+        return ["all"];
+      }
+
+      let newZones = prev.filter(z => z !== "all");
+
+      if (newZones.includes(zoneName)) {
+        newZones = newZones.filter(z => z !== zoneName);
+      } else {
+        newZones = [...newZones, zoneName];
+      }
+
+      // If no zones are selected, default to "all"
+      return newZones.length === 0 ? ["all"] : newZones;
+    });
   };
 
   const handleDeviceChange = (deviceIds: string[]) => {
