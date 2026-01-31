@@ -853,7 +853,7 @@ export const DeviceStatisticsAnalytics = ({
                           type="checkbox"
                           id="zone-all"
                           checked={selectedZones.length === 1 && selectedZones[0] === "all"}
-                          onChange={() => setSelectedZones(["all"])}
+                          onChange={() => updateZones(["all"])}
                           className="rounded"
                         />
                         <label
