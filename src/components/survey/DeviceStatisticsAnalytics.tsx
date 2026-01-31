@@ -482,6 +482,24 @@ export const DeviceStatisticsAnalytics = ({
     fetchStatistics();
   }, []);
 
+  // Fetch devices for the device dropdown
+  useEffect(() => {
+    const fetchDevices = async () => {
+      try {
+        setLoadingDevices(true);
+        const response = await apiClient.getDevices({ limit: 200 });
+        setDevices(response.data || []);
+      } catch (error) {
+        console.error("Error fetching devices:", error);
+        setDevices([]);
+      } finally {
+        setLoadingDevices(false);
+      }
+    };
+
+    fetchDevices();
+  }, []);
+
   useEffect(() => {
     const fetchTimeRangeOptions = async () => {
       debugger
