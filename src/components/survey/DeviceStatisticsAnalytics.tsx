@@ -875,7 +875,6 @@ export const DeviceStatisticsAnalytics = ({
                         <div
                           key={zone.name}
                           className="flex items-center space-x-2 p-1 hover:bg-muted rounded cursor-pointer"
-                          onClick={() => !( selectedZones.length === 1 && selectedZones[0] === "all") && toggleZoneSelection(zone.name)}
                         >
                           <input
                             type="checkbox"
@@ -883,11 +882,11 @@ export const DeviceStatisticsAnalytics = ({
                             checked={selectedZones.includes(zone.name)}
                             onChange={() => toggleZoneSelection(zone.name)}
                             disabled={selectedZones.length === 1 && selectedZones[0] === "all"}
-                            className="rounded pointer-events-none"
+                            className="rounded"
                           />
                           <label
                             htmlFor={`zone-${zone.name}`}
-                            className="flex-1 text-sm cursor-pointer truncate pointer-events-none"
+                            className="flex-1 text-sm cursor-pointer truncate"
                           >
                             {zone.name}
                           </label>
