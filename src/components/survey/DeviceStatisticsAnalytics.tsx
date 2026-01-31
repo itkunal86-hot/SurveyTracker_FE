@@ -702,7 +702,7 @@ export const DeviceStatisticsAnalytics = ({
     // - Props passed from DeviceLogGrid component
     // - Shared state management solution
     setLoadingStats(false);
-  }, [timeRange, selectedZone]);
+  }, [timeRange, selectedZones]);
 
   const usagePercentage =
     statistics.totalActiveDeviceCount > 0
