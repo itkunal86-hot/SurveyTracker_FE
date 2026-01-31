@@ -59,7 +59,7 @@ export default function SettingsMaster() {
 
   const resetForm = () => {
     setEditing(null);
-    setForm({ timePeriod: "", textValue: "", numberValue: "" });
+    setForm({ timePeriod: "", textValue: "", numberValue: "", startValue: "", endValue: "" });
     setErrors({});
     setIsDialogOpen(false);
   };
