@@ -376,6 +376,15 @@ export const DeviceStatisticsAnalytics = ({
     });
   };
 
+  const filteredDevices = devices.filter(d =>
+    d.name.toLowerCase().includes(deviceSearchTerm.toLowerCase()) ||
+    d.id.toLowerCase().includes(deviceSearchTerm.toLowerCase())
+  );
+
+  const filteredZones = zones.filter(z =>
+    z.name.toLowerCase().includes(zoneSearchTerm.toLowerCase())
+  );
+
   const handleStatItemClick = (section: string, label: string, value: string | number, summaryType: string) => {
     setSelectedSummaryType(summaryType);
 
