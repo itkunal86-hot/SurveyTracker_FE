@@ -430,12 +430,18 @@ export const DeviceStatisticsAnalytics = ({
     setLoadingDeviceLog(true);
 
     try {
+      // Prepare zone parameter
+      let zoneParam: string | undefined;
+      if (selectedZones.length > 0 && !(selectedZones.length === 1 && selectedZones[0] === "all")) {
+        zoneParam = selectedZones.join(",");
+      }
+
       const response = await apiClient.getDeviceActiveLog({
         page: 1,
         limit: 100,
         startDate: start,
         endDate: end,
-        zone: selectedZone,
+        zone: zoneParam,
       });
 
       if (response?.success && response?.data) {
