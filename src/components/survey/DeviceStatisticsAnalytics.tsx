@@ -345,21 +345,27 @@ export const DeviceStatisticsAnalytics = ({
 
   const toggleZoneSelection = (zoneName: string) => {
     setSelectedZones(prev => {
+      let newZones: string[];
+
       if (zoneName === "all") {
         // If "all" is selected, clear other selections
-        return ["all"];
-      }
-
-      let newZones = prev.filter(z => z !== "all");
-
-      if (newZones.includes(zoneName)) {
-        newZones = newZones.filter(z => z !== zoneName);
+        newZones = ["all"];
       } else {
-        newZones = [...newZones, zoneName];
+        newZones = prev.filter(z => z !== "all");
+
+        if (newZones.includes(zoneName)) {
+          newZones = newZones.filter(z => z !== zoneName);
+        } else {
+          newZones = [...newZones, zoneName];
+        }
+
+        // If no zones are selected, default to "all"
+        newZones = newZones.length === 0 ? ["all"] : newZones;
       }
 
-      // If no zones are selected, default to "all"
-      return newZones.length === 0 ? ["all"] : newZones;
+      // Call handleZoneChange with the new zones
+      handleZoneChange(newZones);
+      return newZones;
     });
   };
 
