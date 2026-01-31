@@ -508,10 +508,16 @@ export const DeviceStatisticsAnalytics = ({
               return { startDate: null, endDate: null };
           }
         })();
+        // Prepare zone parameter
+        let zoneParam: string | undefined;
+        if (selectedZones.length > 0 && !(selectedZones.length === 1 && selectedZones[0] === "all")) {
+          zoneParam = selectedZones.join(",");
+        }
+
         const response = await apiClient.getDeviceActiveLog({
           page: 1,
           limit: 100,
-          zone: selectedZone,
+          zone: zoneParam,
           startDate: startDate,
           endDate: endDate,
         });
