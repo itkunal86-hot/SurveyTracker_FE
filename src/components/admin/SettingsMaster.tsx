@@ -136,17 +136,33 @@ export default function SettingsMaster() {
   };
 
   const onEdit = (item: Setting) => {
-    // Parse the settingValue: "MONTH=3,TEXT=Last 3 months"
     const parts = item.settingValue.split(",");
-    const timePeriodPart = parts[0]?.split("=")[1] || "";
+    const firstPart = parts[0]?.split("=") || [];
     const textPart = parts[1]?.split("=").slice(1).join("=") || "";
+    const settingType = firstPart[0] || "";
 
     setEditing(item);
-    setForm({
-      timePeriod: item.settingKey,
-      numberValue: timePeriodPart,
-      textValue: textPart,
-    });
+
+    if (settingType === "DEVICE_USAGE" || settingType === "DEVICE_ACCURACY") {
+      // Parse device format: "DEVICE_USAGE=100-150,TEXT=Normal Average"
+      const [start, end] = (firstPart[1] || "").split("-");
+      setForm({
+        timePeriod: settingType,
+        startValue: start || "",
+        endValue: end || "",
+        textValue: textPart,
+        numberValue: "",
+      });
+    } else {
+      // Parse time period format: "MONTH=3,TEXT=Last 3 months"
+      setForm({
+        timePeriod: item.settingKey,
+        numberValue: firstPart[1] || "",
+        textValue: textPart,
+        startValue: "",
+        endValue: "",
+      });
+    }
     setIsDialogOpen(true);
   };
 
