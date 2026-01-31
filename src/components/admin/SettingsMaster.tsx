@@ -218,48 +218,94 @@ export default function SettingsMaster() {
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="space-y-2">
-                    <Label htmlFor="timePeriod">Time Period *</Label>
+                    <Label htmlFor="timePeriod">Select Option *</Label>
                     <Select
                       value={form.timePeriod}
                       onValueChange={(value) => setForm({ ...form, timePeriod: value })}
                       disabled={editing !== null}
                     >
                       <SelectTrigger className={errors.timePeriod ? "border-destructive" : ""}>
-                        <SelectValue placeholder="Select time period" />
+                        <SelectValue placeholder="Select an option" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="MONTH">MONTH</SelectItem>
                         <SelectItem value="DAYS">DAYS</SelectItem>
                         <SelectItem value="HOURS">HOURS</SelectItem>
+                        <SelectItem value="DEVICE_USAGE">Device Usage</SelectItem>
+                        <SelectItem value="DEVICE_ACCURACY">Device Accuracy</SelectItem>
                       </SelectContent>
                     </Select>
                     {errors.timePeriod && <p className="text-sm text-destructive">{errors.timePeriod}</p>}
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="numberValue">Number Value *</Label>
-                    <Input
-                      id="numberValue"
-                      type="number"
-                      value={form.numberValue}
-                      onChange={(e) => setForm({ ...form, numberValue: e.target.value })}
-                      placeholder="e.g., 3, 7, 2"
-                      className={errors.numberValue ? "border-destructive" : ""}
-                    />
-                    {errors.numberValue && <p className="text-sm text-destructive">{errors.numberValue}</p>}
-                  </div>
+                  {isDeviceType() ? (
+                    <>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label htmlFor="startValue">Start Value *</Label>
+                          <Input
+                            id="startValue"
+                            type="number"
+                            value={form.startValue}
+                            onChange={(e) => setForm({ ...form, startValue: e.target.value })}
+                            placeholder="100"
+                            className={errors.startValue ? "border-destructive" : ""}
+                          />
+                          {errors.startValue && <p className="text-sm text-destructive">{errors.startValue}</p>}
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="endValue">End Value *</Label>
+                          <Input
+                            id="endValue"
+                            type="number"
+                            value={form.endValue}
+                            onChange={(e) => setForm({ ...form, endValue: e.target.value })}
+                            placeholder="150"
+                            className={errors.endValue ? "border-destructive" : ""}
+                          />
+                          {errors.endValue && <p className="text-sm text-destructive">{errors.endValue}</p>}
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="textValue">Text Value *</Label>
+                        <Input
+                          id="textValue"
+                          value={form.textValue}
+                          onChange={(e) => setForm({ ...form, textValue: e.target.value })}
+                          placeholder="e.g., Normal, Average, Below Average"
+                          className={errors.textValue ? "border-destructive" : ""}
+                        />
+                        {errors.textValue && <p className="text-sm text-destructive">{errors.textValue}</p>}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="numberValue">Number Value *</Label>
+                        <Input
+                          id="numberValue"
+                          type="number"
+                          value={form.numberValue}
+                          onChange={(e) => setForm({ ...form, numberValue: e.target.value })}
+                          placeholder="e.g., 3, 7, 2"
+                          className={errors.numberValue ? "border-destructive" : ""}
+                        />
+                        {errors.numberValue && <p className="text-sm text-destructive">{errors.numberValue}</p>}
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="textValue">Text Value *</Label>
-                    <Input
-                      id="textValue"
-                      value={form.textValue}
-                      onChange={(e) => setForm({ ...form, textValue: e.target.value })}
-                      placeholder="e.g., Last 3 months, Last 7 Days, Last 2 hours"
-                      className={errors.textValue ? "border-destructive" : ""}
-                    />
-                    {errors.textValue && <p className="text-sm text-destructive">{errors.textValue}</p>}
-                  </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="textValue">Text Value *</Label>
+                        <Input
+                          id="textValue"
+                          value={form.textValue}
+                          onChange={(e) => setForm({ ...form, textValue: e.target.value })}
+                          placeholder="e.g., Last 3 months, Last 7 Days, Last 2 hours"
+                          className={errors.textValue ? "border-destructive" : ""}
+                        />
+                        {errors.textValue && <p className="text-sm text-destructive">{errors.textValue}</p>}
+                      </div>
+                    </>
+                  )}
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={resetForm}>Cancel</Button>
