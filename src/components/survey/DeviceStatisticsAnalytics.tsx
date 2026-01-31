@@ -900,34 +900,33 @@ export const DeviceStatisticsAnalytics = ({
                       type="text"
                       placeholder="Search devices..."
                       className="w-full px-2 py-1 border rounded text-sm"
-                      onChange={(e) => {
-                        // Filter devices based on search
-                        const searchTerm = e.target.value.toLowerCase();
-                        const filtered = devices.filter(d =>
-                          d.name.toLowerCase().includes(searchTerm) ||
-                          d.id.toLowerCase().includes(searchTerm)
-                        );
-                        // This is just for filtering display, we'll use a different approach
-                      }}
+                      value={deviceSearchTerm}
+                      onChange={(e) => setDeviceSearchTerm(e.target.value)}
                     />
                     <div className="space-y-1">
-                      {devices.map((device) => (
-                        <div key={device.id} className="flex items-center space-x-2 p-1 hover:bg-muted rounded cursor-pointer">
-                          <input
-                            type="checkbox"
-                            id={`device-${device.id}`}
-                            checked={selectedDeviceIds.includes(device.id)}
-                            onChange={() => toggleDeviceSelection(device.id)}
-                            className="rounded"
-                          />
-                          <label
-                            htmlFor={`device-${device.id}`}
-                            className="flex-1 text-sm cursor-pointer truncate"
-                          >
-                            {device.name}
-                          </label>
+                      {filteredDevices.length > 0 ? (
+                        filteredDevices.map((device) => (
+                          <div key={device.id} className="flex items-center space-x-2 p-1 hover:bg-muted rounded cursor-pointer">
+                            <input
+                              type="checkbox"
+                              id={`device-${device.id}`}
+                              checked={selectedDeviceIds.includes(device.id)}
+                              onChange={() => toggleDeviceSelection(device.id)}
+                              className="rounded"
+                            />
+                            <label
+                              htmlFor={`device-${device.id}`}
+                              className="flex-1 text-sm cursor-pointer truncate"
+                            >
+                              {device.name}
+                            </label>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-sm text-muted-foreground p-2">
+                          No devices match your search
                         </div>
-                      ))}
+                      )}
                     </div>
                   </>
                 )}
