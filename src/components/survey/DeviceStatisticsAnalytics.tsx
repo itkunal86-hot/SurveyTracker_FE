@@ -109,7 +109,7 @@ const calculateStatisticsFromDevices = (devices: any): DeviceStatisticsData => {
 };
 
 type TimeRange = "all" | "7days" | "1month" | "3months";
-type ZoneSelection = "all" | string;
+type ZoneSelection = string | string[];
 
 const FALLBACK_TIME_RANGE_OPTIONS = [
   { value: "7days", label: "Last 7 Days" },
@@ -165,13 +165,16 @@ export const DeviceStatisticsAnalytics = ({
   onDeviceSelect
 }: DeviceStatisticsAnalyticsProps) => {
   const [timeRange, setTimeRange] = useState<TimeRange>("7days");
-  const [selectedZone, setSelectedZone] = useState<ZoneSelection>("all");
   const [zones, setZones] = useState<Zone[]>([]);
   const [loadingZones, setLoadingZones] = useState(true);
   const [devices, setDevices] = useState<Device[]>([]);
   const [loadingDevices, setLoadingDevices] = useState(true);
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([]);
   const [showDeviceDropdown, setShowDeviceDropdown] = useState(false);
+  const [deviceSearchTerm, setDeviceSearchTerm] = useState("");
+  const [selectedZones, setSelectedZones] = useState<string[]>(["all"]);
+  const [showZoneDropdown, setShowZoneDropdown] = useState(false);
+  const [zoneSearchTerm, setZoneSearchTerm] = useState("");
   const [timeRangeOptions, setTimeRangeOptions] = useState<TimeOption[]>(FALLBACK_TIME_RANGE_OPTIONS);
   const [loadingTimeRanges, setLoadingTimeRanges] = useState(true);
   const [statistics, setStatistics] = useState<DeviceStatisticsData>({
@@ -267,12 +270,18 @@ export const DeviceStatisticsAnalytics = ({
     try {
       const { startDate, endDate } = getDateRangeFromValue(value);
 
+      // Prepare zone parameter
+      let zoneParam: string | undefined;
+      if (selectedZones.length > 0 && !(selectedZones.length === 1 && selectedZones[0] === "all")) {
+        zoneParam = selectedZones.join(",");
+      }
+
       const response = await apiClient.getDeviceActiveLog({
         page: 1,
         limit: 100,
         startDate,
         endDate,
-        zone: selectedZone,
+        zone: zoneParam,
       });
 
       if (response?.success && response?.data) {
@@ -292,15 +301,21 @@ export const DeviceStatisticsAnalytics = ({
   };
 
 
-  const handleZoneChange = async (zone: string) => {
-    setSelectedZone(zone as ZoneSelection);
+  const updateZones = async (newZones: string[]) => {
+    setSelectedZones(newZones);
     if (onZoneSelect) {
-      onZoneSelect(zone as ZoneSelection);
+      onZoneSelect(newZones.length === 1 && newZones[0] === "all" ? "all" : newZones);
     }
 
     setLoadingDeviceLog(true);
     try {
       const { startDate, endDate } = getDateRange();
+
+      // Prepare zone parameter - send comma-separated zone names or skip if "all" is selected
+      let zoneParam: string | undefined;
+      if (newZones.length > 0 && !(newZones.length === 1 && newZones[0] === "all")) {
+        zoneParam = newZones.join(",");
+      }
 
       // Fetch device active log and calculate statistics from it
       const response = await apiClient.getDeviceActiveLog({
@@ -308,7 +323,7 @@ export const DeviceStatisticsAnalytics = ({
         limit: 100,
         startDate,
         endDate,
-        zone,
+        zone: zoneParam,
         deviceIds: selectedDeviceIds.length > 0 ? selectedDeviceIds : undefined,
       });
 
@@ -316,7 +331,7 @@ export const DeviceStatisticsAnalytics = ({
         // Calculate statistics from device data
         const calculatedStats = calculateStatisticsFromDevices(response.summery);
         setStatistics(calculatedStats);
-        toast.success("Device statistics updated for selected zone");
+        toast.success(`Device statistics updated for selected zone${newZones.length > 1 ? 's' : ''}`);
       } else {
         toast.error("Failed to fetch device active log");
       }
@@ -326,6 +341,28 @@ export const DeviceStatisticsAnalytics = ({
     } finally {
       setLoadingDeviceLog(false);
     }
+  };
+
+  const toggleZoneSelection = (zoneName: string) => {
+    let newZones: string[];
+
+    if (zoneName === "all") {
+      // If "all" is selected, clear other selections
+      newZones = ["all"];
+    } else {
+      newZones = selectedZones.filter(z => z !== "all");
+
+      if (newZones.includes(zoneName)) {
+        newZones = newZones.filter(z => z !== zoneName);
+      } else {
+        newZones = [...newZones, zoneName];
+      }
+
+      // If no zones are selected, default to "all"
+      newZones = newZones.length === 0 ? ["all"] : newZones;
+    }
+
+    updateZones(newZones);
   };
 
   const handleDeviceChange = (deviceIds: string[]) => {
@@ -345,6 +382,15 @@ export const DeviceStatisticsAnalytics = ({
       return newIds;
     });
   };
+
+  const filteredDevices = devices.filter(d =>
+    d.name.toLowerCase().includes(deviceSearchTerm.toLowerCase()) ||
+    d.id.toLowerCase().includes(deviceSearchTerm.toLowerCase())
+  );
+
+  const filteredZones = zones.filter(z =>
+    z.name.toLowerCase().includes(zoneSearchTerm.toLowerCase())
+  );
 
   const handleStatItemClick = (section: string, label: string, value: string | number, summaryType: string) => {
     setSelectedSummaryType(summaryType);
@@ -386,12 +432,18 @@ export const DeviceStatisticsAnalytics = ({
     setLoadingDeviceLog(true);
 
     try {
+      // Prepare zone parameter
+      let zoneParam: string | undefined;
+      if (selectedZones.length > 0 && !(selectedZones.length === 1 && selectedZones[0] === "all")) {
+        zoneParam = selectedZones.join(",");
+      }
+
       const response = await apiClient.getDeviceActiveLog({
         page: 1,
         limit: 100,
         startDate: start,
         endDate: end,
-        zone: selectedZone,
+        zone: zoneParam,
       });
 
       if (response?.success && response?.data) {
@@ -458,10 +510,16 @@ export const DeviceStatisticsAnalytics = ({
               return { startDate: null, endDate: null };
           }
         })();
+        // Prepare zone parameter
+        let zoneParam: string | undefined;
+        if (selectedZones.length > 0 && !(selectedZones.length === 1 && selectedZones[0] === "all")) {
+          zoneParam = selectedZones.join(",");
+        }
+
         const response = await apiClient.getDeviceActiveLog({
           page: 1,
           limit: 100,
-          zone: selectedZone,
+          zone: zoneParam,
           startDate: startDate,
           endDate: endDate,
         });
@@ -644,7 +702,7 @@ export const DeviceStatisticsAnalytics = ({
     // - Props passed from DeviceLogGrid component
     // - Shared state management solution
     setLoadingStats(false);
-  }, [timeRange, selectedZone]);
+  }, [timeRange, selectedZones]);
 
   const usagePercentage =
     statistics.totalActiveDeviceCount > 0
@@ -755,35 +813,80 @@ export const DeviceStatisticsAnalytics = ({
               <span className="text-xs font-medium">📅 Calendar</span>
             </Toggle>
           </div>
-          <div className="w-48">
-            <Select
-              value={selectedZone}
-              onValueChange={handleZoneChange}
-              disabled={loadingDeviceLog || loadingZones}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select zone" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Zones</SelectItem>
+          {/* Zone Dropdown - Multiselect with Autocomplete */}
+          <Popover open={showZoneDropdown} onOpenChange={setShowZoneDropdown}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                disabled={loadingZones || loadingDeviceLog}
+                className="w-48 justify-start text-left"
+              >
+                {selectedZones.length === 0 || (selectedZones.length === 1 && selectedZones[0] === "all")
+                  ? "All Zones"
+                  : selectedZones.length === 1
+                    ? selectedZones[0]
+                    : `${selectedZones.length} zones`}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-48 p-0" align="end">
+              <div className="p-3 space-y-2 max-h-64 overflow-y-auto">
                 {loadingZones ? (
-                  <div className="p-2 text-sm text-muted-foreground">
+                  <div className="text-sm text-muted-foreground">
                     Loading zones...
                   </div>
-                ) : zones.length > 0 ? (
-                  zones.map((zone) => (
-                    <SelectItem key={zone.name} value={zone.name}>
-                      {zone.name}
-                    </SelectItem>
-                  ))
-                ) : (
-                  <div className="p-2 text-sm text-muted-foreground">
+                ) : zones.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">
                     No zones available
                   </div>
+                ) : (
+                  <>
+                    <input
+                      type="text"
+                      placeholder="Search zones..."
+                      className="w-full px-2 py-1 border rounded text-sm"
+                      value={zoneSearchTerm}
+                      onChange={(e) => setZoneSearchTerm(e.target.value)}
+                    />
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2 p-1 hover:bg-muted rounded cursor-pointer">
+                        <input
+                          type="checkbox"
+                          id="zone-all"
+                          checked={selectedZones.length === 1 && selectedZones[0] === "all"}
+                          onChange={() => updateZones(["all"])}
+                          className="rounded"
+                        />
+                        <label
+                          htmlFor="zone-all"
+                          className="flex-1 text-sm cursor-pointer font-semibold"
+                        >
+                          All Zones
+                        </label>
+                      </div>
+                      {filteredZones.map((zone) => (
+                        <div key={zone.name} className="flex items-center space-x-2 p-1 hover:bg-muted rounded cursor-pointer">
+                          <input
+                            type="checkbox"
+                            id={`zone-${zone.name}`}
+                            checked={selectedZones.includes(zone.name)}
+                            onChange={() => toggleZoneSelection(zone.name)}
+                            disabled={selectedZones.length === 1 && selectedZones[0] === "all"}
+                            className="rounded"
+                          />
+                          <label
+                            htmlFor={`zone-${zone.name}`}
+                            className="flex-1 text-sm cursor-pointer truncate"
+                          >
+                            {zone.name}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </>
                 )}
-              </SelectContent>
-            </Select>
-          </div>
+              </div>
+            </PopoverContent>
+          </Popover>
 
           {/* Device Dropdown - Multiselect with Autocomplete */}
           <Popover open={showDeviceDropdown} onOpenChange={setShowDeviceDropdown}>
@@ -816,34 +919,33 @@ export const DeviceStatisticsAnalytics = ({
                       type="text"
                       placeholder="Search devices..."
                       className="w-full px-2 py-1 border rounded text-sm"
-                      onChange={(e) => {
-                        // Filter devices based on search
-                        const searchTerm = e.target.value.toLowerCase();
-                        const filtered = devices.filter(d =>
-                          d.name.toLowerCase().includes(searchTerm) ||
-                          d.id.toLowerCase().includes(searchTerm)
-                        );
-                        // This is just for filtering display, we'll use a different approach
-                      }}
+                      value={deviceSearchTerm}
+                      onChange={(e) => setDeviceSearchTerm(e.target.value)}
                     />
                     <div className="space-y-1">
-                      {devices.map((device) => (
-                        <div key={device.id} className="flex items-center space-x-2 p-1 hover:bg-muted rounded cursor-pointer">
-                          <input
-                            type="checkbox"
-                            id={`device-${device.id}`}
-                            checked={selectedDeviceIds.includes(device.id)}
-                            onChange={() => toggleDeviceSelection(device.id)}
-                            className="rounded"
-                          />
-                          <label
-                            htmlFor={`device-${device.id}`}
-                            className="flex-1 text-sm cursor-pointer truncate"
-                          >
-                            {device.name}
-                          </label>
+                      {filteredDevices.length > 0 ? (
+                        filteredDevices.map((device) => (
+                          <div key={device.id} className="flex items-center space-x-2 p-1 hover:bg-muted rounded cursor-pointer">
+                            <input
+                              type="checkbox"
+                              id={`device-${device.id}`}
+                              checked={selectedDeviceIds.includes(device.id)}
+                              onChange={() => toggleDeviceSelection(device.id)}
+                              className="rounded"
+                            />
+                            <label
+                              htmlFor={`device-${device.id}`}
+                              className="flex-1 text-sm cursor-pointer truncate"
+                            >
+                              {device.name}
+                            </label>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-sm text-muted-foreground p-2">
+                          No devices match your search
                         </div>
-                      ))}
+                      )}
                     </div>
                   </>
                 )}
