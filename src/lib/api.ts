@@ -2840,6 +2840,7 @@ class ApiClient {
     startDate?: Date | null;
     endDate?: Date | null;
     zone?: string;
+    deviceIds?: string[];
   }): Promise<PaginatedResponse<Device>> {
     const sp = new URLSearchParams();
     if (params?.page) sp.append("page", String(params.page));
