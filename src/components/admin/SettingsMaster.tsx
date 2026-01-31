@@ -69,11 +69,22 @@ export default function SettingsMaster() {
     await loadSettings();
   };
 
+  const isDeviceType = () => {
+    return form.timePeriod === "DEVICE_USAGE" || form.timePeriod === "DEVICE_ACCURACY";
+  };
+
   const validate = () => {
     const e: typeof errors = {};
-    if (!form.timePeriod.trim()) e.timePeriod = "Time Period is required";
-    if (!form.textValue.trim()) e.textValue = "Text Value is required";
-    if (!form.numberValue.trim()) e.numberValue = "Number Value is required";
+    if (!form.timePeriod.trim()) e.timePeriod = "Selection is required";
+
+    if (isDeviceType()) {
+      if (!form.startValue.trim()) e.startValue = "Start Value is required";
+      if (!form.endValue.trim()) e.endValue = "End Value is required";
+      if (!form.textValue.trim()) e.textValue = "Text Value is required";
+    } else {
+      if (!form.numberValue.trim()) e.numberValue = "Number Value is required";
+      if (!form.textValue.trim()) e.textValue = "Text Value is required";
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
