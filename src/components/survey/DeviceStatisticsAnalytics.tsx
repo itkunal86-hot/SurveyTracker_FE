@@ -344,14 +344,12 @@ export const DeviceStatisticsAnalytics = ({
   };
 
   const toggleZoneSelection = (zoneName: string) => {
-    setSelectedZones(prev => {
-      let newZones: string[];
-
-      if (zoneName === "all") {
-        // If "all" is selected, clear other selections
-        newZones = ["all"];
-      } else {
-        newZones = prev.filter(z => z !== "all");
+    if (zoneName === "all") {
+      // If "all" is selected, clear other selections
+      handleZoneChange(["all"]);
+    } else {
+      setSelectedZones(prev => {
+        let newZones = prev.filter(z => z !== "all");
 
         if (newZones.includes(zoneName)) {
           newZones = newZones.filter(z => z !== zoneName);
@@ -360,13 +358,13 @@ export const DeviceStatisticsAnalytics = ({
         }
 
         // If no zones are selected, default to "all"
-        newZones = newZones.length === 0 ? ["all"] : newZones;
-      }
+        const finalZones = newZones.length === 0 ? ["all"] : newZones;
 
-      // Call handleZoneChange with the new zones
-      handleZoneChange(newZones);
-      return newZones;
-    });
+        // Call handleZoneChange with the final zones
+        handleZoneChange(finalZones);
+        return finalZones;
+      });
+    }
   };
 
   const handleDeviceChange = (deviceIds: string[]) => {
