@@ -565,7 +565,6 @@ export const DeviceStatisticsAnalytics = ({
 
   useEffect(() => {
     const fetchTimeRangeOptions = async () => {
-      debugger
       try {
         setLoadingTimeRanges(true);
 
@@ -823,7 +822,7 @@ export const DeviceStatisticsAnalytics = ({
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                disabled={loadingZones || loadingDeviceLog}
+                //disabled={loadingZones || loadingDeviceLog}
                 className="w-48 justify-start text-left"
               >
                 {selectedZones.length === 0 || (selectedZones.length === 1 && selectedZones[0] === "all")
@@ -881,7 +880,7 @@ export const DeviceStatisticsAnalytics = ({
                             id={`zone-${zone.name}`}
                             checked={selectedZones.includes(zone.name)}
                             onChange={() => toggleZoneSelection(zone.name)}
-                            disabled={selectedZones.length === 1 && selectedZones[0] === "all"}
+                            //disabled={selectedZones.length === 1 && selectedZones[0] === "all"}
                             className="rounded"
                           />
                           <label
