@@ -794,35 +794,80 @@ export const DeviceStatisticsAnalytics = ({
               <span className="text-xs font-medium">📅 Calendar</span>
             </Toggle>
           </div>
-          <div className="w-48">
-            <Select
-              value={selectedZone}
-              onValueChange={handleZoneChange}
-              disabled={loadingDeviceLog || loadingZones}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select zone" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Zones</SelectItem>
+          {/* Zone Dropdown - Multiselect with Autocomplete */}
+          <Popover open={showZoneDropdown} onOpenChange={setShowZoneDropdown}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                disabled={loadingZones || loadingDeviceLog}
+                className="w-48 justify-start text-left"
+              >
+                {selectedZones.length === 0 || (selectedZones.length === 1 && selectedZones[0] === "all")
+                  ? "All Zones"
+                  : selectedZones.length === 1
+                    ? selectedZones[0]
+                    : `${selectedZones.length} zones`}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-48 p-0" align="end">
+              <div className="p-3 space-y-2 max-h-64 overflow-y-auto">
                 {loadingZones ? (
-                  <div className="p-2 text-sm text-muted-foreground">
+                  <div className="text-sm text-muted-foreground">
                     Loading zones...
                   </div>
-                ) : zones.length > 0 ? (
-                  zones.map((zone) => (
-                    <SelectItem key={zone.name} value={zone.name}>
-                      {zone.name}
-                    </SelectItem>
-                  ))
-                ) : (
-                  <div className="p-2 text-sm text-muted-foreground">
+                ) : zones.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">
                     No zones available
                   </div>
+                ) : (
+                  <>
+                    <input
+                      type="text"
+                      placeholder="Search zones..."
+                      className="w-full px-2 py-1 border rounded text-sm"
+                      value={zoneSearchTerm}
+                      onChange={(e) => setZoneSearchTerm(e.target.value)}
+                    />
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2 p-1 hover:bg-muted rounded cursor-pointer">
+                        <input
+                          type="checkbox"
+                          id="zone-all"
+                          checked={selectedZones.length === 1 && selectedZones[0] === "all"}
+                          onChange={() => setSelectedZones(["all"])}
+                          className="rounded"
+                        />
+                        <label
+                          htmlFor="zone-all"
+                          className="flex-1 text-sm cursor-pointer font-semibold"
+                        >
+                          All Zones
+                        </label>
+                      </div>
+                      {filteredZones.map((zone) => (
+                        <div key={zone.name} className="flex items-center space-x-2 p-1 hover:bg-muted rounded cursor-pointer">
+                          <input
+                            type="checkbox"
+                            id={`zone-${zone.name}`}
+                            checked={selectedZones.includes(zone.name)}
+                            onChange={() => toggleZoneSelection(zone.name)}
+                            disabled={selectedZones.length === 1 && selectedZones[0] === "all"}
+                            className="rounded"
+                          />
+                          <label
+                            htmlFor={`zone-${zone.name}`}
+                            className="flex-1 text-sm cursor-pointer truncate"
+                          >
+                            {zone.name}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </>
                 )}
-              </SelectContent>
-            </Select>
-          </div>
+              </div>
+            </PopoverContent>
+          </Popover>
 
           {/* Device Dropdown - Multiselect with Autocomplete */}
           <Popover open={showDeviceDropdown} onOpenChange={setShowDeviceDropdown}>
