@@ -23,8 +23,16 @@ export default function SettingsMaster() {
     timePeriod: "",
     textValue: "",
     numberValue: "",
+    startValue: "",
+    endValue: "",
   });
-  const [errors, setErrors] = useState<{ timePeriod?: string; textValue?: string; numberValue?: string }>({});
+  const [errors, setErrors] = useState<{
+    timePeriod?: string;
+    textValue?: string;
+    numberValue?: string;
+    startValue?: string;
+    endValue?: string;
+  }>({});
 
   const loadSettings = async () => {
     setLoading(true);
