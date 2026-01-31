@@ -147,6 +147,7 @@ export const DeviceLogGrid = ({
         ...(endDate && { endDate }),
         zone: selectedZone,
         ...(summaryType && { summaryType }),
+        ...(selectedDeviceIds && selectedDeviceIds.length > 0 && { deviceIds: selectedDeviceIds.join(",") }),
       });
 
       const response = await fetch(
