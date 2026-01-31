@@ -93,7 +93,13 @@ export default function SettingsMaster() {
     if (!validate()) return;
 
     const settingKey = form.timePeriod.trim();
-    const settingValue = `${form.timePeriod}=${form.numberValue.trim()},TEXT=${form.textValue.trim()}`;
+    let settingValue = "";
+
+    if (isDeviceType()) {
+      settingValue = `${form.timePeriod}=${form.startValue.trim()}-${form.endValue.trim()},TEXT=${form.textValue.trim()}`;
+    } else {
+      settingValue = `${form.timePeriod}=${form.numberValue.trim()},TEXT=${form.textValue.trim()}`;
+    }
 
     const payload = {
       settingKey,
