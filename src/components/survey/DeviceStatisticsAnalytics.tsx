@@ -309,6 +309,7 @@ export const DeviceStatisticsAnalytics = ({
         startDate,
         endDate,
         zone,
+        deviceIds: selectedDeviceIds.length > 0 ? selectedDeviceIds : undefined,
       });
 
       if (response && response.success && response.data) {
@@ -325,6 +326,24 @@ export const DeviceStatisticsAnalytics = ({
     } finally {
       setLoadingDeviceLog(false);
     }
+  };
+
+  const handleDeviceChange = (deviceIds: string[]) => {
+    setSelectedDeviceIds(deviceIds);
+    if (onDeviceSelect) {
+      onDeviceSelect(deviceIds);
+    }
+    toast.success(`Selected ${deviceIds.length} device(s)`);
+  };
+
+  const toggleDeviceSelection = (deviceId: string) => {
+    setSelectedDeviceIds(prev => {
+      const newIds = prev.includes(deviceId)
+        ? prev.filter(id => id !== deviceId)
+        : [...prev, deviceId];
+      handleDeviceChange(newIds);
+      return newIds;
+    });
   };
 
   const handleStatItemClick = (section: string, label: string, value: string | number, summaryType: string) => {
