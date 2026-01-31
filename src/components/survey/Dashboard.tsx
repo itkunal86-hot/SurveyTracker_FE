@@ -29,6 +29,7 @@ export const SurveyDashboard = () => {
   const [selectedZone, setSelectedZone] = useState<string>("all");
   const [customStartDate, setCustomStartDate] = useState<string | null>(null);
   const [customEndDate, setCustomEndDate] = useState<string | null>(null);
+  const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([]);
 
   // ✅ Fetch smId (Survey ID) from localStorage
   // const smId = localStorage.getItem("activeSurveyId");
@@ -221,6 +222,7 @@ useEffect(() => {
           setCustomStartDate(startDate);
           setCustomEndDate(endDate);
         }}
+        onDeviceSelect={setSelectedDeviceIds}
       />
 
       {/* Device Logs Grid */}
@@ -231,6 +233,7 @@ useEffect(() => {
           selectedZone={selectedZone}
           customStartDate={customStartDate}
           customEndDate={customEndDate}
+          selectedDeviceIds={selectedDeviceIds}
         />
       </div>
 

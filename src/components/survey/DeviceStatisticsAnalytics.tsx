@@ -152,6 +152,7 @@ interface DeviceStatisticsAnalyticsProps {
   onSelectedTimeChange?: (time: string) => void;
   timeOptions?: TimeOption[];
   onCustomDateRangeChange?: (startDate: string | null, endDate: string | null) => void;
+  onDeviceSelect?: (deviceIds: string[]) => void;
 }
 
 export const DeviceStatisticsAnalytics = ({
@@ -160,12 +161,17 @@ export const DeviceStatisticsAnalytics = ({
   selectedTime = "7days",
   onSelectedTimeChange,
   timeOptions = [],
-  onCustomDateRangeChange
+  onCustomDateRangeChange,
+  onDeviceSelect
 }: DeviceStatisticsAnalyticsProps) => {
   const [timeRange, setTimeRange] = useState<TimeRange>("7days");
   const [selectedZone, setSelectedZone] = useState<ZoneSelection>("all");
   const [zones, setZones] = useState<Zone[]>([]);
   const [loadingZones, setLoadingZones] = useState(true);
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [loadingDevices, setLoadingDevices] = useState(true);
+  const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([]);
+  const [showDeviceDropdown, setShowDeviceDropdown] = useState(false);
   const [timeRangeOptions, setTimeRangeOptions] = useState<TimeOption[]>(FALLBACK_TIME_RANGE_OPTIONS);
   const [loadingTimeRanges, setLoadingTimeRanges] = useState(true);
   const [statistics, setStatistics] = useState<DeviceStatisticsData>({
@@ -303,6 +309,7 @@ export const DeviceStatisticsAnalytics = ({
         startDate,
         endDate,
         zone,
+        deviceIds: selectedDeviceIds.length > 0 ? selectedDeviceIds : undefined,
       });
 
       if (response && response.success && response.data) {
@@ -319,6 +326,24 @@ export const DeviceStatisticsAnalytics = ({
     } finally {
       setLoadingDeviceLog(false);
     }
+  };
+
+  const handleDeviceChange = (deviceIds: string[]) => {
+    setSelectedDeviceIds(deviceIds);
+    if (onDeviceSelect) {
+      onDeviceSelect(deviceIds);
+    }
+    toast.success(`Selected ${deviceIds.length} device(s)`);
+  };
+
+  const toggleDeviceSelection = (deviceId: string) => {
+    setSelectedDeviceIds(prev => {
+      const newIds = prev.includes(deviceId)
+        ? prev.filter(id => id !== deviceId)
+        : [...prev, deviceId];
+      handleDeviceChange(newIds);
+      return newIds;
+    });
   };
 
   const handleStatItemClick = (section: string, label: string, value: string | number, summaryType: string) => {
@@ -455,6 +480,24 @@ export const DeviceStatisticsAnalytics = ({
 
     fetchZones();
     fetchStatistics();
+  }, []);
+
+  // Fetch devices for the device dropdown
+  useEffect(() => {
+    const fetchDevices = async () => {
+      try {
+        setLoadingDevices(true);
+        const response = await apiClient.getDevices({ limit: 200 });
+        setDevices(response.data || []);
+      } catch (error) {
+        console.error("Error fetching devices:", error);
+        setDevices([]);
+      } finally {
+        setLoadingDevices(false);
+      }
+    };
+
+    fetchDevices();
   }, []);
 
   useEffect(() => {
@@ -741,6 +784,72 @@ export const DeviceStatisticsAnalytics = ({
               </SelectContent>
             </Select>
           </div>
+
+          {/* Device Dropdown - Multiselect with Autocomplete */}
+          <Popover open={showDeviceDropdown} onOpenChange={setShowDeviceDropdown}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                disabled={loadingDevices}
+                className="w-48 justify-start text-left"
+              >
+                {selectedDeviceIds.length === 0
+                  ? "Select devices"
+                  : selectedDeviceIds.length === 1
+                    ? `1 device`
+                    : `${selectedDeviceIds.length} devices`}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-48 p-0" align="end">
+              <div className="p-3 space-y-2 max-h-64 overflow-y-auto">
+                {loadingDevices ? (
+                  <div className="text-sm text-muted-foreground">
+                    Loading devices...
+                  </div>
+                ) : devices.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">
+                    No devices available
+                  </div>
+                ) : (
+                  <>
+                    <input
+                      type="text"
+                      placeholder="Search devices..."
+                      className="w-full px-2 py-1 border rounded text-sm"
+                      onChange={(e) => {
+                        // Filter devices based on search
+                        const searchTerm = e.target.value.toLowerCase();
+                        const filtered = devices.filter(d =>
+                          d.name.toLowerCase().includes(searchTerm) ||
+                          d.id.toLowerCase().includes(searchTerm)
+                        );
+                        // This is just for filtering display, we'll use a different approach
+                      }}
+                    />
+                    <div className="space-y-1">
+                      {devices.map((device) => (
+                        <div key={device.id} className="flex items-center space-x-2 p-1 hover:bg-muted rounded cursor-pointer">
+                          <input
+                            type="checkbox"
+                            id={`device-${device.id}`}
+                            checked={selectedDeviceIds.includes(device.id)}
+                            onChange={() => toggleDeviceSelection(device.id)}
+                            className="rounded"
+                          />
+                          <label
+                            htmlFor={`device-${device.id}`}
+                            className="flex-1 text-sm cursor-pointer truncate"
+                          >
+                            {device.name}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 

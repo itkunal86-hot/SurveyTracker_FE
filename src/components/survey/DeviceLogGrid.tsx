@@ -32,6 +32,7 @@ interface DeviceLogGridProps {
   selectedZone?: string;
   customStartDate?: string | null;
   customEndDate?: string | null;
+  selectedDeviceIds?: string[];
 }
 
 export const DeviceLogGrid = ({
@@ -39,7 +40,8 @@ export const DeviceLogGrid = ({
   selectedTime = "7days",
   selectedZone = "all",
   customStartDate = null,
-  customEndDate = null
+  customEndDate = null,
+  selectedDeviceIds = []
 }: DeviceLogGridProps) => {
   const navigate = useNavigate();
   const [deviceLogs, setDeviceLogs] = useState<DeviceLog[]>([]);
@@ -145,6 +147,7 @@ export const DeviceLogGrid = ({
         ...(endDate && { endDate }),
         zone: selectedZone,
         ...(summaryType && { summaryType }),
+        ...(selectedDeviceIds && selectedDeviceIds.length > 0 && { deviceIds: selectedDeviceIds.join(",") }),
       });
 
       const response = await fetch(
@@ -262,10 +265,10 @@ export const DeviceLogGrid = ({
     }
   };
 
-  // Fetch on component mount and when time selection, summaryType, zone, or custom dates change
+  // Fetch on component mount and when time selection, summaryType, zone, custom dates, or device IDs change
   useEffect(() => {
     fetchDeviceLogs(1);
-  }, [selectedTime, summaryType, selectedZone, customStartDate, customEndDate]);
+  }, [selectedTime, summaryType, selectedZone, customStartDate, customEndDate, selectedDeviceIds]);
 
   const getBatteryColor = (battery?: number) => {
     if (battery === undefined) return "text-muted-foreground";

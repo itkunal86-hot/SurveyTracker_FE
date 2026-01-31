@@ -2840,6 +2840,7 @@ class ApiClient {
     startDate?: Date | null;
     endDate?: Date | null;
     zone?: string;
+    deviceIds?: string[];
   }): Promise<PaginatedResponse<Device>> {
     const sp = new URLSearchParams();
     if (params?.page) sp.append("page", String(params.page));
@@ -2861,6 +2862,11 @@ class ApiClient {
 
     if (params?.zone && params.zone !== "all") {
       sp.append("zone", params.zone);
+    }
+
+    // Add device IDs as comma-separated list if provided
+    if (params?.deviceIds && params.deviceIds.length > 0) {
+      sp.append("deviceIds", params.deviceIds.join(","));
     }
 
     const q = sp.toString();
