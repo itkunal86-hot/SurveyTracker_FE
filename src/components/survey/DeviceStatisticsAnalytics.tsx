@@ -165,7 +165,6 @@ export const DeviceStatisticsAnalytics = ({
   onDeviceSelect
 }: DeviceStatisticsAnalyticsProps) => {
   const [timeRange, setTimeRange] = useState<TimeRange>("7days");
-  const [selectedZone, setSelectedZone] = useState<ZoneSelection>("all");
   const [zones, setZones] = useState<Zone[]>([]);
   const [loadingZones, setLoadingZones] = useState(true);
   const [devices, setDevices] = useState<Device[]>([]);
