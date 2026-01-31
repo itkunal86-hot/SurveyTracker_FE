@@ -282,6 +282,7 @@ export const DeviceStatisticsAnalytics = ({
         startDate,
         endDate,
         zone: zoneParam,
+        deviceIds: selectedDeviceIds.length > 0 ? selectedDeviceIds : undefined,
       });
 
       if (response?.success && response?.data) {
