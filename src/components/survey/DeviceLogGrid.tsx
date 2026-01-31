@@ -32,6 +32,7 @@ interface DeviceLogGridProps {
   selectedZone?: string;
   customStartDate?: string | null;
   customEndDate?: string | null;
+  selectedDeviceIds?: string[];
 }
 
 export const DeviceLogGrid = ({
@@ -39,7 +40,8 @@ export const DeviceLogGrid = ({
   selectedTime = "7days",
   selectedZone = "all",
   customStartDate = null,
-  customEndDate = null
+  customEndDate = null,
+  selectedDeviceIds = []
 }: DeviceLogGridProps) => {
   const navigate = useNavigate();
   const [deviceLogs, setDeviceLogs] = useState<DeviceLog[]>([]);
