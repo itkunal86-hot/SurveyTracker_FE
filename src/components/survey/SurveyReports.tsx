@@ -16,10 +16,27 @@ const REPORT_FORMATS = [
   { value: "csv", label: "CSV" },
 ];
 
+const MONTHS = [
+  { value: "01", label: "January" },
+  { value: "02", label: "February" },
+  { value: "03", label: "March" },
+  { value: "04", label: "April" },
+  { value: "05", label: "May" },
+  { value: "06", label: "June" },
+  { value: "07", label: "July" },
+  { value: "08", label: "August" },
+  { value: "09", label: "September" },
+  { value: "10", label: "October" },
+  { value: "11", label: "November" },
+  { value: "12", label: "December" },
+];
+
 export const SurveyReports = () => {
   const { toast } = useToast();
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [reportType, setReportType] = useState("");
   const [reportFormat, setReportFormat] = useState("excel");
   const [selectedDevice, setSelectedDevice] = useState("all");
@@ -27,6 +44,16 @@ export const SurveyReports = () => {
   const [devicesLoading, setDevicesLoading] = useState(false);
   const [devicesError, setDevicesError] = useState<string | null>(null);
   const [isGeneratingDeviceReport, setIsGeneratingDeviceReport] = useState(false);
+
+  // Generate year options (current year ± 2 years)
+  const getYearOptions = () => {
+    const currentYear = new Date().getFullYear();
+    const years = [];
+    for (let i = currentYear - 2; i <= currentYear + 2; i++) {
+      years.push({ value: i.toString(), label: i.toString() });
+    }
+    return years;
+  };
 
   // Fetch devices on component mount
   useEffect(() => {
@@ -115,21 +142,48 @@ export const SurveyReports = () => {
   ];
 
   const handleGenerateDeviceReport = async () => {
-    if (!startDate || !endDate) {
-      toast({
-        title: "Missing Information",
-        description: "Please select a date range to generate the report",
-        variant: "destructive",
-      });
-      return;
+    // Determine which date range to use
+    let reportStartDate = startDate;
+    let reportEndDate = endDate;
+
+    // If Monthly Usage Report is selected, calculate dates from month and year
+    if (reportType === "usage-monthly") {
+      if (!selectedMonth || !selectedYear) {
+        toast({
+          title: "Missing Information",
+          description: "Please select a month and year to generate the report",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const year = parseInt(selectedYear);
+      const month = parseInt(selectedMonth);
+
+      // First day of the month
+      reportStartDate = `${year}-${selectedMonth}-01`;
+
+      // Last day of the month
+      const lastDay = new Date(year, month, 0).getDate();
+      reportEndDate = `${year}-${selectedMonth}-${lastDay}`;
+    } else {
+      // For other report types, use the date range inputs
+      if (!startDate || !endDate) {
+        toast({
+          title: "Missing Information",
+          description: "Please select a date range to generate the report",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     setIsGeneratingDeviceReport(true);
     try {
       // Build the request payload for device report
       const payload = {
-        startDate,
-        endDate,
+        startDate: reportStartDate,
+        endDate: reportEndDate,
         deviceId: selectedDevice === "all" ? null : selectedDevice,
         format: reportFormat,
       };
@@ -158,7 +212,7 @@ export const SurveyReports = () => {
 
       // Generate filename with current timestamp
       const timestamp = new Date().toISOString().replace(/[:.]/g, "").slice(0, -5);
-     
+
       link.download =reportFormat == "excel" ? `DeviceReport_${timestamp}.xlsx` : reportFormat == "pdf" ? `DeviceReport_${timestamp}.pdf` : `DeviceReport_${timestamp}.csv`;
 
       document.body.appendChild(link);
@@ -260,30 +314,70 @@ export const SurveyReports = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Date Range Selector */}
-            <div className="space-y-4">
-              <Label className="text-sm font-medium">Date Range</Label>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="startDate" className="text-xs text-muted-foreground">Start Date</Label>
-                  <Input
-                    id="startDate"
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="endDate" className="text-xs text-muted-foreground">End Date</Label>
-                  <Input
-                    id="endDate"
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                  />
+            {/* Conditional: Date Range or Month Selector */}
+            {reportType === "usage-monthly" ? (
+              // Month and Year Selector for Monthly Usage Report
+              <div className="space-y-4">
+                <Label className="text-sm font-medium">Select Month & Year</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="monthSelect" className="text-xs text-muted-foreground">Month</Label>
+                    <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select month" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {MONTHS.map((month) => (
+                          <SelectItem key={month.value} value={month.value}>
+                            {month.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="yearSelect" className="text-xs text-muted-foreground">Year</Label>
+                    <Select value={selectedYear} onValueChange={setSelectedYear}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getYearOptions().map((year) => (
+                          <SelectItem key={year.value} value={year.value}>
+                            {year.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              // Date Range Selector for other report types
+              <div className="space-y-4">
+                <Label className="text-sm font-medium">Date Range</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="startDate" className="text-xs text-muted-foreground">Start Date</Label>
+                    <Input
+                      id="startDate"
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="endDate" className="text-xs text-muted-foreground">End Date</Label>
+                    <Input
+                      id="endDate"
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Device Selector */}
             <div className="space-y-3">
