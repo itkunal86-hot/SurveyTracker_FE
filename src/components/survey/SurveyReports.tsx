@@ -188,8 +188,9 @@ export const SurveyReports = () => {
         format: reportFormat,
       };
 
-      // Call the device report generation API endpoint
-      const url = `${API_BASE_PATH}/DeviceLog/generatereports`;
+      // Call the appropriate device report generation API endpoint
+      const endpoint = reportType === "inventory" ? "generateInventoryreports" : "generatereports";
+      const url = `${API_BASE_PATH}/DeviceLog/${endpoint}`;
       const response = await fetch(url, {
         method: "POST",
         headers: {
