@@ -35,6 +35,8 @@ export const SurveyReports = () => {
   const { toast } = useToast();
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [reportType, setReportType] = useState("");
   const [reportFormat, setReportFormat] = useState("excel");
   const [selectedDevice, setSelectedDevice] = useState("all");
