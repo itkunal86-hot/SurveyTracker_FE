@@ -142,21 +142,48 @@ export const SurveyReports = () => {
   ];
 
   const handleGenerateDeviceReport = async () => {
-    if (!startDate || !endDate) {
-      toast({
-        title: "Missing Information",
-        description: "Please select a date range to generate the report",
-        variant: "destructive",
-      });
-      return;
+    // Determine which date range to use
+    let reportStartDate = startDate;
+    let reportEndDate = endDate;
+
+    // If Monthly Usage Report is selected, calculate dates from month and year
+    if (reportType === "usage-monthly") {
+      if (!selectedMonth || !selectedYear) {
+        toast({
+          title: "Missing Information",
+          description: "Please select a month and year to generate the report",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const year = parseInt(selectedYear);
+      const month = parseInt(selectedMonth);
+
+      // First day of the month
+      reportStartDate = `${year}-${selectedMonth}-01`;
+
+      // Last day of the month
+      const lastDay = new Date(year, month, 0).getDate();
+      reportEndDate = `${year}-${selectedMonth}-${lastDay}`;
+    } else {
+      // For other report types, use the date range inputs
+      if (!startDate || !endDate) {
+        toast({
+          title: "Missing Information",
+          description: "Please select a date range to generate the report",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     setIsGeneratingDeviceReport(true);
     try {
       // Build the request payload for device report
       const payload = {
-        startDate,
-        endDate,
+        startDate: reportStartDate,
+        endDate: reportEndDate,
         deviceId: selectedDevice === "all" ? null : selectedDevice,
         format: reportFormat,
       };
@@ -185,7 +212,7 @@ export const SurveyReports = () => {
 
       // Generate filename with current timestamp
       const timestamp = new Date().toISOString().replace(/[:.]/g, "").slice(0, -5);
-     
+
       link.download =reportFormat == "excel" ? `DeviceReport_${timestamp}.xlsx` : reportFormat == "pdf" ? `DeviceReport_${timestamp}.pdf` : `DeviceReport_${timestamp}.csv`;
 
       document.body.appendChild(link);
