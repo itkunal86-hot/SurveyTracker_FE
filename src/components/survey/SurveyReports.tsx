@@ -314,30 +314,70 @@ export const SurveyReports = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Date Range Selector */}
-            <div className="space-y-4">
-              <Label className="text-sm font-medium">Date Range</Label>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="startDate" className="text-xs text-muted-foreground">Start Date</Label>
-                  <Input
-                    id="startDate"
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="endDate" className="text-xs text-muted-foreground">End Date</Label>
-                  <Input
-                    id="endDate"
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                  />
+            {/* Conditional: Date Range or Month Selector */}
+            {reportType === "usage-monthly" ? (
+              // Month and Year Selector for Monthly Usage Report
+              <div className="space-y-4">
+                <Label className="text-sm font-medium">Select Month & Year</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="monthSelect" className="text-xs text-muted-foreground">Month</Label>
+                    <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select month" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {MONTHS.map((month) => (
+                          <SelectItem key={month.value} value={month.value}>
+                            {month.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="yearSelect" className="text-xs text-muted-foreground">Year</Label>
+                    <Select value={selectedYear} onValueChange={setSelectedYear}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getYearOptions().map((year) => (
+                          <SelectItem key={year.value} value={year.value}>
+                            {year.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              // Date Range Selector for other report types
+              <div className="space-y-4">
+                <Label className="text-sm font-medium">Date Range</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="startDate" className="text-xs text-muted-foreground">Start Date</Label>
+                    <Input
+                      id="startDate"
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="endDate" className="text-xs text-muted-foreground">End Date</Label>
+                    <Input
+                      id="endDate"
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Device Selector */}
             <div className="space-y-3">
