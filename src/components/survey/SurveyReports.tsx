@@ -45,6 +45,16 @@ export const SurveyReports = () => {
   const [devicesError, setDevicesError] = useState<string | null>(null);
   const [isGeneratingDeviceReport, setIsGeneratingDeviceReport] = useState(false);
 
+  // Generate year options (current year ± 2 years)
+  const getYearOptions = () => {
+    const currentYear = new Date().getFullYear();
+    const years = [];
+    for (let i = currentYear - 2; i <= currentYear + 2; i++) {
+      years.push({ value: i.toString(), label: i.toString() });
+    }
+    return years;
+  };
+
   // Fetch devices on component mount
   useEffect(() => {
     const fetchDevices = async () => {
