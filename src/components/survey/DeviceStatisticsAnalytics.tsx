@@ -1028,13 +1028,13 @@ export const DeviceStatisticsAnalytics = ({
                 statistics.usageSummary.map((summary, index) => {
                   const categoryText = extractCategoryFromSummary(summary);
                   return (
-                    <StatItem
+                    <div
                       key={index}
-                      label={summary}
-                      value=""
-                      color="text-blue-600"
+                      className="flex items-center justify-between py-2 px-2 border-b last:border-b-0 cursor-pointer transition-colors hover:bg-muted/50 rounded"
                       onClick={() => handleStatItemClick("Device Usage Classification", categoryText, categoryText, categoryText)}
-                    />
+                    >
+                      <span className="text-sm text-muted-foreground hover:text-foreground transition-colors">{summary}</span>
+                    </div>
                   );
                 })
               ) : (
@@ -1080,13 +1080,13 @@ export const DeviceStatisticsAnalytics = ({
                 statistics.accuracySummary.map((summary, index) => {
                   const categoryText = extractCategoryFromSummary(summary);
                   return (
-                    <StatItem
+                    <div
                       key={index}
-                      label={summary}
-                      value=""
-                      color="text-purple-600"
+                      className="flex items-center justify-between py-2 px-2 border-b last:border-b-0 cursor-pointer transition-colors hover:bg-muted/50 rounded"
                       onClick={() => handleStatItemClick("Accuracy Performance", categoryText, categoryText, categoryText)}
-                    />
+                    >
+                      <span className="text-sm text-muted-foreground hover:text-foreground transition-colors">{summary}</span>
+                    </div>
                   );
                 })
               ) : (
