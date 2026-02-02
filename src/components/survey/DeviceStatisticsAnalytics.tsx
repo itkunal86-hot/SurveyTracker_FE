@@ -14,6 +14,7 @@ import {
   Clock,
   Zap,
   Target,
+  Download,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { API_BASE_PATH, apiClient, type Zone, type Device } from "@/lib/api";
