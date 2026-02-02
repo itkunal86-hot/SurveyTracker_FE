@@ -4,9 +4,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Wifi, WifiOff, Battery, Activity, RefreshCw, BarChart3, ChevronLeft, ChevronRight } from "lucide-react";
+import { Wifi, WifiOff, Battery, Activity, RefreshCw, BarChart3, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { API_BASE_PATH } from "@/lib/api";
+import { API_BASE_PATH, apiClient } from "@/lib/api";
+import { toast } from "sonner";
 
 interface DeviceLog {
   id: string;
