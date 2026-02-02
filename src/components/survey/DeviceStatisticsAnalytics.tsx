@@ -1085,7 +1085,7 @@ export const DeviceStatisticsAnalytics = ({
                       label={summary}
                       value=""
                       color="text-purple-600"
-                      onClick={() => handleStatItemClick("Accuracy Performance", categoryText, categoryText, `accuracy-${index}`)}
+                      onClick={() => handleStatItemClick("Accuracy Performance", categoryText, categoryText, categoryText)}
                     />
                   );
                 })
