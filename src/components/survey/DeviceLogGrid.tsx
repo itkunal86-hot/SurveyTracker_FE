@@ -271,6 +271,7 @@ export const DeviceLogGrid = ({
 
   // Fetch on component mount and when time selection, summaryType, zone, custom dates, or device IDs change
   useEffect(() => {
+    console.log("DeviceLogGrid - Fetching with selectedTime:", selectedTime);
     fetchDeviceLogs(1);
   }, [selectedTime, summaryType, selectedZone, customStartDate, customEndDate, memoizedDeviceIds]);
 
