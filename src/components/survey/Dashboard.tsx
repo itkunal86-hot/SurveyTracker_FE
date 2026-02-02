@@ -31,6 +31,11 @@ export const SurveyDashboard = () => {
   const [customEndDate, setCustomEndDate] = useState<string | null>(null);
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([]);
 
+  // Log selectedTime changes to verify it's dynamic, not static
+  useEffect(() => {
+    console.log("Dashboard - selectedTime updated to:", selectedTime);
+  }, [selectedTime]);
+
   // ✅ Fetch smId (Survey ID) from localStorage
   // const smId = localStorage.getItem("activeSurveyId");
   // ✅ Track active survey ID as state (reactive)

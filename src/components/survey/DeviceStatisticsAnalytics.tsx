@@ -270,9 +270,11 @@ export const DeviceStatisticsAnalytics = ({
   // };
 
   const handleTimeRangeChange = async (value: string) => {
+    console.log("DeviceStatisticsAnalytics - Time range changed to:", value);
     setTimeRange(value as TimeRange);
 
     if (onSelectedTimeChange) {
+      console.log("DeviceStatisticsAnalytics - Sending selectedTime to parent:", value);
       onSelectedTimeChange(value);
     }
 
@@ -487,6 +489,14 @@ export const DeviceStatisticsAnalytics = ({
 
   //   toast.success(`Loaded devices: ${summaryType}`);
   // };
+
+  // Sync selectedTime prop with timeRange state
+  useEffect(() => {
+    if (selectedTime && selectedTime !== timeRange) {
+      console.log("DeviceStatisticsAnalytics - Syncing selectedTime from prop:", selectedTime);
+      setTimeRange(selectedTime as TimeRange);
+    }
+  }, [selectedTime]);
 
   useEffect(() => {
     const fetchZones = async () => {
