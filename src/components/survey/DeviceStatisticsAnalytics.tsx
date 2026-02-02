@@ -718,6 +718,16 @@ export const DeviceStatisticsAnalytics = ({
     setLoadingStats(false);
   }, [timeRange, selectedZones]);
 
+  // Auto-select first time range option when options are loaded
+  useEffect(() => {
+    if (timeRangeOptions.length > 0 && !loadingTimeRanges) {
+      const firstOption = timeRangeOptions[0].value;
+      setTimeRange(firstOption as TimeRange);
+      // Trigger data fetch with the first option
+      handleTimeRangeChange(firstOption);
+    }
+  }, [timeRangeOptions, loadingTimeRanges]);
+
   const usagePercentage =
     statistics.totalActiveDeviceCount > 0
       ? Math.round(
