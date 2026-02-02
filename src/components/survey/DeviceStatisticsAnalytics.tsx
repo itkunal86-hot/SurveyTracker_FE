@@ -1020,6 +1020,16 @@ export const DeviceStatisticsAnalytics = ({
               </div>
             </PopoverContent>
           </Popover>
+          <Button
+            onClick={handleExportDeviceSummary}
+            disabled={exportLoading}
+            variant="outline"
+            className="flex items-center gap-2"
+            title="Export device summary"
+          >
+            <Download className="h-4 w-4" />
+            {exportLoading ? "Exporting..." : "Export Summary"}
+          </Button>
         </div>
       </div>
 
