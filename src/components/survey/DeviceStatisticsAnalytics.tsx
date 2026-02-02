@@ -491,6 +491,7 @@ export const DeviceStatisticsAnalytics = ({
   // Sync selectedTime prop with timeRange state
   useEffect(() => {
     if (selectedTime && selectedTime !== timeRange) {
+      console.log("DeviceStatisticsAnalytics - Syncing selectedTime from prop:", selectedTime);
       setTimeRange(selectedTime as TimeRange);
     }
   }, [selectedTime]);
