@@ -1033,7 +1033,7 @@ export const DeviceStatisticsAnalytics = ({
                       label={summary}
                       value=""
                       color="text-blue-600"
-                      onClick={() => handleStatItemClick("Device Usage Classification", categoryText, categoryText, `usage-${index}`)}
+                      onClick={() => handleStatItemClick("Device Usage Classification", categoryText, categoryText, categoryText)}
                     />
                   );
                 })
