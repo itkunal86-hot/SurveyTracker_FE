@@ -14,6 +14,7 @@ import {
   Clock,
   Zap,
   Target,
+  Download,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { API_BASE_PATH, apiClient, type Zone, type Device } from "@/lib/api";
@@ -208,6 +209,7 @@ export const DeviceStatisticsAnalytics = ({
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [hasAutoSelected, setHasAutoSelected] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
 
 
   // const handleTimeRangeChange = async (value: string) => {
@@ -476,6 +478,48 @@ export const DeviceStatisticsAnalytics = ({
       toast.error("Error fetching device active log");
     } finally {
       setLoadingDeviceLog(false);
+    }
+  };
+
+  const handleExportDeviceSummary = async () => {
+    setExportLoading(true);
+
+    try {
+      // Get current date range
+      const { startDate: startISO, endDate: endISO } = getDateRange();
+
+      // Prepare zone parameter
+      let zoneParam: string | undefined;
+      if (selectedZones.length > 0 && !(selectedZones.length === 1 && selectedZones[0] === "all")) {
+        zoneParam = selectedZones.join(",");
+      }
+
+      // Call the export API
+      const blob = await apiClient.exportDeviceSummary({
+        page: 1,
+        limit: 100,
+        startDate: startISO ? new Date(startISO) : undefined,
+        endDate: endISO ? new Date(endISO) : undefined,
+        zone: zoneParam,
+        deviceIds: selectedDeviceIds.length > 0 ? selectedDeviceIds : undefined,
+      });
+
+      // Create a download link and trigger download
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `device-summary-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success("Device summary exported successfully");
+    } catch (error) {
+      console.error("Error exporting device summary:", error);
+      toast.error("Failed to export device summary");
+    } finally {
+      setExportLoading(false);
     }
   };
 
@@ -976,6 +1020,16 @@ export const DeviceStatisticsAnalytics = ({
               </div>
             </PopoverContent>
           </Popover>
+          <Button
+            onClick={handleExportDeviceSummary}
+            disabled={exportLoading}
+            variant="outline"
+            className="flex items-center gap-2"
+            title="Export device summary"
+          >
+            <Download className="h-4 w-4" />
+            {exportLoading ? "Exporting..." : "Export Summary"}
+          </Button>
         </div>
       </div>
 

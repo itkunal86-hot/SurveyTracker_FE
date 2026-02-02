@@ -3077,6 +3077,134 @@ class ApiClient {
     }
   }
 
+  // Export device summary endpoint
+  async exportDeviceSummary(params?: {
+    page?: number;
+    limit?: number;
+    startDate?: Date | null;
+    endDate?: Date | null;
+    zone?: string;
+    deviceIds?: string[];
+  }): Promise<Blob> {
+    const sp = new URLSearchParams();
+    if (params?.page) sp.append("page", String(params.page));
+    if (params?.limit) sp.append("limit", String(params.limit));
+
+    // Format dates if provided
+    if (params?.startDate) {
+      const startDateStr = params.startDate instanceof Date
+        ? params.startDate.toISOString()
+        : String(params.startDate);
+      sp.append("startDate", startDateStr);
+    }
+    if (params?.endDate) {
+      const endDateStr = params.endDate instanceof Date
+        ? params.endDate.toISOString()
+        : String(params.endDate);
+      sp.append("endDate", endDateStr);
+    }
+
+    if (params?.zone && params.zone !== "all") {
+      sp.append("zone", params.zone);
+    }
+
+    // Add device IDs as comma-separated list if provided
+    if (params?.deviceIds && params.deviceIds.length > 0) {
+      sp.append("deviceIds", params.deviceIds.join(","));
+    }
+
+    const q = sp.toString();
+
+    const base = (this.baseURL || "").replace(/\/$/, "");
+    let ep = `/DeviceLog/exportdevicesummery${q ? `?${q}` : ""}`;
+    ep = ep.replace(/^\/api\//, "/");
+    const url = `${base}${ep}`;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`Failed to export device summary: ${response.statusText}`);
+      }
+
+      return await response.blob();
+    } catch (error) {
+      clearTimeout(timeoutId);
+      throw error;
+    }
+  }
+
+  // Export device log endpoint
+  async exportDeviceLog(params?: {
+    page?: number;
+    limit?: number;
+    startDate?: Date | null;
+    endDate?: Date | null;
+    zone?: string;
+    deviceIds?: string[];
+  }): Promise<Blob> {
+    const sp = new URLSearchParams();
+    if (params?.page) sp.append("page", String(params.page));
+    if (params?.limit) sp.append("limit", String(params.limit));
+
+    // Format dates if provided
+    if (params?.startDate) {
+      const startDateStr = params.startDate instanceof Date
+        ? params.startDate.toISOString()
+        : String(params.startDate);
+      sp.append("startDate", startDateStr);
+    }
+    if (params?.endDate) {
+      const endDateStr = params.endDate instanceof Date
+        ? params.endDate.toISOString()
+        : String(params.endDate);
+      sp.append("endDate", endDateStr);
+    }
+
+    if (params?.zone && params.zone !== "all") {
+      sp.append("zone", params.zone);
+    }
+
+    // Add device IDs as comma-separated list if provided
+    if (params?.deviceIds && params.deviceIds.length > 0) {
+      sp.append("deviceIds", params.deviceIds.join(","));
+    }
+
+    const q = sp.toString();
+
+    const base = (this.baseURL || "").replace(/\/$/, "");
+    let ep = `/DeviceLog/exportdevicelog${q ? `?${q}` : ""}`;
+    ep = ep.replace(/^\/api\//, "/");
+    const url = `${base}${ep}`;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`Failed to export device log: ${response.statusText}`);
+      }
+
+      return await response.blob();
+    } catch (error) {
+      clearTimeout(timeoutId);
+      throw error;
+    }
+  }
+
   // Survey entries summary by device and date range
   async getAssetPropertyEntriesByDevice(params: { deviceId: string | number; entryDate: string | Date; endDate?: string | Date }): Promise<{ snapshots: any[]; raw: any; }> {
     const { deviceId, entryDate, endDate } = params;
