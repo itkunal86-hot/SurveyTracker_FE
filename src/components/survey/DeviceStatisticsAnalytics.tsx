@@ -37,6 +37,8 @@ interface DeviceStatisticsData {
   minimumTTFA: number;
   averageTTFA: number;
   maximumTTFA: number;
+  usageSummary?: string[];
+  accuracySummary?: string[];
 }
 
 // Helper function to calculate statistics from device log data
@@ -105,6 +107,8 @@ const calculateStatisticsFromDevices = (devices: any): DeviceStatisticsData => {
     minimumTTFA,
     averageTTFA,
     maximumTTFA,
+    usageSummary: devices.usageSummary,
+    accuracySummary: devices.accuracySummary,
   };
 };
 
@@ -1014,27 +1018,41 @@ export const DeviceStatisticsAnalytics = ({
           </CardHeader>
           <CardContent className="pt-0">
             <div className="space-y-0">
-              <StatItem
-                label="Total Active Devices"
-                value={statistics.totalActiveDeviceCount}
-                color="text-blue-600"
-                icon={<Activity className="h-3 w-3 text-blue-500" />}
-                onClick={() => handleStatItemClick("Total Active Devices", "Active Device", `${statistics.totalActiveDeviceCount}m`, "activeDevice")}
-              />
-              <StatItem
-                label="Normal Usage"
-                value={`${statistics.normalUsage} (${usagePercentage}%)`}
-                color="text-green-600"
-                icon={<TrendingUp className="h-3 w-3 text-green-500" />}
-                onClick={() => handleStatItemClick("Total Active Devices", "Normal Usage", `${statistics.normalUsage}m`, "normalUsage")}
-              />
-              <StatItem
-                label="Under Usage"
-                value={statistics.underUsage}
-                color="text-yellow-600"
-                icon={<AlertCircle className="h-3 w-3 text-yellow-500" />}
-                onClick={() => handleStatItemClick("Total Active Devices", "Under Usage", `${statistics.underUsage}m`, "underUsage")}
-              />
+              {statistics.usageSummary && statistics.usageSummary.length > 0 ? (
+                statistics.usageSummary.map((summary, index) => (
+                  <StatItem
+                    key={index}
+                    label={summary}
+                    value=""
+                    color="text-blue-600"
+                    onClick={() => handleStatItemClick("Device Usage Classification", summary, summary, `usage-${index}`)}
+                  />
+                ))
+              ) : (
+                <>
+                  <StatItem
+                    label="Total Active Devices"
+                    value={statistics.totalActiveDeviceCount}
+                    color="text-blue-600"
+                    icon={<Activity className="h-3 w-3 text-blue-500" />}
+                    onClick={() => handleStatItemClick("Total Active Devices", "Active Device", `${statistics.totalActiveDeviceCount}m`, "activeDevice")}
+                  />
+                  <StatItem
+                    label="Normal Usage"
+                    value={`${statistics.normalUsage} (${usagePercentage}%)`}
+                    color="text-green-600"
+                    icon={<TrendingUp className="h-3 w-3 text-green-500" />}
+                    onClick={() => handleStatItemClick("Total Active Devices", "Normal Usage", `${statistics.normalUsage}m`, "normalUsage")}
+                  />
+                  <StatItem
+                    label="Under Usage"
+                    value={statistics.underUsage}
+                    color="text-yellow-600"
+                    icon={<AlertCircle className="h-3 w-3 text-yellow-500" />}
+                    onClick={() => handleStatItemClick("Total Active Devices", "Under Usage", `${statistics.underUsage}m`, "underUsage")}
+                  />
+                </>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -1049,20 +1067,34 @@ export const DeviceStatisticsAnalytics = ({
           </CardHeader>
           <CardContent className="pt-0">
             <div className="space-y-0">
-              <StatItem
-                label="Normal Accuracy"
-                value={`${statistics.normalAccuracy} (${accuracyPercentage}%)`}
-                color="text-green-600"
-                icon={<Target className="h-3 w-3 text-green-500" />}
-                onClick={() => handleStatItemClick("Accuracy Performance", "Normal Accuracy", `${statistics.normalAccuracy}m`, "normalAccuracy")}
-              />
-              <StatItem
-                label="Below Average Accuracy"
-                value={statistics.belowAverageAccuracy}
-                color="text-red-600"
-                icon={<AlertCircle className="h-3 w-3 text-red-500" />}
-                onClick={() => handleStatItemClick("Accuracy Performance", "Under Accuracy", `${statistics.normalAccuracy}m`, "underAccuracy")}
-              />
+              {statistics.accuracySummary && statistics.accuracySummary.length > 0 ? (
+                statistics.accuracySummary.map((summary, index) => (
+                  <StatItem
+                    key={index}
+                    label={summary}
+                    value=""
+                    color="text-purple-600"
+                    onClick={() => handleStatItemClick("Accuracy Performance", summary, summary, `accuracy-${index}`)}
+                  />
+                ))
+              ) : (
+                <>
+                  <StatItem
+                    label="Normal Accuracy"
+                    value={`${statistics.normalAccuracy} (${accuracyPercentage}%)`}
+                    color="text-green-600"
+                    icon={<Target className="h-3 w-3 text-green-500" />}
+                    onClick={() => handleStatItemClick("Accuracy Performance", "Normal Accuracy", `${statistics.normalAccuracy}m`, "normalAccuracy")}
+                  />
+                  <StatItem
+                    label="Below Average Accuracy"
+                    value={statistics.belowAverageAccuracy}
+                    color="text-red-600"
+                    icon={<AlertCircle className="h-3 w-3 text-red-500" />}
+                    onClick={() => handleStatItemClick("Accuracy Performance", "Under Accuracy", `${statistics.normalAccuracy}m`, "underAccuracy")}
+                  />
+                </>
+              )}
               <div className="mt-2 pt-2 border-t text-xs text-muted-foreground">
                 <span>Data: Trimble Mobile Manager, Access, Cloud</span>
               </div>
