@@ -270,9 +270,11 @@ export const DeviceStatisticsAnalytics = ({
   // };
 
   const handleTimeRangeChange = async (value: string) => {
+    console.log("DeviceStatisticsAnalytics - Time range changed to:", value);
     setTimeRange(value as TimeRange);
 
     if (onSelectedTimeChange) {
+      console.log("DeviceStatisticsAnalytics - Sending selectedTime to parent:", value);
       onSelectedTimeChange(value);
     }
 
