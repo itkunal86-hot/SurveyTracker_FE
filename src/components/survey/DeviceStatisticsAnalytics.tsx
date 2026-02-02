@@ -123,6 +123,12 @@ const FALLBACK_TIME_RANGE_OPTIONS = [
 
 const SURVEY_POINT_THRESHOLD = 100;
 
+// Helper function to extract category name from summary string
+// E.g., "Below Avarage      15(88.24%)" -> "Below Avarage"
+const extractCategoryFromSummary = (summary: string): string => {
+  return summary.trim().split(/\s+/).slice(0, -1).join(" ") || summary;
+};
+
 interface StatItemProps {
   label: string;
   value: string | number;
