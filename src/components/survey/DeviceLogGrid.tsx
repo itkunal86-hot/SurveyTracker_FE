@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -126,6 +126,7 @@ export const DeviceLogGrid = ({
     try {
       setIsLoading(true);
       setError(null);
+      setDeviceLogs([]); // Reset to empty array before fetching
 
       // Use custom dates if available, otherwise use selectedTime
       let startDate: string | null = null;
@@ -254,7 +255,7 @@ export const DeviceLogGrid = ({
       setPagination({
         page,
         limit: pagination.limit,
-        total: data?.data?.pagination?.total || mapped.length,
+        total: data?.pagination?.total || data?.data?.pagination?.total || mapped.length,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to load device logs";
@@ -265,10 +266,13 @@ export const DeviceLogGrid = ({
     }
   };
 
+  // Memoize the device IDs to prevent unnecessary re-fetches
+  const memoizedDeviceIds = useMemo(() => selectedDeviceIds.join(','), [selectedDeviceIds]);
+
   // Fetch on component mount and when time selection, summaryType, zone, custom dates, or device IDs change
   useEffect(() => {
     fetchDeviceLogs(1);
-  }, [selectedTime, summaryType, selectedZone, customStartDate, customEndDate, selectedDeviceIds]);
+  }, [selectedTime, summaryType, selectedZone, customStartDate, customEndDate, memoizedDeviceIds]);
 
   const getBatteryColor = (battery?: number) => {
     if (battery === undefined) return "text-muted-foreground";
@@ -388,7 +392,7 @@ export const DeviceLogGrid = ({
                 </TableRow>
               ) : (
                 deviceLogs.map((log) => (
-                  <TableRow key={log.uniqueId}>
+                  <TableRow key={log.uniqueId || log.deviceLogId || log.id}>
                     <TableCell className="font-medium">{log.id}</TableCell>
                     <TableCell>{log.name}</TableCell>
                     {/* <TableCell className="text-sm">{log.type}</TableCell> */}
