@@ -269,6 +269,57 @@ export const DeviceLogGrid = ({
     }
   };
 
+  // Export device logs
+  const handleExportDeviceLogs = async () => {
+    setExportLoading(true);
+
+    try {
+      // Use custom dates if available, otherwise use selectedTime
+      let startDate: string | null = null;
+      let endDate: string | null = null;
+
+      if (customStartDate && customEndDate) {
+        startDate = customStartDate;
+        endDate = customEndDate;
+      } else {
+        const dateRange = getDateRangeFromValue(selectedTime);
+        startDate = dateRange.startDate;
+        endDate = dateRange.endDate;
+      }
+
+      // Convert date strings to Date objects for the API
+      const startDateObj = startDate ? new Date(startDate) : undefined;
+      const endDateObj = endDate ? new Date(endDate) : undefined;
+
+      // Call the export API
+      const blob = await apiClient.exportDeviceLog({
+        page: 1,
+        limit: 10000, // Export more records for completeness
+        startDate: startDateObj,
+        endDate: endDateObj,
+        zone: selectedZone && selectedZone !== "all" ? selectedZone : undefined,
+        deviceIds: selectedDeviceIds.length > 0 ? selectedDeviceIds : undefined,
+      });
+
+      // Create a download link and trigger download
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `device-logs-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success("Device logs exported successfully");
+    } catch (error) {
+      console.error("Error exporting device logs:", error);
+      toast.error("Failed to export device logs");
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   // Memoize the device IDs to prevent unnecessary re-fetches
   const memoizedDeviceIds = useMemo(() => selectedDeviceIds.join(','), [selectedDeviceIds]);
 
