@@ -1025,15 +1025,18 @@ export const DeviceStatisticsAnalytics = ({
           <CardContent className="pt-0">
             <div className="space-y-0">
               {statistics.usageSummary && statistics.usageSummary.length > 0 ? (
-                statistics.usageSummary.map((summary, index) => (
-                  <StatItem
-                    key={index}
-                    label={summary}
-                    value=""
-                    color="text-blue-600"
-                    onClick={() => handleStatItemClick("Device Usage Classification", summary, summary, `usage-${index}`)}
-                  />
-                ))
+                statistics.usageSummary.map((summary, index) => {
+                  const categoryText = extractCategoryFromSummary(summary);
+                  return (
+                    <StatItem
+                      key={index}
+                      label={summary}
+                      value=""
+                      color="text-blue-600"
+                      onClick={() => handleStatItemClick("Device Usage Classification", categoryText, categoryText, `usage-${index}`)}
+                    />
+                  );
+                })
               ) : (
                 <>
                   <StatItem
@@ -1074,15 +1077,18 @@ export const DeviceStatisticsAnalytics = ({
           <CardContent className="pt-0">
             <div className="space-y-0">
               {statistics.accuracySummary && statistics.accuracySummary.length > 0 ? (
-                statistics.accuracySummary.map((summary, index) => (
-                  <StatItem
-                    key={index}
-                    label={summary}
-                    value=""
-                    color="text-purple-600"
-                    onClick={() => handleStatItemClick("Accuracy Performance", summary, summary, `accuracy-${index}`)}
-                  />
-                ))
+                statistics.accuracySummary.map((summary, index) => {
+                  const categoryText = extractCategoryFromSummary(summary);
+                  return (
+                    <StatItem
+                      key={index}
+                      label={summary}
+                      value=""
+                      color="text-purple-600"
+                      onClick={() => handleStatItemClick("Accuracy Performance", categoryText, categoryText, `accuracy-${index}`)}
+                    />
+                  );
+                })
               ) : (
                 <>
                   <StatItem
