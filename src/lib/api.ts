@@ -3191,6 +3191,66 @@ class ApiClient {
     }
   }
 
+   async getSettingByKey(key : string): Promise<PaginatedResponse<Setting>> {
+    // const sp = new URLSearchParams();
+    // if (params?.page) sp.append("page", String(params.page));
+    // if (params?.limit) sp.append("limit", String(params.limit));
+    // const q = sp.toString();
+
+    try {
+      const raw: any = await this.request<any>(`/Settings/getsettingbykey?key=${key}`);
+      const timestamp = raw?.timestamp || new Date().toISOString();
+
+      const rawItems = Array.isArray(raw?.data?.items)
+        ? raw.data.items
+        : Array.isArray(raw?.data?.data)
+          ? raw.data.data
+          : Array.isArray(raw?.data)
+            ? raw.data
+            : Array.isArray(raw)
+              ? raw
+              : [];
+
+      const mapped: Setting[] = rawItems.map((it: any) => {
+        const fallbackId = (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function")
+          ? crypto.randomUUID()
+          : `${Date.now()}`;
+
+        return {
+          id: String(it.id ?? it.ID ?? it.settingId ?? it.SettingId ?? fallbackId),
+          settingKey: String(it.settingKey ?? it.SettingKey ?? ""),
+          settingValue: String(it.settingValue ?? it.SettingValue ?? ""),
+          performedBy: Number(it.performedBy ?? it.PerformedBy ?? 0) || undefined,
+          createdAt: it.createdAt ?? it.CreatedAt ?? it.created_at ?? timestamp,
+          updatedAt: it.updatedAt ?? it.UpdatedAt ?? it.updated_at ?? "",
+        } as Setting;
+      });
+      const pagination = null
+      // const pagination = raw?.data?.pagination || {
+      //   page: params?.page ?? 1,
+      //   limit: params?.limit ?? mapped.length,
+      //   total: mapped.length,
+      //   totalPages: 1,
+      // };
+
+      return {
+        success: (raw?.status_code ?? 200) >= 200 && (raw?.status_code ?? 200) < 300,
+        data: mapped,
+        message: raw?.message,
+        timestamp,
+        pagination,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        data: [],
+        message: "Failed to load settings",
+        timestamp: new Date().toISOString(),
+        pagination: null,
+      };
+    }
+  }
+
   async createSetting(payload: SettingCreateUpdate): Promise<ApiResponse<Setting>> {
     const sessionData = sessionStorage.getItem("currentUser");
     let performedBy: number | null = null;

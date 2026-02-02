@@ -123,6 +123,7 @@ export const DeviceLogGrid = ({
 
   // Fetch device logs
   const fetchDeviceLogs = async (page: number = 1) => {
+    debugger
     try {
       setIsLoading(true);
       setError(null);

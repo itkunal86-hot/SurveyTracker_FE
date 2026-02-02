@@ -585,76 +585,58 @@ export const DeviceStatisticsAnalytics = ({
   }, []);
 
   useEffect(() => {
-    const fetchTimeRangeOptions = async () => {
-      try {
-        setLoadingTimeRanges(true);
+  const fetchTimeRangeOptions = async () => {
+    try {
+      setLoadingTimeRanges(true);
 
-        const response = await fetch(
-          "https://localhost:7215/api/Settings/getsetting?limit=200"
-        );
+      // ✅ Already scoped by key
+      const response = await apiClient.getSettingByKey("SETTING_DAY_DDL_FILTTER");
 
-        if (!response.ok) {
-          throw new Error(response.statusText);
-        }
+      const settings = response?.data || [];
+      console.log(settings)
+      if (settings.length > 0) {
+        const options: TimeOption[] = settings.map((setting: any) => {
+          const settingValue = setting.settingValue || "";
 
-        const data = await response.json();
-        const settings = data?.data?.data || [];
+          // "DAYS=7,TEXT=Last 7 Days"
+          const parts = settingValue.split(",");
 
-        const daySettings = settings.filter(
-          (s: any) => s.settingKey === "SETTING_DAY_DDL_FILTTER"
-        );
-
-        if (daySettings.length > 0) {
-          const options: TimeOption[] = daySettings.map((setting: any) => {
-            const settingValue = setting.settingValue || "";
-
-            // 🔹 Split by comma → ["DAYS=7", "TEXT=Last 7 Days"]
-            const parts = settingValue.split(",");
-
-            const parsed: Record<string, string> = {};
-
-            parts.forEach((part: string) => {
-              const [key, value] = part.split("=");
-              if (key && value) {
-                parsed[key.trim().toUpperCase()] = value.trim();
-              }
-            });
-
-            // Determine unit dynamically (DAYS / MONTHS)
-            const unit = parsed["DAYS"]
-              ? "days"
-              : parsed["MONTH"]
-                ? "months"
-                : "days";
-
-            const amount =
-              parsed["DAYS"] ||
-              parsed["MONTH"] ||
-              "7";
-
-            const label =
-              parsed["TEXT"] || `Last ${amount} ${unit}`;
-
-            const value = `${amount}-${unit}`;
-
-            return { value, label };
+          const parsed: Record<string, string> = {};
+          parts.forEach((part: string) => {
+            const [key, value] = part.split("=");
+            if (key && value) {
+              parsed[key.trim().toUpperCase()] = value.trim();
+            }
           });
 
-          setTimeRangeOptions(options);
-        } else {
-          setTimeRangeOptions(FALLBACK_TIME_RANGE_OPTIONS);
-        }
-      } catch (error) {
-        console.error("Error fetching time range options:", error);
+          const unit = parsed["DAYS"]
+            ? "days"
+            : parsed["MONTH"]
+            ? "months"
+            : "days";
+
+          const amount = parsed["DAYS"] || parsed["MONTH"] || "7";
+          const label = parsed["TEXT"] || `Last ${amount} ${unit}`;
+          const value = `${amount}-${unit}`;
+
+          return { value, label };
+        });
+
+        setTimeRangeOptions(options);
+      } else {
         setTimeRangeOptions(FALLBACK_TIME_RANGE_OPTIONS);
-      } finally {
-        setLoadingTimeRanges(false);
       }
-    };
+    } catch (error) {
+      console.error("Error fetching time range options:", error);
+      setTimeRangeOptions(FALLBACK_TIME_RANGE_OPTIONS);
+    } finally {
+      setLoadingTimeRanges(false);
+    }
+  };
 
+  fetchTimeRangeOptions();
+}, []);
 
-    fetchTimeRangeOptions();
-  }, []);
 
   const getDateRange = () => {
     var endDate = new Date();
