@@ -388,7 +388,7 @@ export const DeviceLogGrid = ({
                 </TableRow>
               ) : (
                 deviceLogs.map((log) => (
-                  <TableRow key={log.uniqueId}>
+                  <TableRow key={log.uniqueId || log.deviceLogId || log.id}>
                     <TableCell className="font-medium">{log.id}</TableCell>
                     <TableCell>{log.name}</TableCell>
                     {/* <TableCell className="text-sm">{log.type}</TableCell> */}
