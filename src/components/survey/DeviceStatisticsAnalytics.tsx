@@ -207,6 +207,7 @@ export const DeviceStatisticsAnalytics = ({
   const [showCalendar, setShowCalendar] = useState(false);
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+  const [hasAutoSelected, setHasAutoSelected] = useState(false);
 
 
   // const handleTimeRangeChange = async (value: string) => {
@@ -717,6 +718,17 @@ export const DeviceStatisticsAnalytics = ({
     // - Shared state management solution
     setLoadingStats(false);
   }, [timeRange, selectedZones]);
+
+  // Auto-select first time range option when options are loaded
+  useEffect(() => {
+    if (timeRangeOptions.length > 0 && !loadingTimeRanges && !hasAutoSelected) {
+      const firstOption = timeRangeOptions[0].value;
+      setTimeRange(firstOption as TimeRange);
+      setHasAutoSelected(true);
+      // Trigger data fetch with the first option
+      handleTimeRangeChange(firstOption);
+    }
+  }, [timeRangeOptions, loadingTimeRanges, hasAutoSelected]);
 
   const usagePercentage =
     statistics.totalActiveDeviceCount > 0
