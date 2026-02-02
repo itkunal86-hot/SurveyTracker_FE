@@ -209,6 +209,7 @@ export const DeviceStatisticsAnalytics = ({
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [hasAutoSelected, setHasAutoSelected] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
 
 
   // const handleTimeRangeChange = async (value: string) => {
