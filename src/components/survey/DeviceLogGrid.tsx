@@ -126,6 +126,7 @@ export const DeviceLogGrid = ({
     try {
       setIsLoading(true);
       setError(null);
+      setDeviceLogs([]); // Reset to empty array before fetching
 
       // Use custom dates if available, otherwise use selectedTime
       let startDate: string | null = null;
