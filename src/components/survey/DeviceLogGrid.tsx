@@ -49,6 +49,7 @@ export const DeviceLogGrid = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 });
+  const [exportLoading, setExportLoading] = useState(false);
 
   // Calculate date range based on timeRange value
   // const getDateRange = (timeValue: string) => {
