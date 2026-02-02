@@ -254,7 +254,7 @@ export const DeviceLogGrid = ({
       setPagination({
         page,
         limit: pagination.limit,
-        total: data?.data?.pagination?.total || mapped.length,
+        total: data?.pagination?.total || data?.data?.pagination?.total || mapped.length,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to load device logs";
