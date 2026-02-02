@@ -481,6 +481,48 @@ export const DeviceStatisticsAnalytics = ({
     }
   };
 
+  const handleExportDeviceSummary = async () => {
+    setExportLoading(true);
+
+    try {
+      // Get current date range
+      const { startDate: startISO, endDate: endISO } = getDateRange();
+
+      // Prepare zone parameter
+      let zoneParam: string | undefined;
+      if (selectedZones.length > 0 && !(selectedZones.length === 1 && selectedZones[0] === "all")) {
+        zoneParam = selectedZones.join(",");
+      }
+
+      // Call the export API
+      const blob = await apiClient.exportDeviceSummary({
+        page: 1,
+        limit: 100,
+        startDate: startISO ? new Date(startISO) : undefined,
+        endDate: endISO ? new Date(endISO) : undefined,
+        zone: zoneParam,
+        deviceIds: selectedDeviceIds.length > 0 ? selectedDeviceIds : undefined,
+      });
+
+      // Create a download link and trigger download
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `device-summary-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success("Device summary exported successfully");
+    } catch (error) {
+      console.error("Error exporting device summary:", error);
+      toast.error("Failed to export device summary");
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   // const handleStatItemClick = (summaryType: string) => {
   //   setSelectedSummaryType(summaryType);
 
