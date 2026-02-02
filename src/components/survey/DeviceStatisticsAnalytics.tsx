@@ -488,6 +488,13 @@ export const DeviceStatisticsAnalytics = ({
   //   toast.success(`Loaded devices: ${summaryType}`);
   // };
 
+  // Sync selectedTime prop with timeRange state
+  useEffect(() => {
+    if (selectedTime && selectedTime !== timeRange) {
+      setTimeRange(selectedTime as TimeRange);
+    }
+  }, [selectedTime]);
+
   useEffect(() => {
     const fetchZones = async () => {
       try {
