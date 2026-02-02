@@ -1033,7 +1033,7 @@ export const DeviceStatisticsAnalytics = ({
                       label={summary}
                       value=""
                       color="text-blue-600"
-                      onClick={() => handleStatItemClick("Device Usage Classification", categoryText, categoryText, `usage-${index}`)}
+                      onClick={() => handleStatItemClick("Device Usage Classification", categoryText, categoryText, categoryText)}
                     />
                   );
                 })
@@ -1085,7 +1085,7 @@ export const DeviceStatisticsAnalytics = ({
                       label={summary}
                       value=""
                       color="text-purple-600"
-                      onClick={() => handleStatItemClick("Accuracy Performance", categoryText, categoryText, `accuracy-${index}`)}
+                      onClick={() => handleStatItemClick("Accuracy Performance", categoryText, categoryText, categoryText)}
                     />
                   );
                 })
