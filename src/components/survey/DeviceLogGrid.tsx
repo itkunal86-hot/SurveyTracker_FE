@@ -265,10 +265,13 @@ export const DeviceLogGrid = ({
     }
   };
 
+  // Memoize the device IDs to prevent unnecessary re-fetches
+  const memoizedDeviceIds = useMemo(() => selectedDeviceIds.join(','), [selectedDeviceIds]);
+
   // Fetch on component mount and when time selection, summaryType, zone, custom dates, or device IDs change
   useEffect(() => {
     fetchDeviceLogs(1);
-  }, [selectedTime, summaryType, selectedZone, customStartDate, customEndDate, selectedDeviceIds]);
+  }, [selectedTime, summaryType, selectedZone, customStartDate, customEndDate, memoizedDeviceIds]);
 
   const getBatteryColor = (battery?: number) => {
     if (battery === undefined) return "text-muted-foreground";
