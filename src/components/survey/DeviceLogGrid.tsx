@@ -404,6 +404,15 @@ export const DeviceLogGrid = ({
             >
               <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportDeviceLogs}
+              disabled={exportLoading || isLoading}
+              title="Export device logs"
+            >
+              <Download className="w-4 h-4" />
+            </Button>
           </div>
         </div>
       </CardHeader>
