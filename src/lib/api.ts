@@ -3116,7 +3116,7 @@ class ApiClient {
     const q = sp.toString();
 
     const base = (this.baseURL || "").replace(/\/$/, "");
-    let ep = `/DeviceLog/exportdevicesummery${q ? `?${q}` : ""}`;
+    let ep = `/DeviceLog/exportsummery${q ? `?${q}` : ""}`;
     ep = ep.replace(/^\/api\//, "/");
     const url = `${base}${ep}`;
 

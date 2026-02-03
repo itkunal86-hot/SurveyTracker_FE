@@ -38,7 +38,7 @@ interface DeviceLogGridProps {
 
 export const DeviceLogGrid = ({
   summaryType = "",
-  selectedTime = "7days",
+  selectedTime = "7-days",
   selectedZone = "all",
   customStartDate = null,
   customEndDate = null,
@@ -427,7 +427,7 @@ export const DeviceLogGrid = ({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Device ID</TableHead>
+                {/* <TableHead>Device ID</TableHead> */}
                 <TableHead>Name</TableHead>
                 {/* <TableHead>Type</TableHead> */}
                 <TableHead>Initial Location</TableHead>
@@ -437,7 +437,7 @@ export const DeviceLogGrid = ({
                 <TableHead>Battery</TableHead>
                 <TableHead>Last Seen</TableHead>
                 <TableHead>Surveyor</TableHead>
-                <TableHead>Serial Number</TableHead>
+                {/* <TableHead>Serial Number</TableHead> */}
                 <TableHead>Action</TableHead>
               </TableRow>
             </TableHeader>
@@ -457,7 +457,7 @@ export const DeviceLogGrid = ({
               ) : (
                 deviceLogs.map((log) => (
                   <TableRow key={log.uniqueId || log.deviceLogId || log.id}>
-                    <TableCell className="font-medium">{log.id}</TableCell>
+                    {/* <TableCell className="font-medium">{log.id}</TableCell> */}
                     <TableCell>{log.name}</TableCell>
                     {/* <TableCell className="text-sm">{log.type}</TableCell> */}
                     <TableCell className="text-sm">{log.location}</TableCell>
@@ -491,7 +491,7 @@ export const DeviceLogGrid = ({
                       )}
                     </TableCell>
                     <TableCell className="text-sm">{log.surveyor || "-"}</TableCell>
-                    <TableCell className="text-sm">{log.serialNumber || "-"}</TableCell>
+                    {/* <TableCell className="text-sm">{log.serialNumber || "-"}</TableCell> */}
                     <TableCell>
                       <Button
                         variant="outline"

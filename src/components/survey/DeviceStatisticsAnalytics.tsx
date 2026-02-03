@@ -113,13 +113,13 @@ const calculateStatisticsFromDevices = (devices: any): DeviceStatisticsData => {
   };
 };
 
-type TimeRange = "all" | "7days" | "1month" | "3months";
+type TimeRange = "all" | "7-days" | "1-month" | "3-months";
 type ZoneSelection = string | string[];
 
 const FALLBACK_TIME_RANGE_OPTIONS = [
-  { value: "7days", label: "Last 7 Days" },
-  { value: "1month", label: "Last 1 Month" },
-  { value: "3months", label: "Last 3 Months" },
+  { value: "7-days", label: "Last 7 Days" },
+  { value: "1-month", label: "Last 1 Month" },
+  { value: "3-months", label: "Last 3 Months" },
 ];
 
 const SURVEY_POINT_THRESHOLD = 100;
@@ -169,13 +169,13 @@ interface DeviceStatisticsAnalyticsProps {
 export const DeviceStatisticsAnalytics = ({
   onSummaryTypeSelect,
   onZoneSelect,
-  selectedTime = "7days",
+  selectedTime = "7-days",
   onSelectedTimeChange,
   timeOptions = [],
   onCustomDateRangeChange,
   onDeviceSelect
 }: DeviceStatisticsAnalyticsProps) => {
-  const [timeRange, setTimeRange] = useState<TimeRange>("7days");
+  const [timeRange, setTimeRange] = useState<TimeRange>("7-days");
   const [zones, setZones] = useState<Zone[]>([]);
   const [loadingZones, setLoadingZones] = useState(true);
   const [devices, setDevices] = useState<Device[]>([]);
@@ -557,57 +557,57 @@ export const DeviceStatisticsAnalytics = ({
     };
 
     // Fetch initial statistics from device log
-    const fetchStatistics = async () => {
-      try {
-        setLoadingStats(true);
-        const { startDate, endDate } = (() => {
-          const end = new Date();
-          const start = new Date();
+    // const fetchStatistics = async () => {
+    //   try {
+    //     setLoadingStats(true);
+    //     const { startDate, endDate } = (() => {
+    //       const end = new Date();
+    //       const start = new Date();
 
-          switch (selectedTime) {
-            case "all":
-              return { startDate: null, endDate: null };
-            case "7days":
-              start.setDate(start.getDate() - 7);
-              return { startDate: start, endDate: end };
-            case "1month":
-              start.setMonth(start.getMonth() - 1);
-              return { startDate: start, endDate: end };
-            case "3months":
-              start.setMonth(start.getMonth() - 3);
-              return { startDate: start, endDate: end };
-            default:
-              return { startDate: null, endDate: null };
-          }
-        })();
-        // Prepare zone parameter
-        let zoneParam: string | undefined;
-        if (selectedZones.length > 0 && !(selectedZones.length === 1 && selectedZones[0] === "all")) {
-          zoneParam = selectedZones.join(",");
-        }
+    //       switch (selectedTime) {
+    //         case "all":
+    //           return { startDate: null, endDate: null };
+    //         case "7days":
+    //           start.setDate(start.getDate() - 7);
+    //           return { startDate: start, endDate: end };
+    //         case "1month":
+    //           start.setMonth(start.getMonth() - 1);
+    //           return { startDate: start, endDate: end };
+    //         case "3months":
+    //           start.setMonth(start.getMonth() - 3);
+    //           return { startDate: start, endDate: end };
+    //         default:
+    //           return { startDate: null, endDate: null };
+    //       }
+    //     })();
+    //     // Prepare zone parameter
+    //     let zoneParam: string | undefined;
+    //     if (selectedZones.length > 0 && !(selectedZones.length === 1 && selectedZones[0] === "all")) {
+    //       zoneParam = selectedZones.join(",");
+    //     }
 
-        const response = await apiClient.getDeviceActiveLog({
-          page: 1,
-          limit: 100,
-          zone: zoneParam,
-          startDate: startDate,
-          endDate: endDate,
-        });
+    //     const response = await apiClient.getDeviceActiveLog({
+    //       page: 1,
+    //       limit: 100,
+    //       zone: zoneParam,
+    //       startDate: startDate,
+    //       endDate: endDate,
+    //     });
 
-        if (response && response.success && response.data) {
-          // Calculate statistics from device data
-          const calculatedStats = calculateStatisticsFromDevices(response.summery);
-          setStatistics(calculatedStats);
-        }
-      } catch (error) {
-        console.error("Error fetching device active log:", error);
-      } finally {
-        setLoadingStats(false);
-      }
-    };
+    //     if (response && response.success && response.data) {
+    //       // Calculate statistics from device data
+    //       const calculatedStats = calculateStatisticsFromDevices(response.summery);
+    //       setStatistics(calculatedStats);
+    //     }
+    //   } catch (error) {
+    //     console.error("Error fetching device active log:", error);
+    //   } finally {
+    //     setLoadingStats(false);
+    //   }
+    // };
 
     fetchZones();
-    fetchStatistics();
+    //fetchStatistics();
   }, []);
 
   // Fetch devices for the device dropdown
@@ -637,7 +637,7 @@ export const DeviceStatisticsAnalytics = ({
       const response = await apiClient.getSettingByKey("SETTING_DAY_DDL_FILTTER");
 
       const settings = response?.data || [];
-      console.log(settings)
+      //console.log(settings)
       if (settings.length > 0) {
         const options: TimeOption[] = settings.map((setting: any) => {
           const settingValue = setting.settingValue || "";
@@ -691,13 +691,13 @@ export const DeviceStatisticsAnalytics = ({
         startDate = null;
         endDate = null;
         break;
-      case "7days":
+      case "7-days":
         startDate.setDate(startDate.getDate() - 7);
         break;
-      case "1month":
+      case "1-month":
         startDate.setMonth(startDate.getMonth() - 1);
         break;
-      case "3months":
+      case "3-months":
         startDate.setMonth(startDate.getMonth() - 3);
         break;
     }
