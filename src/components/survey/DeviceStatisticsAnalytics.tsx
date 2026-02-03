@@ -40,6 +40,7 @@ interface DeviceStatisticsData {
   maximumTTFA: number;
   usageSummary?: string[];
   accuracySummary?: string[];
+  timeToAchive?:string[];
 }
 
 // Helper function to calculate statistics from device log data
@@ -110,6 +111,7 @@ const calculateStatisticsFromDevices = (devices: any): DeviceStatisticsData => {
     maximumTTFA,
     usageSummary: devices.usageSummary,
     accuracySummary: devices.accuracySummary,
+    timeToAchive:devices.timeToAchive,
   };
 };
 

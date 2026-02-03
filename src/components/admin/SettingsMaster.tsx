@@ -70,7 +70,7 @@ export default function SettingsMaster() {
   };
 
   const isDeviceType = () => {
-    return form.timePeriod === "DEVICE_USAGE" || form.timePeriod === "DEVICE_ACCURACY";
+    return form.timePeriod === "DEVICE_USAGE" || form.timePeriod === "DEVICE_ACCURACY" || form.timePeriod === "DEVICE_TIME_ACCURACY";
   };
 
   const validate = () => {
@@ -233,6 +233,7 @@ export default function SettingsMaster() {
                         <SelectItem value="HOURS">HOURS</SelectItem>
                         <SelectItem value="DEVICE_USAGE">Device Usage</SelectItem>
                         <SelectItem value="DEVICE_ACCURACY">Device Accuracy</SelectItem>
+                        <SelectItem value="DEVICE_TIME_ACCURACY">Device Time Accuracy</SelectItem>
                       </SelectContent>
                     </Select>
                     {errors.timePeriod && <p className="text-sm text-destructive">{errors.timePeriod}</p>}
