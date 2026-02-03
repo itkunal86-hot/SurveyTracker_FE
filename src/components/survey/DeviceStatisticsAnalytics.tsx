@@ -1187,41 +1187,58 @@ export const DeviceStatisticsAnalytics = ({
           </CardHeader>
           <CardContent className="pt-0">
             <div className="space-y-0">
-              <StatItem
-                label="Minimum TTFA"
-                value={`${statistics.minimumTTFA}m`}
-                color="text-green-600"
-                icon={<Clock className="h-3 w-3 text-green-500" />}
-                onClick={() => handleStatItemClick("Time to Achieve Accuracy", "Minimum TTFA", `${statistics.minimumTTFA}m`, "minimumTTFA")}
-              />
-              <StatItem
-                label="Average TTFA"
-                value={`${statistics.averageTTFA}m`}
-                color="text-blue-600"
-                icon={<Clock className="h-3 w-3 text-blue-500" />}
-                onClick={() => handleStatItemClick("Time to Achieve Accuracy", "Average TTFA", `${statistics.averageTTFA}m`, "averageTTFA")}
-              />
-              <StatItem
-                label="Maximum TTFA"
-                value={`${statistics.maximumTTFA}m`}
-                color="text-orange-600"
-                icon={<Clock className="h-3 w-3 text-orange-500" />}
-                onClick={() => handleStatItemClick("Time to Achieve Accuracy", "Maximum TTFA", `${statistics.maximumTTFA}m`, "maximumTTFA")}
-              />
-              <div className="mt-3 pt-2 border-t space-y-1">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">&lt; 5 minutes</span>
-                  <Badge variant="secondary" className="bg-green-100 text-xs h-5">Optimal</Badge>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">5-15 minutes</span>
-                  <Badge variant="secondary" className="bg-yellow-100 text-xs h-5">Normal</Badge>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">&gt; 15 minutes</span>
-                  <Badge variant="secondary" className="bg-red-100 text-xs h-5">Attention</Badge>
-                </div>
-              </div>
+              {statistics.timeToAchive && statistics.timeToAchive.length > 0 ? (
+                statistics.timeToAchive.map((summary, index) => {
+                  const categoryText = extractCategoryFromSummary(summary);
+                  return (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between py-2 px-2 border-b last:border-b-0 cursor-pointer transition-colors hover:bg-muted/50 rounded"
+                      onClick={() => handleStatItemClick("Time to Achieve Accuracy", categoryText, categoryText, categoryText)}
+                    >
+                      <span className="text-sm text-muted-foreground hover:text-foreground transition-colors">{summary}</span>
+                    </div>
+                  );
+                })
+              ) : (
+                <>
+                  <StatItem
+                    label="Minimum TTFA"
+                    value={`${statistics.minimumTTFA}m`}
+                    color="text-green-600"
+                    icon={<Clock className="h-3 w-3 text-green-500" />}
+                    onClick={() => handleStatItemClick("Time to Achieve Accuracy", "Minimum TTFA", `${statistics.minimumTTFA}m`, "minimumTTFA")}
+                  />
+                  <StatItem
+                    label="Average TTFA"
+                    value={`${statistics.averageTTFA}m`}
+                    color="text-blue-600"
+                    icon={<Clock className="h-3 w-3 text-blue-500" />}
+                    onClick={() => handleStatItemClick("Time to Achieve Accuracy", "Average TTFA", `${statistics.averageTTFA}m`, "averageTTFA")}
+                  />
+                  <StatItem
+                    label="Maximum TTFA"
+                    value={`${statistics.maximumTTFA}m`}
+                    color="text-orange-600"
+                    icon={<Clock className="h-3 w-3 text-orange-500" />}
+                    onClick={() => handleStatItemClick("Time to Achieve Accuracy", "Maximum TTFA", `${statistics.maximumTTFA}m`, "maximumTTFA")}
+                  />
+                  <div className="mt-3 pt-2 border-t space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">&lt; 5 minutes</span>
+                      <Badge variant="secondary" className="bg-green-100 text-xs h-5">Optimal</Badge>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">5-15 minutes</span>
+                      <Badge variant="secondary" className="bg-yellow-100 text-xs h-5">Normal</Badge>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">&gt; 15 minutes</span>
+                      <Badge variant="secondary" className="bg-red-100 text-xs h-5">Attention</Badge>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </CardContent>
         </Card>
