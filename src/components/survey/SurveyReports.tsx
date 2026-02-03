@@ -55,22 +55,22 @@ export const SurveyReports = () => {
     return years;
   };
 
-  // Fetch devices on component mount
+  // Fetch active devices on component mount
   useEffect(() => {
     const fetchDevices = async () => {
       setDevicesLoading(true);
       setDevicesError(null);
       try {
-        const response = await apiClient.getDevices({ page: 1, limit: 10 });
+        const response = await apiClient.getActiveDevices();
         if (response.success && response.data) {
           setDevices(response.data);
         } else {
-          setDevicesError("Failed to load devices");
+          setDevicesError("Failed to load active devices");
         }
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "Failed to load devices";
+        const errorMessage = error instanceof Error ? error.message : "Failed to load active devices";
         setDevicesError(errorMessage);
-        console.error("Error fetching devices:", error);
+        console.error("Error fetching active devices:", error);
       } finally {
         setDevicesLoading(false);
       }
