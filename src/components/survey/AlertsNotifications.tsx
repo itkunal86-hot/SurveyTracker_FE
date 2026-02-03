@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useDeviceAlerts } from "@/hooks/useApiQueries";
 import { API_BASE_PATH } from "@/lib/api";
-import { getBatteryColor, getAlertSeverityBorderColor } from "@/utils/batteryUtils";
+import { getBatteryColor, getAlertSeverityBorderColor, getAlertBadgeBgColor } from "@/utils/batteryUtils";
 
 export const AlertsNotifications = () => {
   const { data: alertsResp, isLoading } = useDeviceAlerts({ limit: 100 });
@@ -208,13 +208,14 @@ const handleExportAlerts = async () => {
               <div className="col-span-1 md:col-span-2 lg:col-span-3 text-sm text-muted-foreground">Loading alerts...</div>
             ) : (
               unresolvedAlerts.map((alert: any) => (
-                <Card key={alert.id} className={`border-l-4 ${getAlertSeverityBorderColor(alert.severity)}`}>
+                <Card key={alert.id} className={`border-l-4 ${getAlertSeverityBorderColor(alert.controllerHealthStatus)}`}>
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center space-x-2">
                         {getAlertIcon(alert.deviceType)}
                       </div>
-                      {getSeverityBadge(alert.severity)}
+                      <Badge variant="outline" className={`border-1 text-white ${getAlertBadgeBgColor(alert.controllerHealthStatus)}`}>{alert.controllerHealthStatus}</Badge>
+                     
                     </div>
 
                     <div className="space-y-2">
@@ -228,8 +229,8 @@ const handleExportAlerts = async () => {
                       <div className="flex items-center space-x-4 text-xs flex-wrap gap-2">
                         <div className="flex items-center space-x-1">
                           <Battery className="w-3 h-3" />
-                          <span className={getBatteryColor(Number(alert.batteryLevel ?? 0))}>
-                            {alert.batteryLevel ?? 0}%
+                          <span className={getBatteryColor(Number(alert.controllerbatteryLevel ?? 0))}>
+                            {alert.controllerbatteryLevel ?? 0}%
                           </span>
                         </div>
                         {alert.ch && (
@@ -251,7 +252,7 @@ const handleExportAlerts = async () => {
                           <Clock className="w-3 h-3" />
                           <span>{alert.timestamp}</span>
                         </div>
-                        <Button
+                        {/* <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleMarkResolved(String(alert.id))}
@@ -263,7 +264,7 @@ const handleExportAlerts = async () => {
                             <X className="w-3 h-3 mr-1 text-red-500" />
                           )}
                           Resolve
-                        </Button>
+                        </Button> */}
                       </div>
                     </div>
                   </CardContent>
@@ -289,7 +290,7 @@ const handleExportAlerts = async () => {
                 <div className="col-span-1 md:col-span-2 lg:col-span-3 text-sm text-muted-foreground">Loading alerts...</div>
               ) : (
                 resolvedAlerts.map((alert: any) => (
-                  <Card key={alert.id} className={`border-l-4 ${getAlertSeverityBorderColor(alert.severity)} opacity-70`}>
+                  <Card key={alert.id} className={`border-l-4 ${getAlertSeverityBorderColor(alert.controllerHealthStatus)} opacity-70`}>
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center space-x-2">

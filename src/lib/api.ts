@@ -149,10 +149,12 @@ export interface DeviceAlert {
   zone?: string;
   surveyor?: string;
   timestamp: string;
-  batteryLevel?: number;
-  healthStatus?: "Critical" | "Warning" | "Fair" | "Good" | string;
-  controllerHealthStatus?: "Critical" | "Warning" | "Fair" | "Good" | string;
-  deviceHealthStatus?: "Critical" | "Warning" | "Fair" | "Good" | string;
+  controllerbatteryLevel?: number;
+  receiverbatteryLevel?:number;
+  //batteryLevel?: number;
+  //healthStatus?: "Critical" | "Warning" | "Fair" | "Good" | string;
+  controllerHealthStatus?: "GOOD" | "OVERHEAT" | "DEAD" | "OVER_VOLTAGE" |"UNSPECIFIED_FAILURE"| "COLD" | "UNKNOWN" | string;
+  deviceHealthStatus?: "Excellent" | "Good" | "Warning" | "Critical" | "NA" | string;
   resolved?: boolean;
 }
 
@@ -837,46 +839,34 @@ class ApiClient {
     const ts = it.timestamp ?? it.Timestamp ?? it.time ?? it.Time ?? it.createdAt ?? it.CreatedAt ?? new Date().toISOString();
     const timestamp = String(ts);
 
-    const batteryRaw = it.batteryLevel ?? it.BatteryLevel ?? it.battery ?? it.Battery;
-    const batteryLevel = typeof batteryRaw === "number" ? batteryRaw : (typeof batteryRaw === "string" ? Number(batteryRaw.replace(/%/g, "")) : undefined);
+    const receiverbatteryRaw = it.receiverbatteryLevel ;
+    const controllerbatteryRaw = it.controllerbatteryLevel ;
+    const receiverbatteryLevel = typeof receiverbatteryRaw === "number" ? receiverbatteryRaw : (typeof receiverbatteryRaw === "string" ? Number(receiverbatteryRaw.replace(/%/g, "")) : undefined);
+    const controllerbatteryLevel = typeof controllerbatteryRaw === "number" ? controllerbatteryRaw : (typeof controllerbatteryRaw === "string" ? Number(controllerbatteryRaw.replace(/%/g, "")) : undefined);
 
     const hsRaw = it.healthStatus ?? it.HealthStatus ?? it.health ?? it.Health;
     const healthStatus = hsRaw != null ? String(hsRaw) : undefined;
+    const chRaw = it.ch;
+    const ch = chRaw != null ? String(chRaw) : undefined;
 
-    const controllerHsRaw = it.controllerHealthStatus ?? it.ControllerHealthStatus ?? it.controllerHealth ?? it.ControllerHealth;
+    const controllerHsRaw = it.ch ;
     // If not provided, derive from severity or use healthStatus as fallback
     let controllerHealthStatus: string | undefined;
-    if (controllerHsRaw != null) {
+     
       controllerHealthStatus = String(controllerHsRaw);
-    } else if (healthStatus) {
-      // Use the overall health status for controller as fallback
-      controllerHealthStatus = healthStatus;
-    } else {
-      // Default based on severity
-      controllerHealthStatus = severity === "critical" ? "Critical" : severity === "warning" ? "Warning" : "Good";
-    }
+   
 
-    const deviceHsRaw = it.deviceHealthStatus ?? it.DeviceHealthStatus ?? it.deviceHealth ?? it.DeviceHealth;
+    const deviceHsRaw = it.rh;
     // If not provided, derive from battery level
     let deviceHealthStatus: string | undefined;
-    if (deviceHsRaw != null) {
-      deviceHealthStatus = String(deviceHsRaw);
-    } else {
-      // Derive from battery level
-      const battLevel = batteryLevel ?? 100;
-      if (battLevel < 20) {
-        deviceHealthStatus = "Critical";
-      } else if (battLevel < 50) {
-        deviceHealthStatus = "Warning";
-      } else {
-        deviceHealthStatus = "Good";
-      }
-    }
+    
+    deviceHealthStatus = String(deviceHsRaw);
+    
 
     const resolvedVal = it.resolved ?? it.Resolved ?? it.isResolved ?? it.IsResolved;
     const resolved = typeof resolvedVal === "boolean" ? resolvedVal : (String(resolvedVal ?? "").toLowerCase() === "true");
 
-    return { id, type, instrument, deviceType, message, severity, zone, surveyor, timestamp, batteryLevel, healthStatus, controllerHealthStatus, deviceHealthStatus, resolved };
+    return { id, type, instrument, deviceType, message, severity, zone, surveyor, timestamp, controllerbatteryLevel,receiverbatteryLevel, controllerHealthStatus, deviceHealthStatus, resolved };
   }
 
   async getDeviceAlerts(params?: { page?: number; limit?: number }): Promise<PaginatedResponse<DeviceAlert>> {
