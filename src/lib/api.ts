@@ -1056,6 +1056,77 @@ class ApiClient {
     }
   }
 
+  async getActiveDevices(): Promise<ApiResponse<Device[]>> {
+    try {
+      const raw: any = await this.request<any>("/Device/getActivedevice");
+
+      const timestamp = raw?.timestamp || new Date().toISOString();
+
+      const rawItems = Array.isArray(raw?.data?.items)
+        ? raw.data.items
+        : Array.isArray(raw?.data?.data)
+          ? raw.data.data
+          : Array.isArray(raw?.data)
+            ? raw.data
+            : Array.isArray(raw)
+              ? raw
+              : [];
+
+      const mapped: Device[] = rawItems.map((it: any) => {
+        const id = String(it.id ?? it.ID ?? it.deviceId ?? it.DeviceId ?? it.device_id ?? `${Date.now()}`);
+        const name = String(it.name ?? it.Name ?? it.deviceName ?? it.DeviceName ?? id);
+
+        const rawStatus = String(it.status ?? it.Status ?? it.deviceStatus ?? it.DeviceStatus ?? "").toUpperCase();
+        const allowedStatuses = new Set(["ACTIVE", "INACTIVE", "MAINTENANCE", "ERROR"]);
+        const status = (allowedStatuses.has(rawStatus) ? rawStatus : "ACTIVE") as Device["status"];
+
+        const type = String(it.type ?? it.Type ?? it.deviceType ?? it.DeviceType ?? "SURVEY_EQUIPMENT").toUpperCase();
+
+        const lat = Number(it.lat ?? it.latitude ?? it.Latitude);
+        const lng = Number(it.lng ?? it.longitude ?? it.Longitude);
+        const coordinates = (!Number.isNaN(lat) && !Number.isNaN(lng))
+          ? { lat, lng }
+          : (it.coordinates && typeof it.coordinates.lat === "number" && typeof it.coordinates.lng === "number")
+            ? { lat: it.coordinates.lat, lng: it.coordinates.lng }
+            : { lat: 0, lng: 0 };
+
+        const batteryLevel = typeof it.batteryLevel === "number" ? it.batteryLevel : undefined;
+        const lastSeen = typeof (it.lastUpdated ?? it.lastSeen) === "string" ? (it.lastUpdated ?? it.lastSeen) : undefined;
+        const accuracy = typeof it.accuracy === "number" ? it.accuracy : undefined;
+        const modelName = it.modelName ?? it.ModelName ?? it.deviceModel ?? it.DeviceModel ?? undefined;
+
+        return {
+          id,
+          name,
+          type,
+          status,
+          coordinates,
+          modelName: modelName != null ? String(modelName) : undefined,
+          surveyor: it.surveyor ?? it.Surveyor ?? undefined,
+          batteryLevel,
+          lastSeen,
+          accuracy,
+        } as Device;
+      });
+
+      return {
+        success: (raw?.status_code ?? 200) >= 200 && (raw?.status_code ?? 200) < 300,
+        data: mapped,
+        message: raw?.message ?? raw?.status_message,
+        timestamp,
+      };
+    } catch (error) {
+      console.log("Error fetching active devices:", error);
+      const activeDevices = mockDevices.filter(d => d.status === "ACTIVE");
+      return {
+        success: true,
+        data: activeDevices,
+        message: "Using mock data",
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
   // async createDevice(
   //   device: DeviceCreateUpdate,
   // ): Promise<ApiResponse<Device>> {
