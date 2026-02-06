@@ -63,40 +63,70 @@ const calculateStatisticsFromDevices = (devices: any): DeviceStatisticsData => {
     };
   }
 
-  const totalDeviceCount = devices.totalDeviceCount;
-  const totalActiveDeviceCount = devices.totalActiveDeviceCount;
-  const totalInactiveDeviceCount = devices.totalInactiveDeviceCount;
+  const totalDeviceCount = devices.totalDeviceCount ?? 0;
+  const totalActiveDeviceCount = devices.totalActiveDeviceCount ?? 0;
+  const totalInactiveDeviceCount = devices.totalInactiveDeviceCount ?? 0;
 
-  // Usage classification based on battery level
-  const BATTERY_THRESHOLD = 50; // Battery % threshold for normal usage
-  const normalUsage = devices.normalUsage;
-  const underUsage = devices.underUsage;
-  const normalUsagePercent = devices.normalUsagePercent;
+  // Extract usage statistics from usageSummary array
+  // Format: "Below Avarage      1(100%)", "Normal      0(0%)", etc.
+  const parseUsageSummary = () => {
+    let normalUsage = 0;
+    let underUsage = 0;
+    let normalUsagePercent = 0;
 
-  // Accuracy classification
-  // const ACCURACY_THRESHOLD = 10; // Accuracy threshold in meters
-  // const accuracyValues = devices
-  //   .map(d => d.accuracy)
-  //   .filter((acc) => acc !== undefined && typeof acc === "number") as number[];
+    if (Array.isArray(devices.usageSummary)) {
+      devices.usageSummary.forEach((summary: string) => {
+        const match = summary.match(/(\d+)\((\d+)%\)/);
+        if (match) {
+          const count = parseInt(match[1], 10);
+          const percent = parseInt(match[2], 10);
 
-  //const normalAccuracy = accuracyValues.filter(acc => acc <= ACCURACY_THRESHOLD).length;
-  const normalAccuracy = devices.normalAccuracy;
-  //const belowAverageAccuracy = accuracyValues.filter(acc => acc > ACCURACY_THRESHOLD).length;
-  const belowAverageAccuracy = devices.underUsage;
-  // const normalAccuracyPercentage = accuracyValues.length > 0
-  //   ? Math.round((normalAccuracy / accuracyValues.length) * 100)
-  //   : 0;
-  const normalAccuracyPercentage = devices.normalAccuracyPercentage
+          if (summary.toLowerCase().includes("normal") && !summary.toLowerCase().includes("avarage")) {
+            normalUsage += count;
+            normalUsagePercent += percent;
+          } else {
+            underUsage += count;
+          }
+        }
+      });
+    }
 
-  // Time to Achieve Accuracy (represented by accuracy values in meters/minutes)
-  // const minimumTTFA = accuracyValues.length > 0 ? Math.min(...accuracyValues) : 0;
-  // const maximumTTFA = accuracyValues.length > 0 ? Math.max(...accuracyValues) : 0;
-  // const averageTTFA = accuracyValues.length > 0
-  //   ? Math.round(accuracyValues.reduce((sum, acc) => sum + acc, 0) / accuracyValues.length)
-  //   : 0;
-  const minimumTTFA = devices.minimumTTFA;
-  const maximumTTFA = devices.maximumTTFA;
-  const averageTTFA = devices.averageTTFA;
+    return { normalUsage, underUsage, normalUsagePercent };
+  };
+
+  // Extract accuracy statistics from accuracySummary array
+  const parseAccuracySummary = () => {
+    let normalAccuracy = 0;
+    let belowAverageAccuracy = 0;
+    let normalAccuracyPercentage = 0;
+
+    if (Array.isArray(devices.accuracySummary)) {
+      devices.accuracySummary.forEach((summary: string) => {
+        const match = summary.match(/(\d+)\((\d+)%\)/);
+        if (match) {
+          const count = parseInt(match[1], 10);
+          const percent = parseInt(match[2], 10);
+
+          if (summary.toLowerCase().includes("normal")) {
+            normalAccuracy += count;
+            normalAccuracyPercentage += percent;
+          } else {
+            belowAverageAccuracy += count;
+          }
+        }
+      });
+    }
+
+    return { normalAccuracy, belowAverageAccuracy, normalAccuracyPercentage };
+  };
+
+  const { normalUsage, underUsage, normalUsagePercent } = parseUsageSummary();
+  const { normalAccuracy, belowAverageAccuracy, normalAccuracyPercentage } = parseAccuracySummary();
+
+  // Time to Achieve Accuracy
+  const minimumTTFA = devices.minimumTTFA ?? 0;
+  const maximumTTFA = devices.maximumTTFA ?? 0;
+  const averageTTFA = devices.averageTTFA ?? 0;
   return {
     totalDeviceCount,
     totalActiveDeviceCount,
