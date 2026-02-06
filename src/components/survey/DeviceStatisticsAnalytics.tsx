@@ -167,6 +167,7 @@ interface DeviceStatisticsAnalyticsProps {
   timeOptions?: TimeOption[];
   onCustomDateRangeChange?: (startDate: string | null, endDate: string | null) => void;
   onDeviceSelect?: (deviceIds: string[]) => void;
+  deviceLogSummary?: any;
 }
 
 export const DeviceStatisticsAnalytics = ({
