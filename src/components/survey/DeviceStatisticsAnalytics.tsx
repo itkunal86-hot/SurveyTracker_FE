@@ -671,6 +671,12 @@ export const DeviceStatisticsAnalytics = ({
 
   const accuracyPercentage = statistics.normalAccuracyPercentage || 0;
 
+  // Check if summary arrays are empty - indicates no devices in selection criteria
+  const isSummaryEmpty =
+    (!deviceLogSummary?.usageSummary || deviceLogSummary.usageSummary.length === 0) &&
+    (!deviceLogSummary?.accuracySummary || deviceLogSummary.accuracySummary.length === 0) &&
+    (!deviceLogSummary?.timeToAchive || deviceLogSummary.timeToAchive.length === 0);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-4">
