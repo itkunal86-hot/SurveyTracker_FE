@@ -679,14 +679,18 @@ export const DeviceStatisticsAnalytics = ({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h2 className="text-2xl font-bold">Device Statistics & Analytics</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Time-based operational overview of GNSS devices
-          </p>
-        </div>
-        <div className="flex gap-3 items-center">
+      {/* Title Section */}
+      <div className="mb-4">
+        <h2 className="text-2xl font-bold">Device Statistics & Analytics</h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Time-based operational overview of GNSS devices
+        </p>
+      </div>
+
+      {/* Filters Card */}
+      <Card className="bg-white border-gray-200">
+        <CardContent className="pt-6">
+          <div className="flex gap-3 items-center flex-wrap">
           {/* {timeOptions.length > 0 && (
             <div className="w-48">
               <Select value={selectedTime} onValueChange={(value) => onSelectedTimeChange?.(value)}>
@@ -931,7 +935,8 @@ export const DeviceStatisticsAnalytics = ({
             {exportLoading ? "Exporting..." : "Export Summary"}
           </Button>
         </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {isSummaryEmpty ? (
         <Card className="border-amber-200 bg-amber-50">
