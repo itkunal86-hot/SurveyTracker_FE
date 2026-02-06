@@ -933,7 +933,23 @@ export const DeviceStatisticsAnalytics = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+      {isSummaryEmpty ? (
+        <Card className="border-amber-200 bg-amber-50">
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <AlertCircle className="h-12 w-12 text-amber-600 mb-4" />
+            <p className="text-center text-lg font-semibold text-amber-900">
+              No Active Devices
+            </p>
+            <p className="text-center text-sm text-amber-800 mt-2">
+              No active devices found in the selected criteria range.
+            </p>
+            <p className="text-center text-xs text-amber-700 mt-4">
+              Try adjusting your time range, zone, or device filters to see results.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         {/* Device Status Statistics - Single Card */}
         <Card>
           <CardHeader className="pb-3">
@@ -1141,6 +1157,7 @@ export const DeviceStatisticsAnalytics = ({
           </CardContent>
         </Card>
       </div>
+      )}
     </div>
   );
 };
