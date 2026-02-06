@@ -31,70 +31,39 @@ export const SurveyDashboard = () => {
   const [customEndDate, setCustomEndDate] = useState<string | null>(null);
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([]);
 
-  // Log selectedTime changes to verify it's dynamic, not static
+  // ✅ Get smId from localStorage (only on mount, not reactive polling)
+  const smId = localStorage.getItem("activeSurveyId");
+
+  // ✅ Fetch summary data from API only once on mount and when survey changes
   useEffect(() => {
-    console.log("Dashboard - selectedTime updated to:", selectedTime);
-  }, [selectedTime]);
+    const fetchStats = async () => {
+      if (!smId) {
+        console.warn("No activeSurveyId found in localStorage");
+        setLoadingStats(false);
+        return;
+      }
 
-  // ✅ Fetch smId (Survey ID) from localStorage
-  // const smId = localStorage.getItem("activeSurveyId");
-  // ✅ Track active survey ID as state (reactive)
-  const [smId, setSmId] = useState(localStorage.getItem("activeSurveyId"));
+      try {
+        setLoadingStats(true);
+        const response = await fetch(`${API_BASE_PATH}/DeviceAssignments/summary/${smId}`);
+        if (!response.ok) throw new Error("Failed to fetch summary data");
+        const data = await response.json();
 
+        setStats({
+          totalDevices: data.totalDevices ?? 0,
+          activeDevices: data.activeDevices ?? 0,
+          inactiveDevices: data.inactiveDevices ?? 0,
+          surveyors: data.surveyors ?? 0
+        });
+      } catch (error) {
+        console.error("Error fetching device summary:", error);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
 
-// ✅ Listen for changes to localStorage (from other tabs or in-app updates)
-useEffect(() => {
-  const handleStorageChange = (event: StorageEvent) => {
-    if (event.key === "activeSurveyId") {
-      setSmId(event.newValue);
-    }
-  };
-
-  window.addEventListener("storage", handleStorageChange);
-
-  // Optional: also support same-tab changes
-  const checkLocalChange = () => {
-    const currentId = localStorage.getItem("activeSurveyId");
-    setSmId(currentId);
-  };
-  const interval = setInterval(checkLocalChange, 1000); // check every second
-
-  return () => {
-    window.removeEventListener("storage", handleStorageChange);
-    clearInterval(interval);
-  };
-}, []);
-
-// ✅ Fetch summary data from API whenever smId changes
-useEffect(() => {
-  const fetchStats = async () => {
-    if (!smId) {
-      console.warn("No activeSurveyId found in localStorage");
-      return;
-    }
-
-    try {
-      setLoadingStats(true);
-      const response = await fetch(`${API_BASE_PATH}/DeviceAssignments/summary/${smId}`);
-      //const response = await fetch(`https://localhost:7215/api/DeviceAssignments/summary/${smId}`);
-      if (!response.ok) throw new Error("Failed to fetch summary data");
-      const data = await response.json();
-
-      setStats({
-        totalDevices: data.totalDevices ?? 0,
-        activeDevices: data.activeDevices ?? 0,
-        inactiveDevices: data.inactiveDevices ?? 0,
-        surveyors: data.surveyors ?? 0
-      });
-    } catch (error) {
-      console.error("Error fetching device summary:", error);
-    } finally {
-      setLoadingStats(false);
-    }
-  };
-
-  fetchStats();
-}, [smId]);
+    fetchStats();
+  }, [smId]);
 
   // Mock data - replace with actual API calls
   // const stats = {
