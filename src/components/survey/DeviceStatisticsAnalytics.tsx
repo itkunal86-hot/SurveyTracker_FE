@@ -379,7 +379,7 @@ export const DeviceStatisticsAnalytics = ({
     }
   };
 
-  const fetchDataWithDateRange = async (start: Date, end: Date) => {
+  const fetchDataWithDateRange = (start: Date, end: Date) => {
     const startISO = start.toISOString();
     const endISO = end.toISOString();
 
@@ -387,37 +387,8 @@ export const DeviceStatisticsAnalytics = ({
       onCustomDateRangeChange(startISO, endISO);
     }
 
-    setLoadingDeviceLog(true);
-
-    try {
-      // Prepare zone parameter
-      let zoneParam: string | undefined;
-      if (selectedZones.length > 0 && !(selectedZones.length === 1 && selectedZones[0] === "all")) {
-        zoneParam = selectedZones.join(",");
-      }
-
-      const response = await apiClient.getDeviceActiveLog({
-        page: 1,
-        limit: 100,
-        startDate: start,
-        endDate: end,
-        zone: zoneParam,
-      });
-
-      if (response?.success && response?.data) {
-        const calculatedStats = calculateStatisticsFromDevices(response.summery);
-        console.log("4",calculatedStats);
-        setStatistics(calculatedStats);
-        toast.success("Device statistics updated with custom date range");
-      } else {
-        toast.error("Failed to fetch device active log");
-      }
-    } catch (error) {
-      console.error("Error fetching device active log:", error);
-      toast.error("Error fetching device active log");
-    } finally {
-      setLoadingDeviceLog(false);
-    }
+    // API call is now handled exclusively by DeviceLogGrid component
+    toast.success("Custom date range applied");
   };
 
   const handleExportDeviceSummary = async () => {
