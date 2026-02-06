@@ -198,6 +198,7 @@ export const SurveyDashboard = () => {
           setCustomEndDate(endDate);
         }}
         onDeviceSelect={setSelectedDeviceIds}
+        deviceLogSummary={deviceLogSummary}
       />
 
       {/* Device Logs Grid */}
@@ -209,6 +210,7 @@ export const SurveyDashboard = () => {
           customStartDate={customStartDate}
           customEndDate={customEndDate}
           selectedDeviceIds={selectedDeviceIds}
+          onSummaryDataReceived={setDeviceLogSummary}
         />
       </div>
 
