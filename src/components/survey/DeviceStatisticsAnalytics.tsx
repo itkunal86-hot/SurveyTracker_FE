@@ -177,7 +177,8 @@ export const DeviceStatisticsAnalytics = ({
   onSelectedTimeChange,
   timeOptions = [],
   onCustomDateRangeChange,
-  onDeviceSelect
+  onDeviceSelect,
+  deviceLogSummary
 }: DeviceStatisticsAnalyticsProps) => {
   const didInitRef = useRef(false);
   const [timeRange, setTimeRange] = useState<TimeRange>("7-days");
