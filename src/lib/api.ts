@@ -124,7 +124,8 @@ export interface Device {
   surveyor?: string;
   batteryLevel?: number;
   lastSeen?: string;
-  accuracy?: number;
+  horizontalAccuracy?: number;
+  verticalAccuracy?: number;
   serialNumber?: string;
   currentLocation?: string;
   location?: string;
@@ -989,7 +990,9 @@ class ApiClient {
 
         const batteryLevel = typeof it.batteryLevel === "number" ? it.batteryLevel : undefined;
         const lastSeen = typeof (it.lastUpdated ?? it.lastSeen) === "string" ? (it.lastUpdated ?? it.lastSeen) : undefined;
-        const accuracy = typeof it.accuracy === "number" ? it.accuracy : undefined;
+        const horizontalAccuracy = typeof it.horizontalAccuracy === "number" ? it.horizontalAccuracy : undefined;
+        const verticalAccuracy = typeof it.verticalAccuracy === "number" ? it.verticalAccuracy : undefined;
+        
         const modelName = it.modelName ?? it.ModelName ?? it.deviceModel ?? it.DeviceModel ?? undefined;
 
         return {
@@ -1002,7 +1005,8 @@ class ApiClient {
           surveyor: it.surveyor ?? it.Surveyor ?? undefined,
           batteryLevel,
           lastSeen,
-          accuracy,
+          horizontalAccuracy,
+          verticalAccuracy
         } as Device;
       });
 
@@ -1092,7 +1096,8 @@ class ApiClient {
 
         const batteryLevel = typeof it.batteryLevel === "number" ? it.batteryLevel : undefined;
         const lastSeen = typeof (it.lastUpdated ?? it.lastSeen) === "string" ? (it.lastUpdated ?? it.lastSeen) : undefined;
-        const accuracy = typeof it.accuracy === "number" ? it.accuracy : undefined;
+        const horizontalAccuracy = typeof it.horizontalAccuracy === "number" ? it.horizontalAccuracy : undefined;
+        const verticalAccuracy = typeof it.verticalAccuracy === "number" ? it.verticalAccuracy : undefined;
         const modelName = it.modelName ?? it.ModelName ?? it.deviceModel ?? it.DeviceModel ?? undefined;
 
         return {
@@ -1105,7 +1110,8 @@ class ApiClient {
           surveyor: it.surveyor ?? it.Surveyor ?? undefined,
           batteryLevel,
           lastSeen,
-          accuracy,
+          horizontalAccuracy,
+          verticalAccuracy
         } as Device;
       });
 
@@ -2826,9 +2832,10 @@ class ApiClient {
           it.lastUpdated ?? it.LastUpdated ?? it.lastUpdate ?? it.LastSeen ?? it.lastPing ?? it.LastPing ?? it.timestamp ?? it.Timestamp ?? it.logTime ?? it.LogTime ?? ""
         ) || undefined;
 
-        const accuracyVal = it.accuracy ?? it.Accuracy;
-        const accuracy = typeof accuracyVal === "number" ? accuracyVal : undefined;
-
+        const horizontalaccuracyVal = it.horizontalAccuracy ;
+        const verticalaccuracyVal = it.verticalAccuracy ;
+        const horizontalAccuracy = typeof horizontalaccuracyVal === "number" ? horizontalaccuracyVal : undefined;
+        const verticalAccuracy = typeof verticalaccuracyVal === "number" ? verticalaccuracyVal : undefined;
         const modelName = it.modelName ?? it.ModelName ?? undefined;
         const serialRaw = it.serialNumber ?? it.SerialNumber ?? it.serial_no ?? it.SERIAL_NO ?? it.deviceSerial ?? it.DeviceSerial ?? it.serial ?? it.Serial ?? null;
         const serialNumber = serialRaw != null ? String(serialRaw) : undefined;
@@ -2846,7 +2853,8 @@ class ApiClient {
           surveyor: it.surveyor ?? it.Surveyor ?? it.user ?? it.User ?? undefined,
           batteryLevel,
           lastSeen,
-          accuracy,
+          horizontalAccuracy,
+          verticalAccuracy,
           serialNumber,
           location,
           currentLocation,
@@ -2988,9 +2996,10 @@ class ApiClient {
           it.lastUpdated ?? it.LastUpdated ?? it.lastUpdate ?? it.LastSeen ?? it.lastPing ?? it.LastPing ?? it.timestamp ?? it.Timestamp ?? it.logTime ?? it.LogTime ?? ""
         ) || undefined;
 
-        const accuracyVal = it.accuracy ?? it.Accuracy;
-        const accuracy = typeof accuracyVal === "number" ? accuracyVal : undefined;
-
+       
+        const horizontalAccuracy = typeof it.horizontalAccuracy === "number" ? it.horizontalAccuracy : undefined;
+        const verticalAccuracy = typeof it.verticalAccuracy === "number" ? it.verticalAccuracy : undefined;
+        
         const modelName = it.modelName ?? it.ModelName ?? undefined;
         const serialRaw = it.serialNumber ?? it.SerialNumber ?? it.serial_no ?? it.SERIAL_NO ?? it.deviceSerial ?? it.DeviceSerial ?? it.serial ?? it.Serial ?? null;
         const serialNumber = serialRaw != null ? String(serialRaw) : undefined;
@@ -3008,7 +3017,8 @@ class ApiClient {
           surveyor: it.surveyor ?? it.Surveyor ?? it.user ?? it.User ?? undefined,
           batteryLevel,
           lastSeen,
-          accuracy,
+          horizontalAccuracy,
+          verticalAccuracy,
           serialNumber,
           location,
           currentLocation,

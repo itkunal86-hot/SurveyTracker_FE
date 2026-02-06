@@ -28,7 +28,7 @@ interface DeviceLog {
 }
 
 interface DeviceLogGridProps {
-  summaryType?: string;
+  summaryType?: [string,string];
   selectedTime?: string;
   selectedZone?: string;
   customStartDate?: string | null;
@@ -37,7 +37,7 @@ interface DeviceLogGridProps {
 }
 
 export const DeviceLogGrid = ({
-  summaryType = "",
+  summaryType = ["",""],
   selectedTime = "7-days",
   selectedZone = "all",
   customStartDate = null,
@@ -125,7 +125,7 @@ export const DeviceLogGrid = ({
 
   // Fetch device logs
   const fetchDeviceLogs = async (page: number = 1) => {
-    debugger
+    
     try {
       setIsLoading(true);
       setError(null);
@@ -150,7 +150,8 @@ export const DeviceLogGrid = ({
         ...(startDate && { startDate }),
         ...(endDate && { endDate }),
         zone: selectedZone,
-        ...(summaryType && { summaryType }),
+        summaryType: summaryType[0],
+        summaryKey: summaryType[1],
         ...(selectedDeviceIds && selectedDeviceIds.length > 0 && { deviceIds: selectedDeviceIds.join(",") }),
       });
 
@@ -433,8 +434,8 @@ export const DeviceLogGrid = ({
                 <TableHead>Initial Location</TableHead>
                 <TableHead>Current Location</TableHead>
                 <TableHead>Survey Count</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Battery</TableHead>
+                {/* <TableHead>Status</TableHead>
+                <TableHead>Controller Battery</TableHead> */}
                 <TableHead>Last Seen</TableHead>
                 <TableHead>Surveyor</TableHead>
                 {/* <TableHead>Serial Number</TableHead> */}
@@ -463,7 +464,7 @@ export const DeviceLogGrid = ({
                     <TableCell className="text-sm">{log.location}</TableCell>
                     <TableCell className="text-sm">{log.currentLocation}</TableCell>
                     <TableCell className="text-sm">{log.surveyCount}</TableCell>
-                    <TableCell>{getStatusBadge(log.status)}</TableCell>
+                    {/* <TableCell>{getStatusBadge(log.status)}</TableCell>
                     <TableCell>
                       {log.batteryLevel !== undefined ? (
                         <div className="flex items-center space-x-1">
@@ -475,7 +476,7 @@ export const DeviceLogGrid = ({
                       ) : (
                         <span className="text-sm text-muted-foreground">-</span>
                       )}
-                    </TableCell>
+                    </TableCell> */}
                     <TableCell>
                       {log.lastSeen ? (
                         <div className="flex items-center space-x-1">

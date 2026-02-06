@@ -77,6 +77,8 @@ export const DeviceStatus = () => {
       currentLocation:device.currentLocation,
       surveyCount:device.surveyCount,
       serialNumber: device.serialNumber,
+      horizontalAccuracy:device.horizontalAccuracy,
+      verticalAccuracy:device.verticalAccuracy,
       surveyor: device.surveyor
         ? {
             id: device.surveyor,
@@ -139,12 +141,21 @@ export const DeviceStatus = () => {
     const csvData = devices
       .map(
         (device) =>
-          `${device.id},${device.name},${device.type},${device.serialNumber || "N/A"},${device.status},${device.lastSeen != null ? device.lastSeen.toLocaleString() : "N/A"},"${device.coordinates ? `${device.coordinates.lat.toFixed(4)}, ${device.coordinates.lng.toFixed(4)}` : "N/A"}",${device.batteryLevel || "N/A"}%,${ device.accuracy != null ? device.accuracy : "N/A"}`,
+          `${device.id},
+          ${device.name},
+          ${device.type},
+          ${device.serialNumber || "N/A"},
+          ${device.status},
+          ${device.lastSeen != null ? device.lastSeen.toLocaleString() : "N/A"},
+          "${device.coordinates ? `${device.coordinates.lat.toFixed(4)}, 
+          ${device.coordinates.lng.toFixed(4)}` : "N/A"}",
+          ${ device.horizontalAccuracy != null ? device.horizontalAccuracy : "N/A"},
+          ${ device.verticalAccuracy != null ? device.verticalAccuracy : "N/A"}`,
       )
       .join("\n");
 
     const csvHeader =
-      "Device ID,Name,Type,Serial Number,Status,Last Update,Coordinates (Lat/Lng),Battery Level,Accuracy\n";
+      "Device ID,Name,Type,Serial Number,Status,Last Update,Coordinates (Lat/Lng),Horizontal Accuracy,Vertical Accuracy\n";
     const csvContent = csvHeader + csvData;
 
     const blob = new Blob([csvContent], { type: "text/csv" });
@@ -439,14 +450,7 @@ export const DeviceStatus = () => {
                 >
                   Device
                 </SortableTableHead>
-                {/* <SortableTableHead
-                  sortKey="type"
-                  currentSortKey={tableConfig.sortConfig.key}
-                  sortDirection={tableConfig.sortConfig.direction}
-                  onSort={tableConfig.handleSort}
-                >
-                  Type
-                </SortableTableHead> */}
+             
                  <SortableTableHead
                   sortKey="location"
                   currentSortKey={tableConfig.sortConfig.key}
@@ -513,21 +517,22 @@ export const DeviceStatus = () => {
                 >
                   Location (Coordinates)
                 </SortableTableHead>
+               
                 <SortableTableHead
-                  sortKey="batteryLevel"
+                  sortKey="horizontalAccuracy"
                   currentSortKey={tableConfig.sortConfig.key}
                   sortDirection={tableConfig.sortConfig.direction}
                   onSort={tableConfig.handleSort}
                 >
-                  Battery
+                  Horizontal Accuracy
                 </SortableTableHead>
                 <SortableTableHead
-                  sortKey="accuracy"
+                  sortKey="verticalAccuracy"
                   currentSortKey={tableConfig.sortConfig.key}
                   sortDirection={tableConfig.sortConfig.direction}
                   onSort={tableConfig.handleSort}
                 >
-                  Accuracy
+                  Vertical Accuracy
                 </SortableTableHead>
                 {/* <TableHead>Actions</TableHead> */}
               </TableRow>
@@ -610,13 +615,12 @@ export const DeviceStatus = () => {
                       ? `${device.coordinates.lat.toFixed(4)}, ${device.coordinates.lng.toFixed(4)}`
                       : "Unknown"}
                   </TableCell>
-                  <TableCell>
-                    <span className={getBatteryColor(device.batteryLevel || 0)}>
-                      {device.batteryLevel || 0}%
-                    </span>
+                 
+                  <TableCell>                  
+                  {device.horizontalAccuracy.toFixed(4)}
                   </TableCell>
-                  <TableCell>
-                    {typeof device.accuracy === "number" ? device.accuracy.toFixed(2) : "N/A"}
+                  <TableCell>                  
+                  {device.verticalAccuracy.toFixed(4)}
                   </TableCell>
                   {/* <TableCell>
                     <Button size="sm" onClick={() => navigate(`/daily-personal-maps?device=${encodeURIComponent(device.id)}`)}>

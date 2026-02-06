@@ -24,7 +24,7 @@ export const SurveyDashboard = () => {
     surveyors: 0
   });
   const [loadingStats, setLoadingStats] = useState(true);
-  const [selectedSummaryType, setSelectedSummaryType] = useState<string>("");
+  const [selectedSummaryType, setSelectedSummaryType] = useState<[string,string]>(["",""]);
   const [selectedTime, setSelectedTime] = useState("7-days");
   const [selectedZone, setSelectedZone] = useState<string>("all");
   const [customStartDate, setCustomStartDate] = useState<string | null>(null);
@@ -272,16 +272,14 @@ useEffect(() => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="font-medium text-sm">{alert.instrument}</p>
-                          {/* <Badge variant={(String(alert.severity || '').toLowerCase() === 'critical') ? 'destructive' : 'secondary'} className="text-xs">
-                            {String(alert.severity || '').toLowerCase() || 'info'}
-                          </Badge> */}
+                        
                         </div>
                         <p className="text-xs text-muted-foreground line-clamp-2">{alert.message}</p>
                         <div className="flex items-center gap-3 mt-1 text-xs flex-wrap">
                           <div className="flex items-center gap-1">
                             <Battery className="w-3 h-3" />
-                            <span className={`${Number(alert.batteryLevel ?? 0) < 20 ? 'text-red-500' : Number(alert.batteryLevel ?? 0) < 50 ? 'text-yellow-500' : 'text-green-500'}`}>
-                              {Number(alert.batteryLevel ?? 0)}%
+                            <span className={`${Number(alert.controllerbatteryLevel ?? 0) < 20 ? 'text-red-500' : Number(alert.controllerbatteryLevel ?? 0) < 50 ? 'text-yellow-500' : 'text-green-500'}`}>
+                              {Number(alert.controllerbatteryLevel ?? 0)}%
                             </span>
                           </div>
                           {alert.controllerHealthStatus && (
