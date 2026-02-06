@@ -216,7 +216,7 @@ export const DeviceStatisticsAnalytics = ({
   const [exportLoading, setExportLoading] = useState(false);
 
 
-  const handleTimeRangeChange = async (value: string) => {
+  const handleTimeRangeChange = (value: string) => {
     console.log("DeviceStatisticsAnalytics - Time range changed to:", value);
     setTimeRange(value as TimeRange);
 
@@ -224,42 +224,7 @@ export const DeviceStatisticsAnalytics = ({
       console.log("DeviceStatisticsAnalytics - Sending selectedTime to parent:", value);
       onSelectedTimeChange(value);
     }
-
-    setLoadingDeviceLog(true);
-
-    try {
-      const { startDate, endDate } = getDateRangeFromValue(value);
-
-      // Prepare zone parameter
-      let zoneParam: string | undefined;
-      if (selectedZones.length > 0 && !(selectedZones.length === 1 && selectedZones[0] === "all")) {
-        zoneParam = selectedZones.join(",");
-      }
-
-      const response = await apiClient.getDeviceActiveLog({
-        page: 1,
-        limit: 100,
-        startDate,
-        endDate,
-        zone: zoneParam,
-        deviceIds: selectedDeviceIds.length > 0 ? selectedDeviceIds : undefined,
-      });
-
-      if (response?.success && response?.data) {
-        console.log(response);
-        const calculatedStats = calculateStatisticsFromDevices(response.summery);
-        console.log("1",calculatedStats);
-        setStatistics(calculatedStats);
-        toast.success("Device statistics updated successfully");
-      } else {
-        toast.error("Failed to fetch device active log");
-      }
-    } catch (error) {
-      console.error("Error fetching device active log:", error);
-      toast.error("Error fetching device active log");
-    } finally {
-      setLoadingDeviceLog(false);
-    }
+    // API call is now handled exclusively by DeviceLogGrid component
   };
 
 
