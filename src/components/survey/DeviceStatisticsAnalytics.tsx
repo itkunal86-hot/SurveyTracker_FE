@@ -46,7 +46,7 @@ interface DeviceStatisticsData {
 
 // Helper function to calculate statistics from device log data
 const calculateStatisticsFromDevices = (devices: any): DeviceStatisticsData => {
-  if (!devices || devices.length === 0) {
+  if (!devices || (Array.isArray(devices) && devices.length === 0)) {
     return {
       totalDeviceCount: 0,
       totalActiveDeviceCount: 0,
