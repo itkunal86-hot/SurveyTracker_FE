@@ -34,6 +34,7 @@ interface DeviceLogGridProps {
   customStartDate?: string | null;
   customEndDate?: string | null;
   selectedDeviceIds?: string[];
+  onSummaryDataReceived?: (summaryData: any) => void;
 }
 
 export const DeviceLogGrid = ({
@@ -42,7 +43,8 @@ export const DeviceLogGrid = ({
   selectedZone = "all",
   customStartDate = null,
   customEndDate = null,
-  selectedDeviceIds = []
+  selectedDeviceIds = [],
+  onSummaryDataReceived
 }: DeviceLogGridProps) => {
   const navigate = useNavigate();
   const [deviceLogs, setDeviceLogs] = useState<DeviceLog[]>([]);
@@ -169,7 +171,12 @@ export const DeviceLogGrid = ({
 
       const data = await response.json();
 
-      // Handle various response formats
+      // Extract summary data if available and pass it to parent
+      if (data?.data?.summary && onSummaryDataReceived) {
+        onSummaryDataReceived(data.data.summary);
+      }
+
+      // Handle various response formats for device logs
       const rawItems = Array.isArray(data?.data?.items)
         ? data.data.items
         : Array.isArray(data?.data?.data)

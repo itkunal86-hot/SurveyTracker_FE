@@ -46,7 +46,7 @@ interface DeviceStatisticsData {
 
 // Helper function to calculate statistics from device log data
 const calculateStatisticsFromDevices = (devices: any): DeviceStatisticsData => {
-  if (!devices || devices.length === 0) {
+  if (!devices || (Array.isArray(devices) && devices.length === 0)) {
     return {
       totalDeviceCount: 0,
       totalActiveDeviceCount: 0,
@@ -63,40 +63,70 @@ const calculateStatisticsFromDevices = (devices: any): DeviceStatisticsData => {
     };
   }
 
-  const totalDeviceCount = devices.totalDeviceCount;
-  const totalActiveDeviceCount = devices.totalActiveDeviceCount;
-  const totalInactiveDeviceCount = devices.totalInactiveDeviceCount;
+  const totalDeviceCount = devices.totalDeviceCount ?? 0;
+  const totalActiveDeviceCount = devices.totalActiveDeviceCount ?? 0;
+  const totalInactiveDeviceCount = devices.totalInactiveDeviceCount ?? 0;
 
-  // Usage classification based on battery level
-  const BATTERY_THRESHOLD = 50; // Battery % threshold for normal usage
-  const normalUsage = devices.normalUsage;
-  const underUsage = devices.underUsage;
-  const normalUsagePercent = devices.normalUsagePercent;
+  // Extract usage statistics from usageSummary array
+  // Format: "Below Avarage      1(100%)", "Normal      0(0%)", etc.
+  const parseUsageSummary = () => {
+    let normalUsage = 0;
+    let underUsage = 0;
+    let normalUsagePercent = 0;
 
-  // Accuracy classification
-  // const ACCURACY_THRESHOLD = 10; // Accuracy threshold in meters
-  // const accuracyValues = devices
-  //   .map(d => d.accuracy)
-  //   .filter((acc) => acc !== undefined && typeof acc === "number") as number[];
+    if (Array.isArray(devices.usageSummary)) {
+      devices.usageSummary.forEach((summary: string) => {
+        const match = summary.match(/(\d+)\((\d+)%\)/);
+        if (match) {
+          const count = parseInt(match[1], 10);
+          const percent = parseInt(match[2], 10);
 
-  //const normalAccuracy = accuracyValues.filter(acc => acc <= ACCURACY_THRESHOLD).length;
-  const normalAccuracy = devices.normalAccuracy;
-  //const belowAverageAccuracy = accuracyValues.filter(acc => acc > ACCURACY_THRESHOLD).length;
-  const belowAverageAccuracy = devices.underUsage;
-  // const normalAccuracyPercentage = accuracyValues.length > 0
-  //   ? Math.round((normalAccuracy / accuracyValues.length) * 100)
-  //   : 0;
-  const normalAccuracyPercentage = devices.normalAccuracyPercentage
+          if (summary.toLowerCase().includes("normal") && !summary.toLowerCase().includes("avarage")) {
+            normalUsage += count;
+            normalUsagePercent += percent;
+          } else {
+            underUsage += count;
+          }
+        }
+      });
+    }
 
-  // Time to Achieve Accuracy (represented by accuracy values in meters/minutes)
-  // const minimumTTFA = accuracyValues.length > 0 ? Math.min(...accuracyValues) : 0;
-  // const maximumTTFA = accuracyValues.length > 0 ? Math.max(...accuracyValues) : 0;
-  // const averageTTFA = accuracyValues.length > 0
-  //   ? Math.round(accuracyValues.reduce((sum, acc) => sum + acc, 0) / accuracyValues.length)
-  //   : 0;
-  const minimumTTFA = devices.minimumTTFA;
-  const maximumTTFA = devices.maximumTTFA;
-  const averageTTFA = devices.averageTTFA;
+    return { normalUsage, underUsage, normalUsagePercent };
+  };
+
+  // Extract accuracy statistics from accuracySummary array
+  const parseAccuracySummary = () => {
+    let normalAccuracy = 0;
+    let belowAverageAccuracy = 0;
+    let normalAccuracyPercentage = 0;
+
+    if (Array.isArray(devices.accuracySummary)) {
+      devices.accuracySummary.forEach((summary: string) => {
+        const match = summary.match(/(\d+)\((\d+)%\)/);
+        if (match) {
+          const count = parseInt(match[1], 10);
+          const percent = parseInt(match[2], 10);
+
+          if (summary.toLowerCase().includes("normal")) {
+            normalAccuracy += count;
+            normalAccuracyPercentage += percent;
+          } else {
+            belowAverageAccuracy += count;
+          }
+        }
+      });
+    }
+
+    return { normalAccuracy, belowAverageAccuracy, normalAccuracyPercentage };
+  };
+
+  const { normalUsage, underUsage, normalUsagePercent } = parseUsageSummary();
+  const { normalAccuracy, belowAverageAccuracy, normalAccuracyPercentage } = parseAccuracySummary();
+
+  // Time to Achieve Accuracy
+  const minimumTTFA = devices.minimumTTFA ?? 0;
+  const maximumTTFA = devices.maximumTTFA ?? 0;
+  const averageTTFA = devices.averageTTFA ?? 0;
   return {
     totalDeviceCount,
     totalActiveDeviceCount,
@@ -167,6 +197,7 @@ interface DeviceStatisticsAnalyticsProps {
   timeOptions?: TimeOption[];
   onCustomDateRangeChange?: (startDate: string | null, endDate: string | null) => void;
   onDeviceSelect?: (deviceIds: string[]) => void;
+  deviceLogSummary?: any;
 }
 
 export const DeviceStatisticsAnalytics = ({
@@ -176,7 +207,8 @@ export const DeviceStatisticsAnalytics = ({
   onSelectedTimeChange,
   timeOptions = [],
   onCustomDateRangeChange,
-  onDeviceSelect
+  onDeviceSelect,
+  deviceLogSummary
 }: DeviceStatisticsAnalyticsProps) => {
   const didInitRef = useRef(false);
   const [timeRange, setTimeRange] = useState<TimeRange>("7-days");
@@ -216,7 +248,7 @@ export const DeviceStatisticsAnalytics = ({
   const [exportLoading, setExportLoading] = useState(false);
 
 
-  const handleTimeRangeChange = async (value: string) => {
+  const handleTimeRangeChange = (value: string) => {
     console.log("DeviceStatisticsAnalytics - Time range changed to:", value);
     setTimeRange(value as TimeRange);
 
@@ -224,46 +256,11 @@ export const DeviceStatisticsAnalytics = ({
       console.log("DeviceStatisticsAnalytics - Sending selectedTime to parent:", value);
       onSelectedTimeChange(value);
     }
-
-    setLoadingDeviceLog(true);
-
-    try {
-      const { startDate, endDate } = getDateRangeFromValue(value);
-
-      // Prepare zone parameter
-      let zoneParam: string | undefined;
-      if (selectedZones.length > 0 && !(selectedZones.length === 1 && selectedZones[0] === "all")) {
-        zoneParam = selectedZones.join(",");
-      }
-
-      const response = await apiClient.getDeviceActiveLog({
-        page: 1,
-        limit: 100,
-        startDate,
-        endDate,
-        zone: zoneParam,
-        deviceIds: selectedDeviceIds.length > 0 ? selectedDeviceIds : undefined,
-      });
-
-      if (response?.success && response?.data) {
-        console.log(response);
-        const calculatedStats = calculateStatisticsFromDevices(response.summery);
-        console.log("1",calculatedStats);
-        setStatistics(calculatedStats);
-        toast.success("Device statistics updated successfully");
-      } else {
-        toast.error("Failed to fetch device active log");
-      }
-    } catch (error) {
-      console.error("Error fetching device active log:", error);
-      toast.error("Error fetching device active log");
-    } finally {
-      setLoadingDeviceLog(false);
-    }
+    // API call is now handled exclusively by DeviceLogGrid component
   };
 
 
-  const updateZones = async (newZones: string[]) => {
+  const updateZones = (newZones: string[]) => {
     setSelectedZones(newZones);
 
     // Prepare zone parameter - send comma-separated zone names or "all" if selected
@@ -279,35 +276,7 @@ export const DeviceStatisticsAnalytics = ({
       onZoneSelect(zoneParam);
     }
 
-    setLoadingDeviceLog(true);
-    try {
-      const { startDate, endDate } = getDateRange();
-
-      // Fetch device active log and calculate statistics from it
-      const response = await apiClient.getDeviceActiveLog({
-        page: 1,
-        limit: 100,
-        startDate,
-        endDate,
-        zone: zoneParam === "all" ? undefined : zoneParam,
-        deviceIds: selectedDeviceIds.length > 0 ? selectedDeviceIds : undefined,
-      });
-
-      if (response && response.success && response.data) {
-        // Calculate statistics from device data
-        const calculatedStats = calculateStatisticsFromDevices(response.summery);
-        console.log("2",calculatedStats);
-        setStatistics(calculatedStats);
-        toast.success(`Device statistics updated for selected zone${newZones.length > 1 ? 's' : ''}`);
-      } else {
-        toast.error("Failed to fetch device active log");
-      }
-    } catch (error) {
-      console.error("Error fetching device active log:", error);
-      toast.error("Error fetching device active log");
-    } finally {
-      setLoadingDeviceLog(false);
-    }
+    // API call is now handled exclusively by DeviceLogGrid component
   };
 
   const toggleZoneSelection = (zoneName: string) => {
@@ -396,53 +365,13 @@ export const DeviceStatisticsAnalytics = ({
   };
   useEffect(() => {
     if (selectedDeviceIds.length === 0) return;
-  
-    const fetchDeviceStatistics = async () => {
-      setLoadingDeviceLog(true);
-  
-      try {
-        const { startDate, endDate } = getDateRange();
-  
-        // Prepare zone parameter
-        let zoneParam: string | undefined;
-        if (
-          selectedZones.length > 0 &&
-          !(selectedZones.length === 1 && selectedZones[0] === "all")
-        ) {
-          zoneParam = selectedZones.join(",");
-        }
-  
-        const response = await apiClient.getDeviceActiveLog({
-          page: 1,
-          limit: 100,
-          startDate,
-          endDate,
-          zone: zoneParam,
-          deviceIds: selectedDeviceIds,
-        });
-  
-        if (response?.success && response?.data) {
-          const calculatedStats = calculateStatisticsFromDevices(response.summery);
-          setStatistics(calculatedStats);
-          toast.success("Device statistics updated successfully");
-        } else {
-          toast.error("Failed to fetch device active log");
-        }
-      } catch (error) {
-        console.error("Error fetching device active log:", error);
-        toast.error("Error fetching device active log");
-      } finally {
-        setLoadingDeviceLog(false);
-      }
-    };
-  
-    fetchDeviceStatistics();
-  
-    // Notify parent ONCE
+
+    // Notify parent of device selection
     onDeviceSelect?.(selectedDeviceIds);
     toast.success(`Selected ${selectedDeviceIds.length} device(s)`);
-  
-  }, [selectedDeviceIds, selectedZones, timeRange]);
+
+    // API call is now handled exclusively by DeviceLogGrid component
+  }, [selectedDeviceIds]);
     
 
   const filteredDevices = devices.filter(d =>
@@ -482,7 +411,7 @@ export const DeviceStatisticsAnalytics = ({
     }
   };
 
-  const fetchDataWithDateRange = async (start: Date, end: Date) => {
+  const fetchDataWithDateRange = (start: Date, end: Date) => {
     const startISO = start.toISOString();
     const endISO = end.toISOString();
 
@@ -490,37 +419,8 @@ export const DeviceStatisticsAnalytics = ({
       onCustomDateRangeChange(startISO, endISO);
     }
 
-    setLoadingDeviceLog(true);
-
-    try {
-      // Prepare zone parameter
-      let zoneParam: string | undefined;
-      if (selectedZones.length > 0 && !(selectedZones.length === 1 && selectedZones[0] === "all")) {
-        zoneParam = selectedZones.join(",");
-      }
-
-      const response = await apiClient.getDeviceActiveLog({
-        page: 1,
-        limit: 100,
-        startDate: start,
-        endDate: end,
-        zone: zoneParam,
-      });
-
-      if (response?.success && response?.data) {
-        const calculatedStats = calculateStatisticsFromDevices(response.summery);
-        console.log("4",calculatedStats);
-        setStatistics(calculatedStats);
-        toast.success("Device statistics updated with custom date range");
-      } else {
-        toast.error("Failed to fetch device active log");
-      }
-    } catch (error) {
-      console.error("Error fetching device active log:", error);
-      toast.error("Error fetching device active log");
-    } finally {
-      setLoadingDeviceLog(false);
-    }
+    // API call is now handled exclusively by DeviceLogGrid component
+    toast.success("Custom date range applied");
   };
 
   const handleExportDeviceSummary = async () => {
@@ -733,17 +633,17 @@ export const DeviceStatisticsAnalytics = ({
   };
 
   // NOTE: API call for getdeviceactivelog is now handled exclusively by DeviceLogGrid.tsx
-  // to avoid duplicate endpoint calls. Statistics display shows default values.
-  // In the future, statistics could be:
-  // 1. Fetched via a dedicated statistics endpoint
-  // 2. Computed from DeviceLogGrid data and passed via props
-  // 3. Cached in shared state management
+  // to avoid duplicate endpoint calls. Statistics display now populated from deviceLogSummary prop.
+
+  // Sync deviceLogSummary data to statistics state
+  useEffect(() => {
+    if (deviceLogSummary) {
+      const syncedStats = calculateStatisticsFromDevices(deviceLogSummary);
+      setStatistics(syncedStats);
+    }
+  }, [deviceLogSummary]);
 
   useEffect(() => {
-    // Statistics are initialized with default values and would be populated by:
-    // - A dedicated statistics API endpoint (preferred)
-    // - Props passed from DeviceLogGrid component
-    // - Shared state management solution
     setLoadingStats(false);
   }, [timeRange, selectedZones]);
 
@@ -753,8 +653,10 @@ export const DeviceStatisticsAnalytics = ({
       const firstOption = timeRangeOptions[0].value;
       setTimeRange(firstOption as TimeRange);
       setHasAutoSelected(true);
-      // Trigger data fetch with the first option
-      handleTimeRangeChange(firstOption);
+      // Notify parent to trigger data fetch in DeviceLogGrid
+      if (onSelectedTimeChange) {
+        onSelectedTimeChange(firstOption);
+      }
     }
   }, [timeRangeOptions, loadingTimeRanges, hasAutoSelected]);
 
@@ -769,16 +671,26 @@ export const DeviceStatisticsAnalytics = ({
 
   const accuracyPercentage = statistics.normalAccuracyPercentage || 0;
 
+  // Check if summary arrays are empty - indicates no devices in selection criteria
+  const isSummaryEmpty =
+    (!deviceLogSummary?.usageSummary || deviceLogSummary.usageSummary.length === 0) &&
+    (!deviceLogSummary?.accuracySummary || deviceLogSummary.accuracySummary.length === 0) &&
+    (!deviceLogSummary?.timeToAchive || deviceLogSummary.timeToAchive.length === 0);
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h2 className="text-2xl font-bold">Device Statistics & Analytics</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Time-based operational overview of GNSS devices
-          </p>
-        </div>
-        <div className="flex gap-3 items-center">
+      {/* Title Section */}
+      <div className="mb-4">
+        <h2 className="text-2xl font-bold">Device Statistics & Analytics</h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Time-based operational overview of GNSS devices
+        </p>
+      </div>
+
+      {/* Filters Card */}
+      <Card className="bg-white border-gray-200">
+        <CardContent className="pt-6">
+          <div className="flex gap-3 items-center flex-wrap">
           {/* {timeOptions.length > 0 && (
             <div className="w-48">
               <Select value={selectedTime} onValueChange={(value) => onSelectedTimeChange?.(value)}>
@@ -1023,9 +935,26 @@ export const DeviceStatisticsAnalytics = ({
             {exportLoading ? "Exporting..." : "Export Summary"}
           </Button>
         </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+      {isSummaryEmpty ? (
+        <Card className="border-amber-200 bg-amber-50">
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <AlertCircle className="h-12 w-12 text-amber-600 mb-4" />
+            <p className="text-center text-lg font-semibold text-amber-900">
+              No Active Devices
+            </p>
+            <p className="text-center text-sm text-amber-800 mt-2">
+              No active devices found in the selected criteria range.
+            </p>
+            <p className="text-center text-xs text-amber-700 mt-4">
+              Try adjusting your time range, zone, or device filters to see results.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         {/* Device Status Statistics - Single Card */}
         <Card>
           <CardHeader className="pb-3">
@@ -1233,6 +1162,7 @@ export const DeviceStatisticsAnalytics = ({
           </CardContent>
         </Card>
       </div>
+      )}
     </div>
   );
 };
