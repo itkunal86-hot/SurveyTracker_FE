@@ -30,6 +30,7 @@ export const SurveyDashboard = () => {
   const [customStartDate, setCustomStartDate] = useState<string | null>(null);
   const [customEndDate, setCustomEndDate] = useState<string | null>(null);
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([]);
+  const [deviceLogSummary, setDeviceLogSummary] = useState<any>(null);
 
   // ✅ Get smId from localStorage (only on mount, not reactive polling)
   const smId = localStorage.getItem("activeSurveyId");
