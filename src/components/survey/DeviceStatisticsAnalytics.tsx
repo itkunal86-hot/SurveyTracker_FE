@@ -333,53 +333,13 @@ export const DeviceStatisticsAnalytics = ({
   };
   useEffect(() => {
     if (selectedDeviceIds.length === 0) return;
-  
-    const fetchDeviceStatistics = async () => {
-      setLoadingDeviceLog(true);
-  
-      try {
-        const { startDate, endDate } = getDateRange();
-  
-        // Prepare zone parameter
-        let zoneParam: string | undefined;
-        if (
-          selectedZones.length > 0 &&
-          !(selectedZones.length === 1 && selectedZones[0] === "all")
-        ) {
-          zoneParam = selectedZones.join(",");
-        }
-  
-        const response = await apiClient.getDeviceActiveLog({
-          page: 1,
-          limit: 100,
-          startDate,
-          endDate,
-          zone: zoneParam,
-          deviceIds: selectedDeviceIds,
-        });
-  
-        if (response?.success && response?.data) {
-          const calculatedStats = calculateStatisticsFromDevices(response.summery);
-          setStatistics(calculatedStats);
-          toast.success("Device statistics updated successfully");
-        } else {
-          toast.error("Failed to fetch device active log");
-        }
-      } catch (error) {
-        console.error("Error fetching device active log:", error);
-        toast.error("Error fetching device active log");
-      } finally {
-        setLoadingDeviceLog(false);
-      }
-    };
-  
-    fetchDeviceStatistics();
-  
-    // Notify parent ONCE
+
+    // Notify parent of device selection
     onDeviceSelect?.(selectedDeviceIds);
     toast.success(`Selected ${selectedDeviceIds.length} device(s)`);
-  
-  }, [selectedDeviceIds, selectedZones, timeRange]);
+
+    // API call is now handled exclusively by DeviceLogGrid component
+  }, [selectedDeviceIds]);
     
 
   const filteredDevices = devices.filter(d =>
