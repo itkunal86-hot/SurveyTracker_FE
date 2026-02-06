@@ -621,8 +621,10 @@ export const DeviceStatisticsAnalytics = ({
       const firstOption = timeRangeOptions[0].value;
       setTimeRange(firstOption as TimeRange);
       setHasAutoSelected(true);
-      // Trigger data fetch with the first option
-      handleTimeRangeChange(firstOption);
+      // Notify parent to trigger data fetch in DeviceLogGrid
+      if (onSelectedTimeChange) {
+        onSelectedTimeChange(firstOption);
+      }
     }
   }, [timeRangeOptions, loadingTimeRanges, hasAutoSelected]);
 
