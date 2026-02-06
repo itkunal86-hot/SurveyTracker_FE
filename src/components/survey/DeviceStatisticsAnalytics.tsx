@@ -228,7 +228,7 @@ export const DeviceStatisticsAnalytics = ({
   };
 
 
-  const updateZones = async (newZones: string[]) => {
+  const updateZones = (newZones: string[]) => {
     setSelectedZones(newZones);
 
     // Prepare zone parameter - send comma-separated zone names or "all" if selected
@@ -244,35 +244,7 @@ export const DeviceStatisticsAnalytics = ({
       onZoneSelect(zoneParam);
     }
 
-    setLoadingDeviceLog(true);
-    try {
-      const { startDate, endDate } = getDateRange();
-
-      // Fetch device active log and calculate statistics from it
-      const response = await apiClient.getDeviceActiveLog({
-        page: 1,
-        limit: 100,
-        startDate,
-        endDate,
-        zone: zoneParam === "all" ? undefined : zoneParam,
-        deviceIds: selectedDeviceIds.length > 0 ? selectedDeviceIds : undefined,
-      });
-
-      if (response && response.success && response.data) {
-        // Calculate statistics from device data
-        const calculatedStats = calculateStatisticsFromDevices(response.summery);
-        console.log("2",calculatedStats);
-        setStatistics(calculatedStats);
-        toast.success(`Device statistics updated for selected zone${newZones.length > 1 ? 's' : ''}`);
-      } else {
-        toast.error("Failed to fetch device active log");
-      }
-    } catch (error) {
-      console.error("Error fetching device active log:", error);
-      toast.error("Error fetching device active log");
-    } finally {
-      setLoadingDeviceLog(false);
-    }
+    // API call is now handled exclusively by DeviceLogGrid component
   };
 
   const toggleZoneSelection = (zoneName: string) => {
