@@ -16,6 +16,7 @@ import { SurveyDashboard } from "@/components/survey/Dashboard";
 import { HeatmapView } from "@/components/survey/HeatmapView";
 import { AlertsNotifications } from "@/components/survey/AlertsNotifications";
 import { SurveyReports } from "@/components/survey/SurveyReports";
+import SettingsMaster from "@/components/admin/SettingsMaster";
 import { getMetaConfig } from "@/lib/meta";
 
 const Index = () => {
@@ -113,6 +114,8 @@ const Index = () => {
         return <ValveOperationLog />;
       case "reports":
         return <ReportsDashboard />;
+      case "settings":
+        return <SettingsMaster />;
       default:
         return <MapDashboard />;
     }
