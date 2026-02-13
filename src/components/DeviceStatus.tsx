@@ -617,10 +617,10 @@ export const DeviceStatus = () => {
                   </TableCell>
                  
                   <TableCell>                  
-                  {device.horizontalAccuracy.toFixed(4)}
+                  {device.horizontalAccuracy?.toFixed(4)}
                   </TableCell>
                   <TableCell>                  
-                  {device.verticalAccuracy.toFixed(4)}
+                  {device.verticalAccuracy?.toFixed(4)}
                   </TableCell>
                   {/* <TableCell>
                     <Button size="sm" onClick={() => navigate(`/daily-personal-maps?device=${encodeURIComponent(device.id)}`)}>
