@@ -97,7 +97,7 @@ const adminManagerMenuItems: MenuItem[] = [
     id: "settings",
     label: "Settings",
     icon: Settings,
-    roles: ["admin", "manager"],
+    roles: ["admin", "manager", "survey"],
   },
 ];
 
@@ -136,6 +136,12 @@ const surveyMenuItems: MenuItem[] = [
     id: "survey-reports",
     label: "Reports",
     icon: FileText,
+    roles: ["survey"],
+  },
+  {
+    id: "settings",
+    label: "Settings",
+    icon: Settings,
     roles: ["survey"],
   },
 ];
