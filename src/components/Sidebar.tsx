@@ -93,6 +93,12 @@ const adminManagerMenuItems: MenuItem[] = [
     icon: FileText,
     roles: ["admin", "manager"],
   },
+  {
+    id: "settings",
+    label: "Settings",
+    icon: Settings,
+    roles: ["admin", "manager"],
+  },
 ];
 
 const surveyMenuItems: MenuItem[] = [
