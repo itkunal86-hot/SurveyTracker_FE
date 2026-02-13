@@ -87,6 +87,8 @@ const Index = () => {
           return <AlertsNotifications />;
         case "survey-reports":
           return <SurveyReports />;
+        case "settings":
+          return <SettingsMaster />;
         default:
           return <SurveyDashboard />;
       }
