@@ -148,17 +148,18 @@ export const DeviceLogGrid = ({
         endDate = dateRange.endDate;
       }
 
-      const params = new URLSearchParams({
-        page: String(page),
-        limit: String(pagination.limit),
-        ...(startDate && { startDate }),
-        ...(endDate && { endDate }),
-        zone: selectedZone,
-        circle: selectedCircle,
-        summaryType: summaryType[0],
-        summaryKey: summaryType[1],
-        ...(selectedDeviceIds && selectedDeviceIds.length > 0 && { deviceIds: selectedDeviceIds.join(",") }),
-      });
+      const params = new URLSearchParams();
+      params.append("page", String(page));
+      params.append("limit", String(pagination.limit));
+      if (startDate) params.append("startDate", String(startDate));
+      if (endDate) params.append("endDate", String(endDate));
+      params.append("zone", selectedZone);
+      params.append("circle", selectedCircle);
+      params.append("summaryType", summaryType[0]);
+      params.append("summaryKey", summaryType[1]);
+      if (selectedDeviceIds && selectedDeviceIds.length > 0) {
+        params.append("deviceIds", selectedDeviceIds.join(","));
+      }
 
       const response = await fetch(
         `${API_BASE_PATH}/DeviceLog/getdeviceactivelog?${params.toString()}`,
