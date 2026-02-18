@@ -31,6 +31,7 @@ interface DeviceLogGridProps {
   summaryType?: [string,string];
   selectedTime?: string;
   selectedZone?: string;
+  selectedCircle?: string;
   customStartDate?: string | null;
   customEndDate?: string | null;
   selectedDeviceIds?: string[];
@@ -41,6 +42,7 @@ export const DeviceLogGrid = ({
   summaryType = ["",""],
   selectedTime = "7-days",
   selectedZone = "all",
+  selectedCircle = "all",
   customStartDate = null,
   customEndDate = null,
   selectedDeviceIds = [],
@@ -152,6 +154,7 @@ export const DeviceLogGrid = ({
         ...(startDate && { startDate }),
         ...(endDate && { endDate }),
         zone: selectedZone,
+        circle: selectedCircle,
         summaryType: summaryType[0],
         summaryKey: summaryType[1],
         ...(selectedDeviceIds && selectedDeviceIds.length > 0 && { deviceIds: selectedDeviceIds.join(",") }),
@@ -331,11 +334,11 @@ export const DeviceLogGrid = ({
   // Memoize the device IDs to prevent unnecessary re-fetches
   const memoizedDeviceIds = useMemo(() => selectedDeviceIds.join(','), [selectedDeviceIds]);
 
-  // Fetch on component mount and when time selection, summaryType, zone, custom dates, or device IDs change
+  // Fetch on component mount and when time selection, summaryType, zone, circle, custom dates, or device IDs change
   useEffect(() => {
     console.log("DeviceLogGrid - Fetching with selectedTime:", selectedTime);
     fetchDeviceLogs(1);
-  }, [selectedTime, summaryType, selectedZone, customStartDate, customEndDate, memoizedDeviceIds]);
+  }, [selectedTime, summaryType, selectedZone, selectedCircle, customStartDate, customEndDate, memoizedDeviceIds]);
 
   const getBatteryColor = (battery?: number) => {
     if (battery === undefined) return "text-muted-foreground";

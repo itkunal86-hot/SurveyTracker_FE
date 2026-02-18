@@ -168,6 +168,15 @@ export interface Zone {
   status?: string;
 }
 
+export interface Circle {
+  id: string;
+  name: string;
+  description?: string;
+  polygon?: Array<{ lat: number; lng: number }>;
+  area?: number;
+  status?: string;
+}
+
 export interface PipelineSegment {
   id: string;
   name: string;
@@ -1754,6 +1763,72 @@ class ApiClient {
       };
     } catch (error) {
       // Return empty zones if API fails
+      return {
+        success: true,
+        data: [],
+        message: "",
+        timestamp: new Date().toISOString(),
+        pagination: {
+          page: params?.page ?? 1,
+          limit: params?.limit ?? 0,
+          total: 0,
+          totalPages: 0,
+        },
+      };
+    }
+  }
+
+  // Circle endpoints
+  async getCircles(params?: { page?: number; limit?: number; }): Promise<PaginatedResponse<Circle>> {
+    try {
+      const query = new URLSearchParams();
+      if (params?.page) query.append("page", params.page.toString());
+      if (params?.limit) query.append("limit", params.limit.toString());
+
+      const queryString = query.toString();
+      const raw: any = await this.request<any>(
+        `/DeviceLog/getallcircle${queryString ? `?${queryString}` : ""}`,
+      );
+
+      const timestamp = raw?.timestamp || new Date().toISOString();
+
+      // Extract data array from response - the API returns { total, data: [...] }
+      const rawItems = Array.isArray(raw?.data) ? raw.data : [];
+
+      const mapped: Circle[] = rawItems.map((it: any) => {
+        const fallbackId = (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function")
+          ? crypto.randomUUID()
+          : `${Date.now()}`;
+
+        // Map districtName or circleName from API to name field in Circle interface
+        const id = String(it.id ?? it.ID ?? it.circleId ?? it.CircleId ?? fallbackId);
+        const name = String(it.districtName ?? it.DistrictName ?? it.name ?? it.Name ?? it.circleName ?? it.CircleName ?? "");
+        const description = it.description ?? it.Description ?? undefined;
+        const polygon = Array.isArray(it.polygon) ? it.polygon : Array.isArray(it.Polygon) ? it.Polygon : undefined;
+        const area = typeof it.area === "number" ? it.area : (typeof it.Area === "number" ? it.Area : undefined);
+        const status = it.status ?? it.Status ?? undefined;
+
+        return { id, name, description, polygon, area, status } as Circle;
+      });
+
+      const total = raw?.total ?? mapped.length;
+      const limit = (params?.limit ?? mapped.length) || 1;
+      const pagination = {
+        page: params?.page ?? 1,
+        limit: params?.limit ?? mapped.length,
+        total,
+        totalPages: Math.ceil(total / limit),
+      };
+
+      return {
+        success: (raw?.status_code ?? 200) >= 200 && (raw?.status_code ?? 200) < 300,
+        data: mapped,
+        message: raw?.message,
+        timestamp,
+        pagination,
+      };
+    } catch (error) {
+      // Return empty circles if API fails
       return {
         success: true,
         data: [],

@@ -27,6 +27,7 @@ export const SurveyDashboard = () => {
   const [selectedSummaryType, setSelectedSummaryType] = useState<[string,string]>(["",""]);
   const [selectedTime, setSelectedTime] = useState("7-days");
   const [selectedZone, setSelectedZone] = useState<string>("all");
+  const [selectedCircle, setSelectedCircle] = useState<string>("all");
   const [customStartDate, setCustomStartDate] = useState<string | null>(null);
   const [customEndDate, setCustomEndDate] = useState<string | null>(null);
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([]);
@@ -190,6 +191,7 @@ export const SurveyDashboard = () => {
       <DeviceStatisticsAnalytics
         onSummaryTypeSelect={setSelectedSummaryType}
         onZoneSelect={setSelectedZone}
+        onCircleSelect={setSelectedCircle}
         selectedTime={selectedTime}
         onSelectedTimeChange={setSelectedTime}
         timeOptions={TIME_OPTIONS}
@@ -207,6 +209,7 @@ export const SurveyDashboard = () => {
           summaryType={selectedSummaryType}
           selectedTime={selectedTime}
           selectedZone={selectedZone}
+          selectedCircle={selectedCircle}
           customStartDate={customStartDate}
           customEndDate={customEndDate}
           selectedDeviceIds={selectedDeviceIds}
