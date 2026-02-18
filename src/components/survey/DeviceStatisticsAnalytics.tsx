@@ -32,7 +32,7 @@ interface DeviceStatisticsData {
   totalInactiveDeviceCount: number;
   normalUsage: number;
   underUsage: number;
-  normalUsagePercent: 0,
+  normalUsagePercent: number;
   normalAccuracy: number;
   belowAverageAccuracy: number;
   normalAccuracyPercentage: number;
