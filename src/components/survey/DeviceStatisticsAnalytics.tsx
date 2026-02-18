@@ -18,7 +18,7 @@ import {
   Download,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { API_BASE_PATH, apiClient, type Zone, type Device } from "@/lib/api";
+import { API_BASE_PATH, apiClient, type Zone, type Device, type Circle } from "@/lib/api";
 import { toast } from "sonner";
 import { Toggle } from "@/components/ui/toggle";
 import { Calendar } from "@/components/ui/calendar";
@@ -192,6 +192,7 @@ type SummarySelection = [string, string];
 interface DeviceStatisticsAnalyticsProps {
   onSummaryTypeSelect?: (value: SummarySelection) => void;
   onZoneSelect?: (zone: ZoneSelection) => void;
+  onCircleSelect?: (circle: ZoneSelection) => void;
   selectedTime?: string;
   onSelectedTimeChange?: (time: string) => void;
   timeOptions?: TimeOption[];
@@ -203,6 +204,7 @@ interface DeviceStatisticsAnalyticsProps {
 export const DeviceStatisticsAnalytics = ({
   onSummaryTypeSelect,
   onZoneSelect,
+  onCircleSelect,
   selectedTime = "7-days",
   onSelectedTimeChange,
   timeOptions = [],
@@ -214,6 +216,8 @@ export const DeviceStatisticsAnalytics = ({
   const [timeRange, setTimeRange] = useState<TimeRange>("7-days");
   const [zones, setZones] = useState<Zone[]>([]);
   const [loadingZones, setLoadingZones] = useState(true);
+  const [circles, setCircles] = useState<Circle[]>([]);
+  const [loadingCircles, setLoadingCircles] = useState(true);
   const [devices, setDevices] = useState<Device[]>([]);
   const [loadingDevices, setLoadingDevices] = useState(true);
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([]);
@@ -222,6 +226,9 @@ export const DeviceStatisticsAnalytics = ({
   const [selectedZones, setSelectedZones] = useState<string[]>(["all"]);
   const [showZoneDropdown, setShowZoneDropdown] = useState(false);
   const [zoneSearchTerm, setZoneSearchTerm] = useState("");
+  const [selectedCircles, setSelectedCircles] = useState<string[]>(["all"]);
+  const [showCircleDropdown, setShowCircleDropdown] = useState(false);
+  const [circleSearchTerm, setCircleSearchTerm] = useState("");
   const [timeRangeOptions, setTimeRangeOptions] = useState<TimeOption[]>(FALLBACK_TIME_RANGE_OPTIONS);
   const [loadingTimeRanges, setLoadingTimeRanges] = useState(true);
   const [statistics, setStatistics] = useState<DeviceStatisticsData>({
@@ -299,6 +306,47 @@ export const DeviceStatisticsAnalytics = ({
     }
 
     updateZones(newZones);
+  };
+
+  const updateCircles = (newCircles: string[]) => {
+    setSelectedCircles(newCircles);
+
+    // Prepare circle parameter - send comma-separated circle names or "all" if selected
+    let circleParam: string;
+    if (newCircles.length === 1 && newCircles[0] === "all") {
+      circleParam = "all";
+    } else {
+      circleParam = newCircles.join(",");
+    }
+
+    // Always pass a string to the parent component
+    if (onCircleSelect) {
+      onCircleSelect(circleParam);
+    }
+
+    // API call is now handled exclusively by DeviceLogGrid component
+  };
+
+  const toggleCircleSelection = (circleName: string) => {
+    let newCircles: string[];
+
+    if (circleName === "all") {
+      // If "all" is selected, clear other selections
+      newCircles = ["all"];
+    } else {
+      newCircles = selectedCircles.filter(c => c !== "all");
+
+      if (newCircles.includes(circleName)) {
+        newCircles = newCircles.filter(c => c !== circleName);
+      } else {
+        newCircles = [...newCircles, circleName];
+      }
+
+      // If no circles are selected, default to "all"
+      newCircles = newCircles.length === 0 ? ["all"] : newCircles;
+    }
+
+    updateCircles(newCircles);
   };
 
   // const handleDeviceChange = async (deviceIds: string[]) => {
@@ -381,6 +429,10 @@ export const DeviceStatisticsAnalytics = ({
 
   const filteredZones = zones.filter(z =>
     z.name.toLowerCase().includes(zoneSearchTerm.toLowerCase())
+  );
+
+  const filteredCircles = circles.filter(c =>
+    c.name.toLowerCase().includes(circleSearchTerm.toLowerCase())
   );
 
   const handleStatItemClick = (section: string, label: string, value: string | number, summaryType: string, summaryKey: string) => {
@@ -497,9 +549,27 @@ export const DeviceStatisticsAnalytics = ({
         setLoadingZones(false);
       }
     };
-   
+
     fetchZones();
     //fetchStatistics();
+  }, []);
+
+  // Fetch circles for the circle dropdown
+  useEffect(() => {
+    const fetchCircles = async () => {
+      try {
+        setLoadingCircles(true);
+        const response = await apiClient.getCircles({ limit: 100 });
+        setCircles(response.data || []);
+      } catch (error) {
+        console.error("Error fetching circles:", error);
+        setCircles([]);
+      } finally {
+        setLoadingCircles(false);
+      }
+    };
+
+    fetchCircles();
   }, []);
 
   // Fetch devices for the device dropdown
@@ -850,6 +920,86 @@ export const DeviceStatisticsAnalytics = ({
                             className="flex-1 text-sm cursor-pointer truncate"
                           >
                             {zone.name}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Circle Dropdown - Multiselect with Autocomplete */}
+          <Popover open={showCircleDropdown} onOpenChange={setShowCircleDropdown}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                //disabled={loadingCircles || loadingDeviceLog}
+                className="w-48 justify-start text-left"
+              >
+                {selectedCircles.length === 0 || (selectedCircles.length === 1 && selectedCircles[0] === "all")
+                  ? "All Circles"
+                  : selectedCircles.length === 1
+                    ? selectedCircles[0]
+                    : `${selectedCircles.length} circles`}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-48 p-0" align="end">
+              <div className="p-3 space-y-2 max-h-64 overflow-y-auto">
+                {loadingCircles ? (
+                  <div className="text-sm text-muted-foreground">
+                    Loading circles...
+                  </div>
+                ) : circles.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">
+                    No circles available
+                  </div>
+                ) : (
+                  <>
+                    <input
+                      type="text"
+                      placeholder="Search circles..."
+                      className="w-full px-2 py-1 border rounded text-sm"
+                      value={circleSearchTerm}
+                      onChange={(e) => setCircleSearchTerm(e.target.value)}
+                    />
+                    <div className="space-y-1">
+                      <div
+                        className="flex items-center space-x-2 p-1 hover:bg-muted rounded cursor-pointer"
+                        onClick={() => updateCircles(["all"])}
+                      >
+                        <input
+                          type="checkbox"
+                          id="circle-all"
+                          checked={selectedCircles.length === 1 && selectedCircles[0] === "all"}
+                          onChange={() => updateCircles(["all"])}
+                          className="rounded pointer-events-none"
+                        />
+                        <label
+                          htmlFor="circle-all"
+                          className="flex-1 text-sm cursor-pointer font-semibold pointer-events-none"
+                        >
+                          All Circles
+                        </label>
+                      </div>
+                      {filteredCircles.map((circle) => (
+                        <div
+                          key={circle.name}
+                          className="flex items-center space-x-2 p-1 hover:bg-muted rounded cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            id={`circle-${circle.name}`}
+                            checked={selectedCircles.includes(circle.name)}
+                            onChange={() => toggleCircleSelection(circle.name)}
+                            className="rounded"
+                          />
+                          <label
+                            htmlFor={`circle-${circle.name}`}
+                            className="flex-1 text-sm cursor-pointer truncate"
+                          >
+                            {circle.name}
                           </label>
                         </div>
                       ))}
