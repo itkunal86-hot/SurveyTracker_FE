@@ -30,8 +30,8 @@ interface DeviceLog {
 interface DeviceLogGridProps {
   summaryType?: [string,string];
   selectedTime?: string;
-  selectedZone?: string;
-  selectedCircle?: string;
+  selectedZone?: string | string[];
+  selectedCircle?: string | string[];
   customStartDate?: string | null;
   customEndDate?: string | null;
   selectedDeviceIds?: string[];
