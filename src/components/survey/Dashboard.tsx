@@ -26,8 +26,8 @@ export const SurveyDashboard = () => {
   const [loadingStats, setLoadingStats] = useState(true);
   const [selectedSummaryType, setSelectedSummaryType] = useState<[string,string]>(["",""]);
   const [selectedTime, setSelectedTime] = useState("7-days");
-  const [selectedZone, setSelectedZone] = useState<string>("all");
-  const [selectedCircle, setSelectedCircle] = useState<string>("all");
+  const [selectedZone, setSelectedZone] = useState<string | string[]>("all");
+  const [selectedCircle, setSelectedCircle] = useState<string | string[]>("all");
   const [customStartDate, setCustomStartDate] = useState<string | null>(null);
   const [customEndDate, setCustomEndDate] = useState<string | null>(null);
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([]);
