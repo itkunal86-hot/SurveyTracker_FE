@@ -147,7 +147,7 @@ const calculateStatisticsFromDevices = (devices: any): DeviceStatisticsData => {
 };
 
 type TimeRange = "all" | "7-days" | "1-month" | "3-months";
-type ZoneSelection = string | string[];
+type ZoneSelection = string;
 
 const FALLBACK_TIME_RANGE_OPTIONS = [
   { value: "7-days", label: "Last 7 Days" },

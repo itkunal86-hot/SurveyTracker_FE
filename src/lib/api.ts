@@ -1787,7 +1787,7 @@ class ApiClient {
 
       const queryString = query.toString();
       const raw: any = await this.request<any>(
-        `/DeviceLog/getallcircle${queryString ? `?${queryString}` : ""}`,
+        `/DeviceLog/getallzone${queryString ? `?${queryString}` : ""}`,
       );
 
       const timestamp = raw?.timestamp || new Date().toISOString();
