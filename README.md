@@ -1,4 +1,4 @@
-# Pipeline Vista Guardian
+# AltGeo Survey Dashboard
 
 A comprehensive pipeline monitoring and management system built with React, TypeScript, and Node.js. This application provides real-time monitoring of pipeline networks, device management, catastrophe tracking, and valve operations.
 
