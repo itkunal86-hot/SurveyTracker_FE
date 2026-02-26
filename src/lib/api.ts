@@ -131,6 +131,8 @@ export interface Device {
   location?: string;
   surveyCount?: string;
   controllerId?: string;
+  mobileaccuracy?: number;
+  mcoordinates?: Coordinates;
   summery:{}
 }
 
@@ -2918,7 +2920,13 @@ class ApiClient {
         const location = it.location ?? "";
         const currentLocation = it.currentLocation ?? ""
         const surveyCount = it.surveyCount ?? ""
-
+        const mobileaccuracy = it.mobileAccuracy ;
+        const controllerId = it.controllerId ;
+        const mcoordinates = (!Number.isNaN(lat) && !Number.isNaN(lng))
+          ? { lat, lng }
+          : (it.mcoordinates && typeof it.mcoordinates.lat === "number" && typeof it.mcoordinates.lng === "number")
+            ? { lat: it.mcoordinates.lat, lng: it.mcoordinates.lng }
+            : { lat: 0, lng: 0 };
         return {
           id,
           name,
@@ -2934,7 +2942,10 @@ class ApiClient {
           serialNumber,
           location,
           currentLocation,
-          surveyCount
+          surveyCount,
+          mobileaccuracy,
+          controllerId,
+          mcoordinates
         } as Device;
       });
 

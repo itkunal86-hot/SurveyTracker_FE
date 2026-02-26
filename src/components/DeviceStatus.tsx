@@ -450,7 +450,14 @@ export const DeviceStatus = () => {
                 >
                   Device
                 </SortableTableHead>
-             
+                <SortableTableHead
+                  sortKey="controllerId"
+                  currentSortKey={tableConfig.sortConfig.key}
+                  sortDirection={tableConfig.sortConfig.direction}
+                  onSort={tableConfig.handleSort}
+                >
+                  Contoller
+                </SortableTableHead>
                  <SortableTableHead
                   sortKey="location"
                   currentSortKey={tableConfig.sortConfig.key}
@@ -518,6 +525,15 @@ export const DeviceStatus = () => {
                   Location (Coordinates)
                 </SortableTableHead>
                
+               <SortableTableHead
+                  sortKey="location"
+                  currentSortKey={tableConfig.sortConfig.key}
+                  sortDirection={tableConfig.sortConfig.direction}
+                  onSort={tableConfig.handleSort}
+                  sortable={false}
+                >
+                  Mobile Location (Coordinates)
+                </SortableTableHead>
                 <SortableTableHead
                   sortKey="horizontalAccuracy"
                   currentSortKey={tableConfig.sortConfig.key}
@@ -534,6 +550,24 @@ export const DeviceStatus = () => {
                 >
                   Vertical Accuracy
                 </SortableTableHead>
+                 <SortableTableHead
+                  sortKey="mobileaccuracy"
+                  currentSortKey={tableConfig.sortConfig.key}
+                  sortDirection={tableConfig.sortConfig.direction}
+                  onSort={tableConfig.handleSort}
+                >
+                  Mobile Accuracy
+                </SortableTableHead>
+                 
+                 {/* <SortableTableHead
+                  sortKey="Mobilelocation"
+                  currentSortKey={tableConfig.sortConfig.key}
+                  sortDirection={tableConfig.sortConfig.direction}
+                  onSort={tableConfig.handleSort}
+                  sortable={false}
+                >
+                 Mobile Location (Coordinates)
+                </SortableTableHead> */}
                 {/* <TableHead>Actions</TableHead> */}
               </TableRow>
             </TableHeader>
@@ -552,6 +586,7 @@ export const DeviceStatus = () => {
                     </div>
                   </TableCell>
                   {/* <TableCell>{device.type}</TableCell> */}
+                   <TableCell>{device.controllerId}</TableCell>
                   <TableCell>{device.location}</TableCell>
                   <TableCell>{device.currentLocation}</TableCell>
                   <TableCell>{device.surveyCount}</TableCell>
@@ -615,12 +650,19 @@ export const DeviceStatus = () => {
                       ? `${device.coordinates.lat.toFixed(4)}, ${device.coordinates.lng.toFixed(4)}`
                       : "Unknown"}
                   </TableCell>
-                 
+                  <TableCell className="text-sm font-mono">
+                    {device.mcoordinates
+                      ? `${device.mcoordinates.lat.toFixed(4)}, ${device.mcoordinates.lng.toFixed(4)}`
+                      : "Unknown"}
+                  </TableCell>
                   <TableCell>                  
                   {device.horizontalAccuracy?.toFixed(4)}
                   </TableCell>
                   <TableCell>                  
                   {device.verticalAccuracy?.toFixed(4)}
+                  </TableCell>
+                  <TableCell>                  
+                  {device.mobileaccuracy?.toFixed(4)}
                   </TableCell>
                   {/* <TableCell>
                     <Button size="sm" onClick={() => navigate(`/daily-personal-maps?device=${encodeURIComponent(device.id)}`)}>
