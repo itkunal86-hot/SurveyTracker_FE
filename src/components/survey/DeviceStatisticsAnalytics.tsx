@@ -577,7 +577,7 @@ export const DeviceStatisticsAnalytics = ({
     const fetchDevices = async () => {
       try {
         setLoadingDevices(true);
-        const response = await apiClient.getDevices({ limit: 200 });
+        const response = await apiClient.getActiveDevices();
         setDevices(response.data || []);
       } catch (error) {
         console.error("Error fetching devices:", error);

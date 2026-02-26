@@ -482,14 +482,14 @@ export const DeviceStatus = () => {
                 >
                   Survey Count
                 </SortableTableHead>
-                <SortableTableHead
+                {/* <SortableTableHead
                   sortKey="serialNumber"
                   currentSortKey={tableConfig.sortConfig.key}
                   sortDirection={tableConfig.sortConfig.direction}
                   onSort={tableConfig.handleSort}
                 >
                   Serial Number
-                </SortableTableHead>
+                </SortableTableHead> */}
                 <SortableTableHead
                   sortKey="status"
                   currentSortKey={tableConfig.sortConfig.key}
@@ -590,9 +590,9 @@ export const DeviceStatus = () => {
                   <TableCell>{device.location}</TableCell>
                   <TableCell>{device.currentLocation}</TableCell>
                   <TableCell>{device.surveyCount}</TableCell>
-                  <TableCell className="font-mono text-sm">
+                  {/* <TableCell className="font-mono text-sm">
                     {device.serialNumber || "N/A"}
-                  </TableCell>
+                  </TableCell> */}
                   <TableCell>
                     <Badge className={getStatusColor(device.status)}>
                       {device.status === "ACTIVE"
