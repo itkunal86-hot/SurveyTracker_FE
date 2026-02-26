@@ -130,6 +130,7 @@ export interface Device {
   currentLocation?: string;
   location?: string;
   surveyCount?: string;
+  controllerId?: string;
   summery:{}
 }
 
@@ -911,17 +912,17 @@ class ApiClient {
       return await fetchAndMap(raw);
     } catch (primaryError) {
       try {
-        const localBase = (typeof window !== "undefined" && window.location?.origin)
-          ? `${window.location.origin}/api`
-          : "/api";
-        const resp = await fetch(`${localBase}/proxy/device-alerts${q ? `?${q}` : ""}`, {
-          method: "GET",
-          headers: { Accept: "application/json" },
-        });
-        const text = await resp.text();
-        let rawProxy: any;
-        try { rawProxy = JSON.parse(text); } catch { rawProxy = text; }
-        return await fetchAndMap(rawProxy);
+        // const localBase = (typeof window !== "undefined" && window.location?.origin)
+        //   ? `${window.location.origin}/api`
+        //   : "/api";
+        // const resp = await fetch(`${localBase}/proxy/device-alerts${q ? `?${q}` : ""}`, {
+        //   method: "GET",
+        //   headers: { Accept: "application/json" },
+        // });
+        // const text = await resp.text();
+        // let rawProxy: any;
+        // try { rawProxy = JSON.parse(text); } catch { rawProxy = text; }
+        // return await fetchAndMap(rawProxy);
       } catch (error) {
         return {
           success: true,
@@ -2959,17 +2960,17 @@ class ApiClient {
       return await fetchAndMap(raw);
     } catch (primaryError) {
       try {
-        const localBase = (typeof window !== "undefined" && window.location?.origin)
-          ? `${window.location.origin}/api`
-          : "/api";
-        const resp = await fetch(`${localBase}/proxy/device-log${q ? `?${q}` : ""}`, {
-          method: "GET",
-          headers: { Accept: "application/json" },
-        });
-        const text = await resp.text();
-        let rawProxy: any;
-        try { rawProxy = JSON.parse(text); } catch { rawProxy = text; }
-        return await fetchAndMap(rawProxy);
+        // const localBase = (typeof window !== "undefined" && window.location?.origin)
+        //   ? `${window.location.origin}/api`
+        //   : "/api";
+        // const resp = await fetch(`${localBase}/proxy/device-log${q ? `?${q}` : ""}`, {
+        //   method: "GET",
+        //   headers: { Accept: "application/json" },
+        // });
+        // const text = await resp.text();
+        // let rawProxy: any;
+        // try { rawProxy = JSON.parse(text); } catch { rawProxy = text; }
+        // return await fetchAndMap(rawProxy);
       } catch (error) {
         //return createMockPaginatedResponse<Device>([], params);
         return null
@@ -3081,7 +3082,7 @@ class ApiClient {
         const location = it.location ?? "";
         const currentLocation = it.currentLocation ?? ""
         const surveyCount = it.surveyCount ?? ""
-
+        const controllerId = it.controllerId ?? ""
         return {
           id,
           name,
@@ -3097,7 +3098,8 @@ class ApiClient {
           serialNumber,
           location,
           currentLocation,
-          surveyCount
+          surveyCount,
+          controllerId
         } as Device;
       });
 
@@ -3124,31 +3126,31 @@ class ApiClient {
       return await fetchAndMap(raw);
     } catch (primaryError) {
       try {
-        const localBase = (typeof window !== "undefined" && window.location?.origin)
-          ? `${window.location.origin}/api`
-          : "/api";
-        const resp = await fetch(`${localBase}/proxy/device-log${q ? `?${q}` : ""}`, {
-          method: "GET",
-          headers: { Accept: "application/json" },
-        });
-        const text = await resp.text();
-        let rawProxy: any;
-        try { rawProxy = JSON.parse(text); } catch { rawProxy = text; }
-        return await fetchAndMap(rawProxy);
+        // const localBase = (typeof window !== "undefined" && window.location?.origin)
+        //   ? `${window.location.origin}/api`
+        //   : "/api";
+        // const resp = await fetch(`${localBase}/proxy/device-log${q ? `?${q}` : ""}`, {
+        //   method: "GET",
+        //   headers: { Accept: "application/json" },
+        // });
+        // const text = await resp.text();
+        // let rawProxy: any;
+        // try { rawProxy = JSON.parse(text); } catch { rawProxy = text; }
+        // return await fetchAndMap(rawProxy);
       } catch (error) {
-        console.error("Error fetching device active log:", error);
-        return {
-          success: false,
-          data: [],
-          message: "Failed to fetch device active log",
-          timestamp: new Date().toISOString(),
-          pagination: {
-            page: params?.page ?? 1,
-            limit: params?.limit ?? 10,
-            total: 0,
-            totalPages: 0,
-          },
-        };
+        // console.error("Error fetching device active log:", error);
+        // return {
+        //   success: false,
+        //   data: [],
+        //   message: "Failed to fetch device active log",
+        //   timestamp: new Date().toISOString(),
+        //   pagination: {
+        //     page: params?.page ?? 1,
+        //     limit: params?.limit ?? 10,
+        //     total: 0,
+        //     totalPages: 0,
+        //   },
+        // };
       }
     }
   }

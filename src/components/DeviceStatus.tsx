@@ -606,8 +606,8 @@ export const DeviceStatus = () => {
                     )}
                   </TableCell>
                   <TableCell className="text-sm">
-                    {device.lastSeen.toLocaleString()
-                      ? new Date(device.lastSeen).toLocaleString()
+                    {device.lastSeen?.toLocaleString()
+                      ? new Date(device.lastSeen)?.toLocaleString()
                       : "Unknown"}
                   </TableCell>
                   <TableCell className="text-sm font-mono">
