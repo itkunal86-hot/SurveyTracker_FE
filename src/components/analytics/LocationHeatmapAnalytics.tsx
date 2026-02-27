@@ -105,9 +105,14 @@ const clusterPoints = (assets: any[], zoom: number) => {
     assets.forEach((other, j) => {
       if (i === j || used.has(j)) return;
 
+      const assetLat = asset.coordinates?.lat ?? asset.mcoordinates?.lat;
+      const assetLng = asset.coordinates?.lng ?? asset.mcoordinates?.lng;
+      const otherLat = other.coordinates?.lat ?? other.mcoordinates?.lat;
+      const otherLng = other.coordinates?.lng ?? other.mcoordinates?.lng;
+
       const dist = Math.sqrt(
-        Math.pow(asset.coordinates.lat - other.coordinates.lat, 2) +
-        Math.pow(asset.coordinates.lng - other.coordinates.lng, 2)
+        Math.pow(assetLat - otherLat, 2) +
+        Math.pow(assetLng - otherLng, 2)
       );
 
       if (dist <= radius) {
@@ -117,9 +122,9 @@ const clusterPoints = (assets: any[], zoom: number) => {
     });
 
     const lat =
-      group.reduce((s, a) => s + a.coordinates.lat, 0) / group.length;
+      group.reduce((s, a) => s + (a.coordinates?.lat ?? a.mcoordinates?.lat), 0) / group.length;
     const lng =
-      group.reduce((s, a) => s + a.coordinates.lng, 0) / group.length;
+      group.reduce((s, a) => s + (a.coordinates?.lng ?? a.mcoordinates?.lng), 0) / group.length;
 
     clusters.push({
       id: `cluster-${i}`,
