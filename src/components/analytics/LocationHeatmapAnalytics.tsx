@@ -74,8 +74,8 @@ const clusterPoints = (assets: any[], zoom: number) => {
   if (zoom >= 13) {
     return assets.map((a: any, i: number) => ({
       id: `asset-${i}`,
-      lat: a.coordinates.lat,
-      lng: a.coordinates.lng,
+      lat: a.coordinates.lat ?? a.mcoordinates.lat,
+      lng: a.coordinates.lng ?? a.mcoordinates.lng,
       devices: [a],
       isCluster: false,
     }));
@@ -146,6 +146,7 @@ const HeatmapLeafletMap = ({ filteredAssets }: any) => {
 
     //const map = L.map(mapRef.current).setView([22.57, 88.36], 12);
     // Assam (Guwahati) focus
+    
     const ASSAM_CENTER: [number, number] = [26.1445, 91.7362];
     const map = L.map(mapRef.current).setView(ASSAM_CENTER, 6);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -167,7 +168,6 @@ const HeatmapLeafletMap = ({ filteredAssets }: any) => {
 
   useEffect(() => {
     if (!layerRef.current) return;
-
     layerRef.current.clearLayers();
     const latestMapAssets = getLatestAssetsForMap(filteredAssets);
     const clusters = clusterPoints(latestMapAssets, zoomLevel);
@@ -201,9 +201,8 @@ const HeatmapLeafletMap = ({ filteredAssets }: any) => {
         layerRef.current.addLayer(marker);
       } else {
         const d = c.devices[0];
-
         const circle = L.circle(
-          [d.coordinates.lat, d.coordinates.lng],
+          [d.coordinates.lat ?? d.mcoordinates.lat , d.coordinates.lng ?? d.mcoordinates.lng],
           {
             radius: 80,
             color: "#f97316",
@@ -216,8 +215,8 @@ const HeatmapLeafletMap = ({ filteredAssets }: any) => {
           `<div>
             <b>${d.name ?? "Device"}</b><br/>
             ID: ${d.id ?? "-"}<br/>
-            Lat: ${d.coordinates.lat}<br/>
-            Lng: ${d.coordinates.lng}
+            Lat: ${d.coordinates.lat ?? d.mcoordinates.lat}<br/>
+            Lng: ${d.coordinates.lng ?? d.mcoordinates.lng}
           </div>`,
           { direction: "top" }
         );
@@ -262,14 +261,31 @@ export const LocationHeatmapAnalytics = () => {
 
   const devices = Array.isArray(data?.data) ? data.data : [];
 
-  const filteredAssets = useMemo(() => {
-    return devices.filter(
-      (d: any) =>
-        d.coordinates &&
-        d.coordinates.lat !== 0 &&
-        d.coordinates.lng !== 0
-    );
-  }, [devices]);
+  // const filteredAssets = useMemo(() => {
+  //   return devices.filter(
+  //     (d: any) =>
+  //       d.coordinates &&
+  //       d.coordinates.lat !== 0 &&
+  //       d.coordinates.lng !== 0
+  //   );
+  // }, [devices]);
+
+ const filteredAssets = useMemo(() => {
+  return devices.filter((d: any) => {
+    const lat =
+      d.coordinates?.lat && d.coordinates.lat !== 0
+        ? d.coordinates.lat
+        : d.mcoordinates?.lat;
+
+    const lng =
+      d.coordinates?.lng && d.coordinates.lng !== 0
+        ? d.coordinates.lng
+        : d.mcoordinates?.lng;
+
+    return lat != null && lng != null && lat !== 0 && lng !== 0;
+  });
+}, [devices]);
+
   const visibleMapAssets = getLatestAssetsForMap(filteredAssets);
   return (
     <Card>
