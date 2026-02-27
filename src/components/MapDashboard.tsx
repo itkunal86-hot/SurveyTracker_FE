@@ -105,8 +105,8 @@ export const MapDashboard = () => {
     return devices.map((device) => ({
       id: device.id,
       name: device.name,
-      lat: device.coordinates?.lat ?? device.mcoordinates?.lat ?? 0,
-      lng: device.coordinates?.lng ?? device.mcoordinates?.lng ?? 0,
+      lat: device.coordinates?.lat ?? 0,
+      lng: device.coordinates?.lng ?? 0,
       status: device.status === "ACTIVE" ? "active" :
               device.status === "INACTIVE" ? "offline" :
               device.status === "MAINTENANCE" ? "maintenance" : "error",

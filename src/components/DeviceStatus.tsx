@@ -317,8 +317,13 @@ export const DeviceStatus = () => {
               devices={devices.map((device) => ({
                 id: device.id,
                 name: device.name,
-                lat: device.coordinates?.lat ?? device.mcoordinates?.lat ?? 0,
-                lng: device.coordinates?.lng ?? device.mcoordinates?.lng ?? 0,
+               lat: device.coordinates?.lat == 0
+                ? device.mcoordinates?.lat
+                : device.coordinates.lat,
+
+                lng: device.coordinates?.lng == 0
+                      ? device.mcoordinates?.lng
+                      : device.coordinates.lng,
                 status:
                   device.status === "MAINTENANCE"
                     ? "offline"
