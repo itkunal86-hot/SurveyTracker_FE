@@ -69,16 +69,27 @@ interface HeatmapFilters {
 /* ================= CLUSTER LOGIC ================= */
 
 const clusterPoints = (assets: any[], zoom: number) => {
+  debugger
   if (!assets.length) return [];
 
   if (zoom >= 13) {
-    return assets.map((a: any, i: number) => ({
+    var sss = assets.map((a: any, i: number) => ({
       id: `asset-${i}`,
-      lat: a.coordinates.lat ?? a.mcoordinates.lat,
-      lng: a.coordinates.lng ?? a.mcoordinates.lng,
+      lat: a.coordinates.lat == 0 ? a.mcoordinates.lat : a.coordinates.lat,
+      lng: a.coordinates.lng == 0 ? a.mcoordinates.lng : a.coordinates.lng,
       devices: [a],
       isCluster: false,
     }));
+    console.log(sss)
+    return sss;
+    // return assets.map((a: any, i: number) => ({
+    //   id: `asset-${i}`,
+    //   lat: a.coordinates.lat == 0 ? a.mcoordinates.lat : a.coordinates.lat,
+    //   lng: a.coordinates.lng == 0 ? a.mcoordinates.lng : a.coordinates.lng,
+    //   devices: [a],
+    //   isCluster: false,
+    // }));
+
   }
 
   const clusterRadiusByZoom: Record<number, number> = {
@@ -105,10 +116,36 @@ const clusterPoints = (assets: any[], zoom: number) => {
     assets.forEach((other, j) => {
       if (i === j || used.has(j)) return;
 
-      const assetLat = asset.coordinates?.lat ?? asset.mcoordinates?.lat;
-      const assetLng = asset.coordinates?.lng ?? asset.mcoordinates?.lng;
-      const otherLat = other.coordinates?.lat ?? other.mcoordinates?.lat;
-      const otherLng = other.coordinates?.lng ?? other.mcoordinates?.lng;
+      //const assetLat = asset.coordinates?.lat ?? asset.mcoordinates?.lat;
+      //const assetLng = asset.coordinates?.lng ?? asset.mcoordinates?.lng;
+      // const otherLat = other.coordinates?.lat ?? other.mcoordinates?.lat;
+      //const otherLng = other.coordinates?.lng ?? other.mcoordinates?.lng;
+
+
+      const assetLat = asset.coordinates?.lat !== null &&
+        asset.coordinates?.lat !== undefined &&
+        asset.coordinates?.lat !== 0
+        ? asset.coordinates.lat
+        : asset.mcoordinates?.lat;
+      const assetLng = asset.coordinates?.lng !== null &&
+        asset.coordinates?.lng !== undefined &&
+        asset.coordinates?.lng !== 0
+        ? asset.coordinates.lng
+        : asset.mcoordinates?.lng;
+      const otherLat =
+        other.coordinates?.lat !== null &&
+          other.coordinates?.lat !== undefined &&
+          other.coordinates?.lat !== 0
+          ? other.coordinates.lat
+          : other.mcoordinates?.lat;
+
+      const otherLng =
+        other.coordinates?.lng !== null &&
+          other.coordinates?.lng !== undefined &&
+          other.coordinates?.lng !== 0
+          ? other.coordinates.lng
+          : other.mcoordinates?.lng;
+
 
       const dist = Math.sqrt(
         Math.pow(assetLat - otherLat, 2) +
@@ -121,10 +158,30 @@ const clusterPoints = (assets: any[], zoom: number) => {
       }
     });
 
+    // const lat =
+    //   group.reduce((s, a) => s + (a.coordinates?.lat ?? a.mcoordinates?.lat), 0) / group.length;
+    // const lng =
+    //   group.reduce((s, a) => s + (a.coordinates?.lng ?? a.mcoordinates?.lng), 0) / group.length;
+
     const lat =
-      group.reduce((s, a) => s + (a.coordinates?.lat ?? a.mcoordinates?.lat), 0) / group.length;
+      group.reduce(
+        (s, a) =>
+          s +
+          (a.coordinates?.lat === 0
+            ? a.mcoordinates?.lat ?? 0
+            : a.coordinates?.lat ?? 0),
+        0
+      ) / group.length;
+
     const lng =
-      group.reduce((s, a) => s + (a.coordinates?.lng ?? a.mcoordinates?.lng), 0) / group.length;
+      group.reduce(
+        (s, a) =>
+          s +
+          (a.coordinates?.lng === 0
+            ? a.mcoordinates?.lng ?? 0
+            : a.coordinates?.lng ?? 0),
+        0
+      ) / group.length;
 
     clusters.push({
       id: `cluster-${i}`,
@@ -151,7 +208,7 @@ const HeatmapLeafletMap = ({ filteredAssets }: any) => {
 
     //const map = L.map(mapRef.current).setView([22.57, 88.36], 12);
     // Assam (Guwahati) focus
-    
+
     const ASSAM_CENTER: [number, number] = [26.1445, 91.7362];
     const map = L.map(mapRef.current).setView(ASSAM_CENTER, 6);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -172,6 +229,7 @@ const HeatmapLeafletMap = ({ filteredAssets }: any) => {
   }, []);
 
   useEffect(() => {
+    debugger
     if (!layerRef.current) return;
     layerRef.current.clearLayers();
     const latestMapAssets = getLatestAssetsForMap(filteredAssets);
@@ -207,7 +265,15 @@ const HeatmapLeafletMap = ({ filteredAssets }: any) => {
       } else {
         const d = c.devices[0];
         const circle = L.circle(
-          [d.coordinates.lat ?? d.mcoordinates.lat , d.coordinates.lng ?? d.mcoordinates.lng],
+          [
+            d.coordinates?.lat === 0
+              ? d.mcoordinates?.lat ?? 0
+              : d.coordinates?.lat ?? 0,
+
+            d.coordinates?.lng === 0
+              ? d.mcoordinates?.lng ?? 0
+              : d.coordinates?.lng ?? 0
+          ],
           {
             radius: 80,
             color: "#f97316",
@@ -220,8 +286,14 @@ const HeatmapLeafletMap = ({ filteredAssets }: any) => {
           `<div>
             <b>${d.name ?? "Device"}</b><br/>
             ID: ${d.id ?? "-"}<br/>
-            Lat: ${d.coordinates.lat ?? d.mcoordinates.lat}<br/>
-            Lng: ${d.coordinates.lng ?? d.mcoordinates.lng}
+           Lat: ${d.coordinates?.lat === 0
+            ? d.mcoordinates?.lat ?? 0
+            : d.coordinates?.lat ?? 0
+          }<br/>
+          Lng: ${d.coordinates?.lng === 0
+            ? d.mcoordinates?.lng ?? 0
+            : d.coordinates?.lng ?? 0
+          }
           </div>`,
           { direction: "top" }
         );
@@ -245,7 +317,7 @@ const getLatestAssetsForMap = (assets: any[]) => {
     if (
       !existing ||
       new Date(asset.timestamp || asset.createdAt) >
-        new Date(existing.timestamp || existing.createdAt)
+      new Date(existing.timestamp || existing.createdAt)
     ) {
       latestMap.set(deviceId, asset);
     }
@@ -275,21 +347,21 @@ export const LocationHeatmapAnalytics = () => {
   //   );
   // }, [devices]);
 
- const filteredAssets = useMemo(() => {
-  return devices.filter((d: any) => {
-    const lat =
-      d.coordinates?.lat && d.coordinates.lat !== 0
-        ? d.coordinates.lat
-        : d.mcoordinates?.lat;
+  const filteredAssets = useMemo(() => {
+    return devices.filter((d: any) => {
+      const lat =
+        d.coordinates?.lat && d.coordinates.lat !== 0
+          ? d.coordinates.lat
+          : d.mcoordinates?.lat;
 
-    const lng =
-      d.coordinates?.lng && d.coordinates.lng !== 0
-        ? d.coordinates.lng
-        : d.mcoordinates?.lng;
+      const lng =
+        d.coordinates?.lng && d.coordinates.lng !== 0
+          ? d.coordinates.lng
+          : d.mcoordinates?.lng;
 
-    return lat != null && lng != null && lat !== 0 && lng !== 0;
-  });
-}, [devices]);
+      return lat != null && lng != null && lat !== 0 && lng !== 0;
+    });
+  }, [devices]);
 
   const visibleMapAssets = getLatestAssetsForMap(filteredAssets);
   return (
