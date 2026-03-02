@@ -1271,41 +1271,7 @@ export const DeviceStatisticsAnalytics = ({
                 })
               ) : (
                 <>
-                  <StatItem
-                    label="Minimum TTFA"
-                    value={`${statistics.minimumTTFA}m`}
-                    color="text-green-600"
-                    icon={<Clock className="h-3 w-3 text-green-500" />}
-                    onClick={() => handleStatItemClick("Time to Achieve Accuracy", "Minimum TTFA", `${statistics.minimumTTFA}m`, "minimumTTFA","DEVICE_TIME_ACCURACY")}
-                  />
-                  <StatItem
-                    label="Average TTFA"
-                    value={`${statistics.averageTTFA}m`}
-                    color="text-blue-600"
-                    icon={<Clock className="h-3 w-3 text-blue-500" />}
-                    onClick={() => handleStatItemClick("Time to Achieve Accuracy", "Average TTFA", `${statistics.averageTTFA}m`, "averageTTFA","DEVICE_TIME_ACCURACY")}
-                  />
-                  <StatItem
-                    label="Maximum TTFA"
-                    value={`${statistics.maximumTTFA}m`}
-                    color="text-orange-600"
-                    icon={<Clock className="h-3 w-3 text-orange-500" />}
-                    onClick={() => handleStatItemClick("Time to Achieve Accuracy", "Maximum TTFA", `${statistics.maximumTTFA}m`, "maximumTTFA","DEVICE_TIME_ACCURACY")}
-                  />
-                  <div className="mt-3 pt-2 border-t space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">&lt; 5 minutes</span>
-                      <Badge variant="secondary" className="bg-green-100 text-xs h-5">Optimal</Badge>
-                    </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">5-15 minutes</span>
-                      <Badge variant="secondary" className="bg-yellow-100 text-xs h-5">Normal</Badge>
-                    </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">&gt; 15 minutes</span>
-                      <Badge variant="secondary" className="bg-red-100 text-xs h-5">Attention</Badge>
-                    </div>
-                  </div>
+                 <span>No time to achieve accuracy was received.</span>
                 </>
               )}
             </div>
