@@ -3657,6 +3657,22 @@ class ApiClient {
       };
     }
   }
+
+  async getFlowlines(): Promise<any> {
+    try {
+      return await this.request<any>(`/Map/flowlines`);
+    } catch (error: any) {
+      throw new Error(error?.message ?? "Failed to fetch flowlines");
+    }
+  }
+
+  async getValves(): Promise<any> {
+    try {
+      return await this.request<any>(`/Map/valves`);
+    } catch (error: any) {
+      throw new Error(error?.message ?? "Failed to fetch valves");
+    }
+  }
 }
 
 // Compatibility helpers for backward compatibility with existing components
