@@ -4,10 +4,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Wifi, WifiOff, Battery, Activity, RefreshCw, BarChart3, ChevronLeft, ChevronRight, Download } from "lucide-react";
+import { Wifi, WifiOff, Battery, Activity, RefreshCw, BarChart3, ChevronLeft, ChevronRight, Download, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_PATH, apiClient } from "@/lib/api";
 import { toast } from "sonner";
+import { ActiveDeviceListModal } from "./ActiveDeviceListModal";
 
 interface DeviceLog {
   id: string;
@@ -55,6 +56,7 @@ export const DeviceLogGrid = ({
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 });
   const [exportLoading, setExportLoading] = useState(false);
+  const [isDeviceListModalOpen, setIsDeviceListModalOpen] = useState(false);
 
   // Calculate date range based on timeRange value
   // const getDateRange = (timeValue: string) => {
@@ -413,6 +415,14 @@ export const DeviceLogGrid = ({
             <Button
               variant="outline"
               size="sm"
+              onClick={() => setIsDeviceListModalOpen(true)}
+              title="View active devices"
+            >
+              <Users className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => fetchDeviceLogs(pagination.page)}
               disabled={isLoading}
             >
@@ -574,6 +584,16 @@ export const DeviceLogGrid = ({
           </div>
         )}
       </CardContent>
+
+      <ActiveDeviceListModal
+        open={isDeviceListModalOpen}
+        onOpenChange={setIsDeviceListModalOpen}
+        selectedZone={selectedZone}
+        selectedCircle={selectedCircle}
+        selectedTime={selectedTime}
+        customStartDate={customStartDate}
+        customEndDate={customEndDate}
+      />
     </Card>
   );
 };
