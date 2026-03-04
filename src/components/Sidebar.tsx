@@ -75,6 +75,18 @@ const adminManagerMenuItems: MenuItem[] = [
     roles: ["admin", "manager"],
   },
   {
+    id: "flowlines-map",
+    label: "Flowlines Map",
+    icon: Map,
+    roles: ["admin", "manager"],
+  },
+  {
+    id: "valves-map",
+    label: "Valves Map",
+    icon: Map,
+    roles: ["admin", "manager"],
+  },
+  {
     id: "alerts-notifications",
     label: "Alerts & Notifications",
     icon: AlertTriangle,
@@ -188,6 +200,14 @@ export const Sidebar = ({
     onTabChange(tabId);
     if (tabId === "pipeline-operations") {
       navigate("/pipeline-operations");
+      return;
+    }
+    if (tabId === "flowlines-map") {
+      navigate("/flowlines-map");
+      return;
+    }
+    if (tabId === "valves-map") {
+      navigate("/valves-map");
       return;
     }
     if (tabId.startsWith("assets:")) {
