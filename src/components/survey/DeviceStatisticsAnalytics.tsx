@@ -412,11 +412,12 @@ export const DeviceStatisticsAnalytics = ({
     setSelectedDeviceIds(deviceIds);
   };
   useEffect(() => {
-    if (selectedDeviceIds.length === 0) return;
-
-    // Notify parent of device selection
+    // Notify parent of device selection (including when empty)
     onDeviceSelect?.(selectedDeviceIds);
-    toast.success(`Selected ${selectedDeviceIds.length} device(s)`);
+
+    if (selectedDeviceIds.length > 0) {
+      toast.success(`Selected ${selectedDeviceIds.length} device(s)`);
+    }
 
     // API call is now handled exclusively by DeviceLogGrid component
   }, [selectedDeviceIds]);
