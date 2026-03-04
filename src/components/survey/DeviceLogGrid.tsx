@@ -57,6 +57,7 @@ export const DeviceLogGrid = ({
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 });
   const [exportLoading, setExportLoading] = useState(false);
   const [isDeviceListModalOpen, setIsDeviceListModalOpen] = useState(false);
+  const [deviceLogSummaryData, setDeviceLogSummaryData] = useState<any>(null);
 
   // Calculate date range based on timeRange value
   // const getDateRange = (timeValue: string) => {
@@ -179,8 +180,11 @@ export const DeviceLogGrid = ({
       const data = await response.json();
 
       // Extract summary data if available and pass it to parent
-      if (data?.data?.summary && onSummaryDataReceived) {
-        onSummaryDataReceived(data.data.summary);
+      if (data?.data?.summary) {
+        setDeviceLogSummaryData(data.data.summary);
+        if (onSummaryDataReceived) {
+          onSummaryDataReceived(data.data.summary);
+        }
       }
 
       // Handle various response formats for device logs
@@ -588,6 +592,7 @@ export const DeviceLogGrid = ({
       <ActiveDeviceListModal
         open={isDeviceListModalOpen}
         onOpenChange={setIsDeviceListModalOpen}
+        summaryData={deviceLogSummaryData}
         selectedZone={selectedZone}
         selectedCircle={selectedCircle}
         selectedTime={selectedTime}
