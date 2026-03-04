@@ -65,7 +65,7 @@ export const DeviceStatus = () => {
     isLoading,
     error,
     refetch,
-  } = useDeviceLogs({ page: currentPage, limit: 10, mintues: minutesFilter });
+  } = useDeviceLogs({ page: currentPage, limit: 10,searchKey:searchTerm, mintues: minutesFilter });
 
   // Transform API data to match component interface
   const devices: ExtendedDevice[] = useMemo(() => {
@@ -413,7 +413,7 @@ export const DeviceStatus = () => {
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by device name, ID, serial number, or surveyor..."
+                  placeholder="Search by device name or surveyor..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
