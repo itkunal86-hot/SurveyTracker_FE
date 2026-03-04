@@ -82,9 +82,15 @@ export const ActiveDeviceListModal = ({
 
   useEffect(() => {
     if (open) {
-      fetchActiveDevices();
+      // If summary data is provided, use it directly without API call
+      if (summaryData?.alldeviceSummary) {
+        setDevices(summaryData.alldeviceSummary);
+      } else {
+        // Fallback to API call if no summary data provided
+        fetchActiveDevices();
+      }
     }
-  }, [open, selectedZone, selectedCircle, selectedTime, customStartDate, customEndDate]);
+  }, [open, summaryData]);
 
   const fetchActiveDevices = async () => {
     try {
