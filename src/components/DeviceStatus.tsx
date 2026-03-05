@@ -75,6 +75,7 @@ export const DeviceStatus = () => {
       ...device,
       location: device.location,
       currentLocation:device.currentLocation,
+      currentCircle:device.currentCircle,
       surveyCount:device.surveyCount,
       serialNumber: device.serialNumber,
       horizontalAccuracy:device.horizontalAccuracy,
@@ -479,6 +480,14 @@ export const DeviceStatus = () => {
                 >
                   Current Location
                 </SortableTableHead>
+                 <SortableTableHead
+                  sortKey="currentCircle"
+                  currentSortKey={tableConfig.sortConfig.key}
+                  sortDirection={tableConfig.sortConfig.direction}
+                  onSort={tableConfig.handleSort}
+                >
+                  Current Circle
+                </SortableTableHead>
                 <SortableTableHead
                   sortKey="surveyCount"
                   currentSortKey={tableConfig.sortConfig.key}
@@ -594,6 +603,7 @@ export const DeviceStatus = () => {
                    <TableCell>{device.controllerId}</TableCell>
                   <TableCell>{device.location}</TableCell>
                   <TableCell>{device.currentLocation}</TableCell>
+                  <TableCell>{device.currentCircle}</TableCell>
                   <TableCell>{device.surveyCount}</TableCell>
                   {/* <TableCell className="font-mono text-sm">
                     {device.serialNumber || "N/A"}

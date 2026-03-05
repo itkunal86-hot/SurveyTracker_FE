@@ -27,6 +27,7 @@ interface DeviceLog {
   surveyCount?: string;
   controllerId?: string;
   uniqueId:string;
+  currentCircle?: string;
 }
 
 interface DeviceLogGridProps {
@@ -272,6 +273,7 @@ export const DeviceLogGrid = ({
         surveyCount: item.surveyCount ?? undefined,
         uniqueId:item.uniqueId ?? undefined,
         controllerId : item.controllerId ?? undefined,
+        currentCircle: item.currentCircle  ?? undefined,
       }));
 
       setDeviceLogs(mapped);
@@ -460,6 +462,7 @@ export const DeviceLogGrid = ({
                 <TableHead>Contoller Name</TableHead> 
                 <TableHead>Initial Location</TableHead>
                 <TableHead>Current Location</TableHead>
+                <TableHead>Current Circle</TableHead>
                 <TableHead>Survey Count</TableHead>
                 {/* <TableHead>Status</TableHead>
                 <TableHead>Controller Battery</TableHead> */}
@@ -491,6 +494,7 @@ export const DeviceLogGrid = ({
                     {/* <TableCell className="text-sm">{log.type}</TableCell> */}
                     <TableCell className="text-sm">{log.location}</TableCell>
                     <TableCell className="text-sm">{log.currentLocation}</TableCell>
+                     <TableCell className="text-sm">{log.currentCircle}</TableCell>
                     <TableCell className="text-sm">{log.surveyCount}</TableCell>
                     {/* <TableCell>{getStatusBadge(log.status)}</TableCell>
                     <TableCell>
