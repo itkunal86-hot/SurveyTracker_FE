@@ -205,7 +205,25 @@ export const ValvePointsEditor = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Valve Network Map</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-96">
+              <LeafletMap
+                devices={mapDevices}
+                pipelines={mapPipelines}
+                valves={mapValves}
+                showDevices={showDevices}
+                showPipelines={showPipelines}
+                showValves={showValves}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -273,24 +291,6 @@ export const ValvePointsEditor = () => {
               canGoPrevious={tableConfig.canGoPrevious}
               pageSizeOptions={[5, 10, 20]}
             />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Valve Network Map</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-96">
-              <LeafletMap
-                devices={mapDevices}
-                pipelines={mapPipelines}
-                valves={mapValves}
-                showDevices={showDevices}
-                showPipelines={showPipelines}
-                showValves={showValves}
-              />
-            </div>
           </CardContent>
         </Card>
       </div>
