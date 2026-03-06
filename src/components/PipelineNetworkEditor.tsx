@@ -432,7 +432,26 @@ export const PipelineNetworkEditor = () => {
       </div>
 
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="space-y-6">
+        {/* Map View */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Pipeline Network Map</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-96">
+              <LeafletMap
+                devices={mapDevices}
+                pipelines={mapPipelines}
+                valves={mapValves}
+                showDevices={showDevicesOnMap}
+                showPipelines={showPipelinesOnMap}
+                showValves={showValvesOnMap}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Pipeline Segments List */}
         <Card>
           <CardHeader>
@@ -510,25 +529,6 @@ export const PipelineNetworkEditor = () => {
                 pageSizeOptions={[5, 10, 20]}
               />
             )}
-          </CardContent>
-        </Card>
-
-        {/* Map View */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Pipeline Network Map</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-96">
-              <LeafletMap
-                devices={mapDevices}
-                pipelines={mapPipelines}
-                valves={mapValves}
-                showDevices={showDevicesOnMap}
-                showPipelines={showPipelinesOnMap}
-                showValves={showValvesOnMap}
-              />
-            </div>
           </CardContent>
         </Card>
       </div>
