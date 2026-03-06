@@ -4,10 +4,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Wifi, WifiOff, Battery, Activity, RefreshCw, BarChart3, ChevronLeft, ChevronRight, Download } from "lucide-react";
+import { Wifi, WifiOff, Battery, Activity, RefreshCw, BarChart3, ChevronLeft, ChevronRight, Download, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_PATH, apiClient } from "@/lib/api";
 import { toast } from "sonner";
+import { ActiveDeviceListModal } from "./ActiveDeviceListModal";
 
 interface DeviceLog {
   id: string;
@@ -26,6 +27,7 @@ interface DeviceLog {
   surveyCount?: string;
   controllerId?: string;
   uniqueId:string;
+  currentCircle?: string;
 }
 
 interface DeviceLogGridProps {
@@ -55,6 +57,8 @@ export const DeviceLogGrid = ({
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 });
   const [exportLoading, setExportLoading] = useState(false);
+  const [isDeviceListModalOpen, setIsDeviceListModalOpen] = useState(false);
+  const [deviceLogSummaryData, setDeviceLogSummaryData] = useState<any>(null);
 
   // Calculate date range based on timeRange value
   // const getDateRange = (timeValue: string) => {
@@ -177,8 +181,11 @@ export const DeviceLogGrid = ({
       const data = await response.json();
 
       // Extract summary data if available and pass it to parent
-      if (data?.data?.summary && onSummaryDataReceived) {
-        onSummaryDataReceived(data.data.summary);
+      if (data?.data?.summary) {
+        setDeviceLogSummaryData(data.data.summary);
+        if (onSummaryDataReceived) {
+          onSummaryDataReceived(data.data.summary);
+        }
       }
 
       // Handle various response formats for device logs
@@ -266,6 +273,7 @@ export const DeviceLogGrid = ({
         surveyCount: item.surveyCount ?? undefined,
         uniqueId:item.uniqueId ?? undefined,
         controllerId : item.controllerId ?? undefined,
+        currentCircle: item.currentCircle  ?? undefined,
       }));
 
       setDeviceLogs(mapped);
@@ -413,6 +421,14 @@ export const DeviceLogGrid = ({
             <Button
               variant="outline"
               size="sm"
+              onClick={() => setIsDeviceListModalOpen(true)}
+              title="View active devices"
+            >
+              <Users className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => fetchDeviceLogs(pagination.page)}
               disabled={isLoading}
             >
@@ -446,6 +462,7 @@ export const DeviceLogGrid = ({
                 <TableHead>Contoller Name</TableHead> 
                 <TableHead>Initial Location</TableHead>
                 <TableHead>Current Location</TableHead>
+                <TableHead>Current Circle</TableHead>
                 <TableHead>Survey Count</TableHead>
                 {/* <TableHead>Status</TableHead>
                 <TableHead>Controller Battery</TableHead> */}
@@ -477,6 +494,7 @@ export const DeviceLogGrid = ({
                     {/* <TableCell className="text-sm">{log.type}</TableCell> */}
                     <TableCell className="text-sm">{log.location}</TableCell>
                     <TableCell className="text-sm">{log.currentLocation}</TableCell>
+                     <TableCell className="text-sm">{log.currentCircle}</TableCell>
                     <TableCell className="text-sm">{log.surveyCount}</TableCell>
                     {/* <TableCell>{getStatusBadge(log.status)}</TableCell>
                     <TableCell>
@@ -574,6 +592,17 @@ export const DeviceLogGrid = ({
           </div>
         )}
       </CardContent>
+
+      <ActiveDeviceListModal
+        open={isDeviceListModalOpen}
+        onOpenChange={setIsDeviceListModalOpen}
+        summaryData={deviceLogSummaryData}
+        selectedZone={selectedZone}
+        selectedCircle={selectedCircle}
+        selectedTime={selectedTime}
+        customStartDate={customStartDate}
+        customEndDate={customEndDate}
+      />
     </Card>
   );
 };

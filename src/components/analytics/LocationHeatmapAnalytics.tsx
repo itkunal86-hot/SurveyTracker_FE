@@ -69,7 +69,6 @@ interface HeatmapFilters {
 /* ================= CLUSTER LOGIC ================= */
 
 const clusterPoints = (assets: any[], zoom: number) => {
-  debugger
   if (!assets.length) return [];
 
   if (zoom >= 13) {
@@ -229,7 +228,6 @@ const HeatmapLeafletMap = ({ filteredAssets }: any) => {
   }, []);
 
   useEffect(() => {
-    debugger
     if (!layerRef.current) return;
     layerRef.current.clearLayers();
     const latestMapAssets = getLatestAssetsForMap(filteredAssets);

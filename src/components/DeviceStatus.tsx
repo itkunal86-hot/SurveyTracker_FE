@@ -65,7 +65,7 @@ export const DeviceStatus = () => {
     isLoading,
     error,
     refetch,
-  } = useDeviceLogs({ page: currentPage, limit: 10, mintues: minutesFilter });
+  } = useDeviceLogs({ page: currentPage, limit: 10,searchKey:searchTerm, mintues: minutesFilter });
 
   // Transform API data to match component interface
   const devices: ExtendedDevice[] = useMemo(() => {
@@ -75,6 +75,7 @@ export const DeviceStatus = () => {
       ...device,
       location: device.location,
       currentLocation:device.currentLocation,
+      currentCircle:device.currentCircle,
       surveyCount:device.surveyCount,
       serialNumber: device.serialNumber,
       horizontalAccuracy:device.horizontalAccuracy,
@@ -413,7 +414,7 @@ export const DeviceStatus = () => {
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by device name, ID, serial number, or surveyor..."
+                  placeholder="Search by device name or surveyor..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -478,6 +479,14 @@ export const DeviceStatus = () => {
                   onSort={tableConfig.handleSort}
                 >
                   Current Location
+                </SortableTableHead>
+                 <SortableTableHead
+                  sortKey="currentCircle"
+                  currentSortKey={tableConfig.sortConfig.key}
+                  sortDirection={tableConfig.sortConfig.direction}
+                  onSort={tableConfig.handleSort}
+                >
+                  Current Circle
                 </SortableTableHead>
                 <SortableTableHead
                   sortKey="surveyCount"
@@ -594,6 +603,7 @@ export const DeviceStatus = () => {
                    <TableCell>{device.controllerId}</TableCell>
                   <TableCell>{device.location}</TableCell>
                   <TableCell>{device.currentLocation}</TableCell>
+                  <TableCell>{device.currentCircle}</TableCell>
                   <TableCell>{device.surveyCount}</TableCell>
                   {/* <TableCell className="font-mono text-sm">
                     {device.serialNumber || "N/A"}

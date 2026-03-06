@@ -133,6 +133,7 @@ export interface Device {
   controllerId?: string;
   mobileaccuracy?: number;
   mcoordinates?: Coordinates;
+  currentCircle?: string;
   summery:{}
 }
 
@@ -1790,7 +1791,7 @@ class ApiClient {
 
       const queryString = query.toString();
       const raw: any = await this.request<any>(
-        `/DeviceLog/getallzone${queryString ? `?${queryString}` : ""}`,
+        `/DeviceLog/getallcircle${queryString ? `?${queryString}` : ""}`,
       );
 
       const timestamp = raw?.timestamp || new Date().toISOString();
@@ -1805,7 +1806,7 @@ class ApiClient {
 
         // Map districtName or circleName from API to name field in Circle interface
         const id = String(it.id ?? it.ID ?? it.circleId ?? it.CircleId ?? fallbackId);
-        const name = String(it.districtName ?? it.DistrictName ?? it.name ?? it.Name ?? it.circleName ?? it.CircleName ?? "");
+        const name = String(it.circleName ?? it.name ?? it.Name ?? it.CircleName ?? "");
         const description = it.description ?? it.Description ?? undefined;
         const polygon = Array.isArray(it.polygon) ? it.polygon : Array.isArray(it.Polygon) ? it.Polygon : undefined;
         const area = typeof it.area === "number" ? it.area : (typeof it.Area === "number" ? it.Area : undefined);
@@ -2835,11 +2836,11 @@ class ApiClient {
     }
   }
   // Device Log endpoint - used for Device Status Grid
-  async getDeviceLogs(params?: { page?: number; limit?: number; status?: string; surveyId?: string; mintues?: number; }): Promise<PaginatedResponse<Device>> {
+  async getDeviceLogs(params?: { page?: number; limit?: number; searchKey?: string; surveyId?: string; mintues?: number; }): Promise<PaginatedResponse<Device>> {
     const sp = new URLSearchParams();
     if (params?.page) sp.append("page", String(params.page));
     if (params?.limit) sp.append("limit", String(params.limit));
-    if (params?.status) sp.append("status", params.status);
+    if (params?.searchKey) sp.append("searchKey", params.searchKey);
     if (params?.mintues) sp.append("mintues", String(params.mintues));
     // Pass surveyId if available (from params or persisted selection)
     const storedSurveyId = (() => {
@@ -2919,6 +2920,7 @@ class ApiClient {
         const serialNumber = serialRaw != null ? String(serialRaw) : undefined;
         const location = it.location ?? "";
         const currentLocation = it.currentLocation ?? ""
+        const currentCircle = it.currentCircle ?? ""
         const surveyCount = it.surveyCount ?? ""
         const mobileaccuracy = it.mobileAccuracy ;
         const controllerId = it.controllerId ;
@@ -2945,7 +2947,8 @@ class ApiClient {
           surveyCount,
           mobileaccuracy,
           controllerId,
-          mcoordinates
+          mcoordinates,
+          currentCircle
         } as Device;
       });
 
@@ -3092,6 +3095,7 @@ class ApiClient {
         const serialNumber = serialRaw != null ? String(serialRaw) : undefined;
         const location = it.location ?? "";
         const currentLocation = it.currentLocation ?? ""
+         const currentCircle = it.currentCircle ?? ""
         const surveyCount = it.surveyCount ?? ""
         const controllerId = it.controllerId ?? ""
         return {
@@ -3110,7 +3114,8 @@ class ApiClient {
           location,
           currentLocation,
           surveyCount,
-          controllerId
+          controllerId,
+          currentCircle
         } as Device;
       });
 
