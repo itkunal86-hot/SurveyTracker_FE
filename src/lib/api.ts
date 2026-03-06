@@ -3671,7 +3671,7 @@ class ApiClient {
     }
   }
 
-  async getValves(): Promise<any> {
+  async getAllValves(): Promise<any> {
     try {
       return await this.request<any>(`/Map/valves`);
     } catch (error: any) {

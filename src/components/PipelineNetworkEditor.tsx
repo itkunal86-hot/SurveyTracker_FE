@@ -82,7 +82,8 @@ export const PipelineNetworkEditor = () => {
       setPropLoading(true);
       setPropError(null);
       try {
-        const url = `https://localhost:7215/api/SurveyEntries/survey-geojson?atName=PipeLine`;
+        const url = `${API_BASE_PATH}/SurveyEntries/survey-geojson?atName=PipeLine`;
+        //const url = `https://localhost:7215/api/SurveyEntries/survey-geojson?atName=PipeLine`;
         const res = await fetch(url, { signal: controller.signal });
         if (!res.ok) throw new Error(`Request failed: ${res.status}`);
         const json = await res.json();
@@ -148,7 +149,7 @@ export const PipelineNetworkEditor = () => {
     async function loadValves() {
       setValveError(null);
       try {
-        const url = `${API_BASE_PATH}/AssetProperties/ByType/valve`;
+        const url = `${API_BASE_PATH}/api/AssetProperties/ByType/valve`;
         //const url = `https://localhost:7215/api/AssetProperties/ByType/valve`;
         const res = await fetch(url, { signal: controller.signal });
         if (!res.ok) throw new Error(`Request failed: ${res.status}`);
@@ -441,10 +442,10 @@ export const PipelineNetworkEditor = () => {
           <CardContent>
             <div className="h-96">
               <LeafletMap
-                devices={mapDevices}
+                devices={[]}
                 pipelines={mapPipelines}
                 valves={mapValves}
-                showDevices={showDevicesOnMap}
+                showDevices={false}
                 showPipelines={showPipelinesOnMap}
                 showValves={showValvesOnMap}
               />

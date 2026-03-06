@@ -58,7 +58,8 @@ export const ValvePointsEditor = () => {
       setLoading(true);
       setError(null);
       try {
-        const url = `https://localhost:7215/api/SurveyEntries/survey-geojson?atName=Valve`;
+        const url = `${API_BASE_PATH}/SurveyEntries/survey-geojson?atName=Valve`;
+        //const url = `https://localhost:7215/api/SurveyEntries/survey-geojson?atName=Valve`;
         const res = await fetch(url, { signal: controller.signal });
         if (!res.ok) {
           throw new Error(`Request failed: ${res.status}`);
@@ -213,10 +214,10 @@ export const ValvePointsEditor = () => {
           <CardContent>
             <div className="h-96">
               <LeafletMap
-                devices={mapDevices}
+                devices={[]}
                 pipelines={mapPipelines}
                 valves={mapValves}
-                showDevices={showDevices}
+                showDevices={false}
                 showPipelines={showPipelines}
                 showValves={showValves}
               />
