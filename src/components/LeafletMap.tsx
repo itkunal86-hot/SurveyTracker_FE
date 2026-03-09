@@ -233,7 +233,14 @@ export const LeafletMap = ({
       return fallback ? [...fallback] : null;
     });
   }, [valves]);
-
+  const consumerPositions = useMemo<( [number, number] | null )[]>(() => {
+    return consumers.map((valve, index) => {
+      const derived = sanitizeCoordinate(valve.coordinates);
+      if (derived) return derived;
+      const fallback = DEFAULT_VALVE_POSITIONS[index];
+      return fallback ? [...fallback] : null;
+    });
+  }, [valves]);
   const catastrophePositions = useMemo<[number, number][]>(() => {
     return (catastrophes || [])
       .map((c) => sanitizeCoordinate(c.coordinates))
@@ -505,6 +512,7 @@ export const LeafletMap = ({
     }
   }, [consumers, showConsumers, consumersLayer]);
 
+  
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
