@@ -131,7 +131,27 @@ export const ConsumerPointsEditor = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Consumer Points Map</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[500px]">
+              <LeafletMap
+                devices={mapDevices}
+                pipelines={[]}
+                valves={[]}
+                consumers={mapConsumers}
+                showDevices={mapDevices.length > 0}
+                showPipelines={false}
+                showValves={false}
+                showConsumers={mapConsumers.length > 0}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -204,26 +224,6 @@ export const ConsumerPointsEditor = () => {
                 pageSizeOptions={[5, 10, 20]}
               />
             )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Consumer Points Map</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[500px]">
-              <LeafletMap
-                devices={mapDevices}
-                pipelines={[]}
-                valves={[]}
-                consumers={mapConsumers}
-                showDevices={mapDevices.length > 0}
-                showPipelines={false}
-                showValves={false}
-                showConsumers={mapConsumers.length > 0}
-              />
-            </div>
           </CardContent>
         </Card>
       </div>
