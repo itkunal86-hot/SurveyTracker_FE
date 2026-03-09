@@ -65,7 +65,7 @@ export const DeviceStatus = () => {
     isLoading,
     error,
     refetch,
-  } = useDeviceLogs({ page: currentPage, limit: 10,searchKey:searchTerm, mintues: minutesFilter });
+  } = useDeviceLogs({ page: currentPage, limit: 10, searchKey: searchTerm, mintues: minutesFilter });
 
   // Transform API data to match component interface
   const devices: ExtendedDevice[] = useMemo(() => {
@@ -74,19 +74,19 @@ export const DeviceStatus = () => {
     return devicesResponse.data.map((device) => ({
       ...device,
       location: device.location,
-      currentLocation:device.currentLocation,
-      currentCircle:device.currentCircle,
-      surveyCount:device.surveyCount,
+      currentLocation: device.currentLocation,
+      currentCircle: device.currentCircle,
+      surveyCount: device.surveyCount,
       serialNumber: device.serialNumber,
-      horizontalAccuracy:device.horizontalAccuracy,
-      verticalAccuracy:device.verticalAccuracy,
+      horizontalAccuracy: device.horizontalAccuracy,
+      verticalAccuracy: device.verticalAccuracy,
       surveyor: device.surveyor
         ? {
-            id: device.surveyor,
-            name: device.surveyor,
-            phone: "+1-555-0123",
-            email: `${device.surveyor.toLowerCase().replace(" ", ".")}@company.com`,
-          }
+          id: device.surveyor,
+          name: device.surveyor,
+          phone: "+1-555-0123",
+          email: `${device.surveyor.toLowerCase().replace(" ", ".")}@company.com`,
+        }
         : undefined,
     }));
   }, [devicesResponse]);
@@ -104,8 +104,8 @@ export const DeviceStatus = () => {
         (device.surveyor && typeof device.surveyor === "string"
           ? device.surveyor.toLowerCase().includes(searchTerm.toLowerCase())
           : typeof device.surveyor === "object" && device.surveyor?.name
-              .toLowerCase()
-              .includes(searchTerm.toLowerCase()));
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()));
 
       const normalizedStatus =
         device.status === "ACTIVE"
@@ -127,7 +127,7 @@ export const DeviceStatus = () => {
   // Get total pages from pagination info
   const totalPages = devicesResponse?.pagination?.totalPages || 1;
   const totalDevices = devicesResponse?.pagination?.total || 0;
-// Table functionality
+  // Table functionality
   const { tableConfig, sortedAndPaginatedData } = useTable(
     filteredDevices,
     10,
@@ -150,8 +150,8 @@ export const DeviceStatus = () => {
           ${device.lastSeen != null ? device.lastSeen.toLocaleString() : "N/A"},
           "${device.coordinates ? `${device.coordinates.lat.toFixed(4)}, 
           ${device.coordinates.lng.toFixed(4)}` : "N/A"}",
-          ${ device.horizontalAccuracy != null ? device.horizontalAccuracy : "N/A"},
-          ${ device.verticalAccuracy != null ? device.verticalAccuracy : "N/A"}`,
+          ${device.horizontalAccuracy != null ? device.horizontalAccuracy : "N/A"},
+          ${device.verticalAccuracy != null ? device.verticalAccuracy : "N/A"}`,
       )
       .join("\n");
 
@@ -330,13 +330,13 @@ export const DeviceStatus = () => {
               devices={devices.map((device) => ({
                 id: device.id,
                 name: device.name,
-               lat: device.coordinates?.lat == 0
-                ? device.mcoordinates?.lat
-                : device.coordinates.lat,
+                lat: device.coordinates?.lat == 0
+                  ? device.mcoordinates?.lat
+                  : device.coordinates.lat,
 
                 lng: device.coordinates?.lng == 0
-                      ? device.mcoordinates?.lng
-                      : device.coordinates.lng,
+                  ? device.mcoordinates?.lng
+                  : device.coordinates.lng,
                 status:
                   device.status === "MAINTENANCE"
                     ? "offline"
@@ -476,7 +476,7 @@ export const DeviceStatus = () => {
                 >
                   Contoller
                 </SortableTableHead>
-                 <SortableTableHead
+                <SortableTableHead
                   sortKey="location"
                   currentSortKey={tableConfig.sortConfig.key}
                   sortDirection={tableConfig.sortConfig.direction}
@@ -500,7 +500,7 @@ export const DeviceStatus = () => {
                 >
                   Current District
                 </SortableTableHead>
-                 <SortableTableHead
+                <SortableTableHead
                   sortKey="currentCircle"
                   currentSortKey={tableConfig.sortConfig.key}
                   sortDirection={tableConfig.sortConfig.direction}
@@ -558,8 +558,8 @@ export const DeviceStatus = () => {
                 >
                   Location (Coordinates)
                 </SortableTableHead>
-               
-               <SortableTableHead
+
+                <SortableTableHead
                   sortKey="location"
                   currentSortKey={tableConfig.sortConfig.key}
                   sortDirection={tableConfig.sortConfig.direction}
@@ -584,7 +584,7 @@ export const DeviceStatus = () => {
                 >
                   Vertical Accuracy
                 </SortableTableHead>
-                 <SortableTableHead
+                <SortableTableHead
                   sortKey="mobileaccuracy"
                   currentSortKey={tableConfig.sortConfig.key}
                   sortDirection={tableConfig.sortConfig.direction}
@@ -592,8 +592,8 @@ export const DeviceStatus = () => {
                 >
                   Mobile Accuracy
                 </SortableTableHead>
-                 
-                 {/* <SortableTableHead
+
+                {/* <SortableTableHead
                   sortKey="Mobilelocation"
                   currentSortKey={tableConfig.sortConfig.key}
                   sortDirection={tableConfig.sortConfig.direction}
@@ -620,17 +620,19 @@ export const DeviceStatus = () => {
                     </div>
                   </TableCell>
                   {/* <TableCell>{device.type}</TableCell> */}
-                   <TableCell>{device.controllerId}</TableCell>
+                  <TableCell>{device.controllerId}</TableCell>
                   <TableCell>
-                    <span className={getCircleBackgroundColor(device.location, device.currentCircle, true)}>
-                      {device.location}
-                    </span>
+                    {device.location}
+
                   </TableCell>
-                  <TableCell>{device.location}</TableCell>
-                  <TableCell>{device.initialCircle}</TableCell>
+
+                  <TableCell>
+                    <span className={getCircleBackgroundColor(device.initialCircle, device.currentCircle, true)}>
+                      {device.initialCircle}
+                    </span></TableCell>
                   <TableCell>{device.currentLocation}</TableCell>
                   <TableCell>
-                    <span className={getCircleBackgroundColor(device.location, device.currentCircle, false)}>
+                    <span className={getCircleBackgroundColor(device.initialCircle, device.currentCircle, false)}>
                       {device.currentCircle}
                     </span>
                   </TableCell>
@@ -700,14 +702,14 @@ export const DeviceStatus = () => {
                       ? `${device.mcoordinates.lat.toFixed(4)}, ${device.mcoordinates.lng.toFixed(4)}`
                       : "Unknown"}
                   </TableCell>
-                  <TableCell>                  
-                  {device.horizontalAccuracy?.toFixed(4)}
+                  <TableCell>
+                    {device.horizontalAccuracy?.toFixed(4)}
                   </TableCell>
-                  <TableCell>                  
-                  {device.verticalAccuracy?.toFixed(4)}
+                  <TableCell>
+                    {device.verticalAccuracy?.toFixed(4)}
                   </TableCell>
-                  <TableCell>                  
-                  {device.mobileaccuracy?.toFixed(4)}
+                  <TableCell>
+                    {device.mobileaccuracy?.toFixed(4)}
                   </TableCell>
                   {/* <TableCell>
                     <Button size="sm" onClick={() => navigate(`/daily-personal-maps?device=${encodeURIComponent(device.id)}`)}>
