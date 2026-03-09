@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { apiClient, type Device } from "@/lib/api";
+import { apiClient, type Device, type Zone, type Circle } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
 export default function DeviceMaster() {
@@ -21,6 +21,10 @@ export default function DeviceMaster() {
   const [editing, setEditing] = useState<Device | null>(null);
   const [deviceTypes, setDeviceTypes] = useState<string[]>([]);
   const [statusOptions, setStatusOptions] = useState<string[]>([]);
+  const [districts, setDistricts] = useState<Zone[]>([]);
+  const [circles, setCircles] = useState<Circle[]>([]);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
+  const [loadingCircles, setLoadingCircles] = useState(false);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -29,8 +33,10 @@ export default function DeviceMaster() {
     type: "SURVEY_EQUIPMENT" as Device["type"],
     status: "ACTIVE" as Device["status"],
     modelName: "",
+    district: "",
+    circle: "",
   });
-  const [errors, setErrors] = useState<{ name?: string }>({});
+  const [errors, setErrors] = useState<{ name?: string, district?: string, circle?: string }>({});
 
   const loadDevices = async () => {
     setLoading(true);
@@ -60,7 +66,33 @@ export default function DeviceMaster() {
       }
     };
     loadConfig();
+
+    const loadDistricts = async () => {
+      setLoadingDistricts(true);
+      try {
+        const res = await apiClient.getZones({ limit: 1000 });
+        setDistricts(res.data || []);
+      } finally {
+        setLoadingDistricts(false);
+      }
+    };
+    loadDistricts();
   }, []);
+
+  const handleDistrictChange = async (districtName: string) => {
+    setForm(prev => ({ ...prev, district: districtName, circle: "" }));
+    if (!districtName) {
+      setCircles([]);
+      return;
+    }
+    setLoadingCircles(true);
+    try {
+      const res = await apiClient.getCirclesByDistrict(districtName);
+      setCircles(res.data || []);
+    } finally {
+      setLoadingCircles(false);
+    }
+  };
 
   const filtered = useMemo(() => {
     const t = searchTerm.toLowerCase();
@@ -74,7 +106,8 @@ export default function DeviceMaster() {
 
   const resetForm = () => {
     setEditing(null);
-    setForm({ name: "", type: "SURVEY_EQUIPMENT", status: "ACTIVE", modelName: "" });
+    setForm({ name: "", type: "SURVEY_EQUIPMENT", status: "ACTIVE", modelName: "", district: "", circle: "" });
+    setCircles([]);
     setErrors({});
     setIsDialogOpen(false);
   };
@@ -91,6 +124,8 @@ export default function DeviceMaster() {
   const validate = () => {
     const e: typeof errors = {};
     if (!form.name.trim()) e.name = "Name is required";
+    if (!form.district) e.district = "District is required";
+    if (!form.circle) e.circle = "Circle is required";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -123,6 +158,8 @@ export default function DeviceMaster() {
       type: form.type,
       status: form.status,
       modelName: form.modelName || undefined,
+      district: form.district,
+      circle: form.circle,
     };
 
     let response;
@@ -148,14 +185,29 @@ export default function DeviceMaster() {
     }
   };
 
-  const onEdit = (item: Device) => {
+  const onEdit = async (item: Device) => {
     setEditing(item);
     setForm({
       name: item.name,
       type: item.type,
       status: item.status,
       modelName: item.modelName || "",
+      district: item.currentDistrict || "",
+      circle: item.currentCircle || "",
     });
+
+    if (item.currentDistrict) {
+      setLoadingCircles(true);
+      try {
+        const res = await apiClient.getCirclesByDistrict(item.currentDistrict);
+        setCircles(res.data || []);
+      } finally {
+        setLoadingCircles(false);
+      }
+    } else {
+      setCircles([]);
+    }
+
     setIsDialogOpen(true);
   };
 
@@ -235,6 +287,37 @@ export default function DeviceMaster() {
                     <Label htmlFor="modelName">Model Name</Label>
                     <Input id="modelName" value={form.modelName} onChange={(e) => setForm({ ...form, modelName: e.target.value })} />
                   </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="district">District *</Label>
+                      <Select value={form.district} onValueChange={handleDistrictChange}>
+                        <SelectTrigger id="district" className={errors.district ? "border-destructive" : ""}>
+                          <SelectValue placeholder={loadingDistricts ? "Loading..." : "Select District"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {districts.map((d) => (
+                            <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {errors.district && <p className="text-sm text-destructive">{errors.district}</p>}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="circle">Circle *</Label>
+                      <Select value={form.circle} onValueChange={(v) => setForm({ ...form, circle: v })}>
+                        <SelectTrigger id="circle" className={errors.circle ? "border-destructive" : ""}>
+                          <SelectValue placeholder={loadingCircles ? "Loading..." : form.district ? "Select Circle" : "Select District first"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {circles.map((c) => (
+                            <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {errors.circle && <p className="text-sm text-destructive">{errors.circle}</p>}
+                    </div>
+                  </div>
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={resetForm}>Cancel</Button>
@@ -285,6 +368,8 @@ export default function DeviceMaster() {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Type</TableHead>
+                  <TableHead>District</TableHead>
+                  <TableHead>Circle</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Model Name</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -300,6 +385,8 @@ export default function DeviceMaster() {
                       </div>
                     </TableCell>
                     <TableCell>{d.type}</TableCell>
+                    <TableCell>{d.currentDistrict || <span className="text-muted-foreground">—</span>}</TableCell>
+                    <TableCell>{d.currentCircle || <span className="text-muted-foreground">—</span>}</TableCell>
                     <TableCell>{getStatusBadge(d.status)}</TableCell>
                     <TableCell>{d.modelName || <span className="text-muted-foreground">—</span>}</TableCell>
                     <TableCell className="text-right space-x-2">
