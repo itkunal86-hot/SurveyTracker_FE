@@ -222,6 +222,18 @@ export const DeviceStatus = () => {
     return "text-destructive";
   };
 
+  const getCircleBackgroundColor = (initialCircle?: string, currentCircle?: string, isInitial: boolean = false) => {
+    if (isInitial) {
+      // Initial Circle always green
+      return "bg-green-100 text-green-800 px-2 py-1 rounded font-medium";
+    }
+    // Current Circle: green if matches, red if different
+    if (initialCircle === currentCircle) {
+      return "bg-green-100 text-green-800 px-2 py-1 rounded font-medium";
+    }
+    return "bg-red-100 text-red-800 px-2 py-1 rounded font-medium";
+  };
+
   const handleSurveyorClick = (
     surveyor: string | { id: string; name: string; phone: string; email: string; },
     deviceId: string,
@@ -609,10 +621,19 @@ export const DeviceStatus = () => {
                   </TableCell>
                   {/* <TableCell>{device.type}</TableCell> */}
                    <TableCell>{device.controllerId}</TableCell>
+                  <TableCell>
+                    <span className={getCircleBackgroundColor(device.location, device.currentCircle, true)}>
+                      {device.location}
+                    </span>
+                  </TableCell>
                   <TableCell>{device.location}</TableCell>
                   <TableCell>{device.initialCircle}</TableCell>
                   <TableCell>{device.currentLocation}</TableCell>
-                  <TableCell>{device.currentCircle}</TableCell>
+                  <TableCell>
+                    <span className={getCircleBackgroundColor(device.location, device.currentCircle, false)}>
+                      {device.currentCircle}
+                    </span>
+                  </TableCell>
                   <TableCell>{device.surveyCount}</TableCell>
                   {/* <TableCell className="font-mono text-sm">
                     {device.serialNumber || "N/A"}
