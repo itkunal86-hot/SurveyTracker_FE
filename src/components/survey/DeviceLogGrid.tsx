@@ -373,6 +373,18 @@ export const DeviceLogGrid = ({
     }
   };
 
+  const getCircleBackgroundColor = (initialCircle?: string, currentCircle?: string, isInitial: boolean = false) => {
+    if (isInitial) {
+      // Initial Circle always green
+      return "bg-green-100 text-green-800 px-2 py-1 rounded font-medium";
+    }
+    // Current Circle: green if matches, red if different
+    if (initialCircle === currentCircle) {
+      return "bg-green-100 text-green-800 px-2 py-1 rounded font-medium";
+    }
+    return "bg-red-100 text-red-800 px-2 py-1 rounded font-medium";
+  };
+
   const formatLastSeen = (dateString?: string): string => {
     if (!dateString) return "-";
 
@@ -460,7 +472,7 @@ export const DeviceLogGrid = ({
                 {/* <TableHead>Device ID</TableHead> */}
                 <TableHead>Name</TableHead>
                 <TableHead>Contoller Name</TableHead> 
-                <TableHead>Initial Location</TableHead>
+                <TableHead>Initial Circle</TableHead>
                 <TableHead>Current Location</TableHead>
                 <TableHead>Current Circle</TableHead>
                 <TableHead>Survey Count</TableHead>
@@ -492,9 +504,17 @@ export const DeviceLogGrid = ({
                     <TableCell>{log.name}</TableCell>
                      <TableCell>{log.controllerId}</TableCell>
                     {/* <TableCell className="text-sm">{log.type}</TableCell> */}
-                    <TableCell className="text-sm">{log.location}</TableCell>
+                    <TableCell className="text-sm">
+                      <span className={getCircleBackgroundColor(log.location, log.currentCircle, true)}>
+                        {log.location}
+                      </span>
+                    </TableCell>
                     <TableCell className="text-sm">{log.currentLocation}</TableCell>
-                     <TableCell className="text-sm">{log.currentCircle}</TableCell>
+                     <TableCell className="text-sm">
+                      <span className={getCircleBackgroundColor(log.location, log.currentCircle, false)}>
+                        {log.currentCircle}
+                      </span>
+                    </TableCell>
                     <TableCell className="text-sm">{log.surveyCount}</TableCell>
                     {/* <TableCell>{getStatusBadge(log.status)}</TableCell>
                     <TableCell>
