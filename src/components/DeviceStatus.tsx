@@ -482,6 +482,14 @@ export const DeviceStatus = () => {
                   sortDirection={tableConfig.sortConfig.direction}
                   onSort={tableConfig.handleSort}
                 >
+                  Initial District
+                </SortableTableHead>
+                <SortableTableHead
+                  sortKey="initialCircle"
+                  currentSortKey={tableConfig.sortConfig.key}
+                  sortDirection={tableConfig.sortConfig.direction}
+                  onSort={tableConfig.handleSort}
+                >
                   Initial Circle
                 </SortableTableHead>
                 <SortableTableHead
@@ -490,7 +498,7 @@ export const DeviceStatus = () => {
                   sortDirection={tableConfig.sortConfig.direction}
                   onSort={tableConfig.handleSort}
                 >
-                  Current Location
+                  Current District
                 </SortableTableHead>
                  <SortableTableHead
                   sortKey="currentCircle"
@@ -618,6 +626,8 @@ export const DeviceStatus = () => {
                       {device.location}
                     </span>
                   </TableCell>
+                  <TableCell>{device.location}</TableCell>
+                  <TableCell>{device.initialCircle}</TableCell>
                   <TableCell>{device.currentLocation}</TableCell>
                   <TableCell>
                     <span className={getCircleBackgroundColor(device.location, device.currentCircle, false)}>

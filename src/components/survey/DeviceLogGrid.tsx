@@ -28,6 +28,7 @@ interface DeviceLog {
   controllerId?: string;
   uniqueId:string;
   currentCircle?: string;
+  initialCircle?: string;
 }
 
 interface DeviceLogGridProps {
@@ -274,6 +275,7 @@ export const DeviceLogGrid = ({
         uniqueId:item.uniqueId ?? undefined,
         controllerId : item.controllerId ?? undefined,
         currentCircle: item.currentCircle  ?? undefined,
+        initialCircle: item.initialCircle  ?? undefined,
       }));
 
       setDeviceLogs(mapped);
@@ -472,8 +474,9 @@ export const DeviceLogGrid = ({
                 {/* <TableHead>Device ID</TableHead> */}
                 <TableHead>Name</TableHead>
                 <TableHead>Contoller Name</TableHead> 
+                <TableHead>Initial District</TableHead>
                 <TableHead>Initial Circle</TableHead>
-                <TableHead>Current Location</TableHead>
+                <TableHead>Current District</TableHead>
                 <TableHead>Current Circle</TableHead>
                 <TableHead>Survey Count</TableHead>
                 {/* <TableHead>Status</TableHead>
@@ -509,6 +512,8 @@ export const DeviceLogGrid = ({
                         {log.location}
                       </span>
                     </TableCell>
+                    <TableCell className="text-sm">{log.location}</TableCell>
+                     <TableCell className="text-sm">{log.initialCircle}</TableCell>
                     <TableCell className="text-sm">{log.currentLocation}</TableCell>
                      <TableCell className="text-sm">
                       <span className={getCircleBackgroundColor(log.location, log.currentCircle, false)}>
