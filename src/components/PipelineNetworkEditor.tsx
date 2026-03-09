@@ -395,26 +395,7 @@ export const PipelineNetworkEditor = () => {
       </div>
 
 
-      <div className="grid grid-cols-1 gap-6">
-        {/* Map View */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Pipeline Network Map</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[500px]">
-              <LeafletMap
-                devices={mapDevices}
-                pipelines={mapPipelines}
-                valves={mapValves}
-                showDevices={showDevicesOnMap}
-                showPipelines={showPipelinesOnMap}
-                showValves={showValvesOnMap}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Pipeline Segments List */}
         <Card>
           <CardHeader>
@@ -426,7 +407,8 @@ export const PipelineNetworkEditor = () => {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="p-6 pb-0 overflow-x-auto">
+            <div className="p-6 pb-0">
+
               {propLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin" />
@@ -486,6 +468,25 @@ export const PipelineNetworkEditor = () => {
                 pageSizeOptions={[5, 10, 20]}
               />
             )}
+          </CardContent>
+        </Card>
+
+        {/* Map View */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Pipeline Network Map</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-96">
+              <LeafletMap
+                devices={mapDevices}
+                pipelines={mapPipelines}
+                valves={mapValves}
+                showDevices={showDevicesOnMap}
+                showPipelines={showPipelinesOnMap}
+                showValves={showValvesOnMap}
+              />
+            </div>
           </CardContent>
         </Card>
       </div>
