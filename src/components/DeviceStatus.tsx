@@ -470,7 +470,15 @@ export const DeviceStatus = () => {
                   sortDirection={tableConfig.sortConfig.direction}
                   onSort={tableConfig.handleSort}
                 >
-                  Initial Location
+                  Initial District
+                </SortableTableHead>
+                <SortableTableHead
+                  sortKey="initialCircle"
+                  currentSortKey={tableConfig.sortConfig.key}
+                  sortDirection={tableConfig.sortConfig.direction}
+                  onSort={tableConfig.handleSort}
+                >
+                  Initial Circle
                 </SortableTableHead>
                 <SortableTableHead
                   sortKey="currentLocation"
@@ -478,7 +486,7 @@ export const DeviceStatus = () => {
                   sortDirection={tableConfig.sortConfig.direction}
                   onSort={tableConfig.handleSort}
                 >
-                  Current Location
+                  Current District
                 </SortableTableHead>
                  <SortableTableHead
                   sortKey="currentCircle"
@@ -602,6 +610,7 @@ export const DeviceStatus = () => {
                   {/* <TableCell>{device.type}</TableCell> */}
                    <TableCell>{device.controllerId}</TableCell>
                   <TableCell>{device.location}</TableCell>
+                  <TableCell>{device.initialCircle}</TableCell>
                   <TableCell>{device.currentLocation}</TableCell>
                   <TableCell>{device.currentCircle}</TableCell>
                   <TableCell>{device.surveyCount}</TableCell>

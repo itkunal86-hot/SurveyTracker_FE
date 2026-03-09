@@ -135,6 +135,7 @@ export interface Device {
   mcoordinates?: Coordinates;
   currentCircle?: string;
   currentDistrict?: string;
+  initialCircle?:string;
   summery:{}
 }
 
@@ -1025,6 +1026,7 @@ class ApiClient {
           verticalAccuracy,
           currentCircle: it.currentCircle ?? it.circle ?? undefined,
           currentDistrict: it.currentDistrict ?? it.district ?? undefined,
+          initialCircle: it.initialCircle ?? it.circle ?? undefined,
         } as Device;
       });
 
@@ -1132,6 +1134,7 @@ class ApiClient {
           verticalAccuracy,
           currentCircle: it.currentCircle ?? it.circle ?? undefined,
           currentDistrict: it.currentDistrict ?? it.district ?? undefined,
+          initialCircle:it.initialCircle ?? it.circle ?? undefined,
         } as Device;
       });
 
@@ -2970,6 +2973,7 @@ class ApiClient {
         const location = it.location ?? "";
         const currentLocation = it.currentLocation ?? ""
         const currentCircle = it.currentCircle ?? ""
+        const initialCircle = it.initialCircle ?? ""
         const surveyCount = it.surveyCount ?? ""
         const mobileaccuracy = it.mobileAccuracy ;
         const controllerId = it.controllerId ;
@@ -2997,7 +3001,8 @@ class ApiClient {
           mobileaccuracy,
           controllerId,
           mcoordinates,
-          currentCircle
+          currentCircle,
+          initialCircle
         } as Device;
       });
 
@@ -3144,9 +3149,10 @@ class ApiClient {
         const serialNumber = serialRaw != null ? String(serialRaw) : undefined;
         const location = it.location ?? "";
         const currentLocation = it.currentLocation ?? ""
-         const currentCircle = it.currentCircle ?? ""
+        const currentCircle = it.currentCircle ?? ""
         const surveyCount = it.surveyCount ?? ""
         const controllerId = it.controllerId ?? ""
+        const initialCircle = it.initialCircle ?? ""
         return {
           id,
           name,
@@ -3164,7 +3170,8 @@ class ApiClient {
           currentLocation,
           surveyCount,
           controllerId,
-          currentCircle
+          currentCircle,
+          initialCircle
         } as Device;
       });
 

@@ -28,6 +28,7 @@ interface DeviceLog {
   controllerId?: string;
   uniqueId:string;
   currentCircle?: string;
+  initialCircle?: string;
 }
 
 interface DeviceLogGridProps {
@@ -274,6 +275,7 @@ export const DeviceLogGrid = ({
         uniqueId:item.uniqueId ?? undefined,
         controllerId : item.controllerId ?? undefined,
         currentCircle: item.currentCircle  ?? undefined,
+        initialCircle: item.initialCircle  ?? undefined,
       }));
 
       setDeviceLogs(mapped);
@@ -460,8 +462,9 @@ export const DeviceLogGrid = ({
                 {/* <TableHead>Device ID</TableHead> */}
                 <TableHead>Name</TableHead>
                 <TableHead>Contoller Name</TableHead> 
-                <TableHead>Initial Location</TableHead>
-                <TableHead>Current Location</TableHead>
+                <TableHead>Initial District</TableHead>
+                <TableHead>Initial Circle</TableHead>
+                <TableHead>Current District</TableHead>
                 <TableHead>Current Circle</TableHead>
                 <TableHead>Survey Count</TableHead>
                 {/* <TableHead>Status</TableHead>
@@ -493,6 +496,7 @@ export const DeviceLogGrid = ({
                      <TableCell>{log.controllerId}</TableCell>
                     {/* <TableCell className="text-sm">{log.type}</TableCell> */}
                     <TableCell className="text-sm">{log.location}</TableCell>
+                     <TableCell className="text-sm">{log.initialCircle}</TableCell>
                     <TableCell className="text-sm">{log.currentLocation}</TableCell>
                      <TableCell className="text-sm">{log.currentCircle}</TableCell>
                     <TableCell className="text-sm">{log.surveyCount}</TableCell>
