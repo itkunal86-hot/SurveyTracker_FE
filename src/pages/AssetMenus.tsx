@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ValvePointsEditor } from "@/components/ValvePointsEditor";
 import { PipelineNetworkEditor } from "@/components/PipelineNetworkEditor";
+import { ConsumerPointsEditor } from "@/components/ConsumerPointsEditor";
 import CatastropheManagement from "@/components/CatastropheManagement";
 import { CatastrophePointsEditor } from "@/components/CatastrophePointsEditor";
 import apiClient from "@/lib/api";
@@ -87,6 +88,10 @@ export default function AssetMenus() {
       const item = findBy((a) => a.name.toLowerCase() === "catastrophe" || (a.menuName || "").toLowerCase().includes("catastrophe"));
       return { heading: normalizeHeading(item?.menuName || item?.name || "Catastrophe Management"), isCatastropheSurveyElement: item ? item.isSurveyElement : true };
     }
+    if (key === "consumer") {
+        const item = findBy((a) => a.name.toLowerCase() === "consumer" || (a.menuName || "").toLowerCase() === "consumer");
+        return { heading: normalizeHeading(item?.menuName || item?.name || "Consumer"), isCatastropheSurveyElement: null as any };
+    }
     return { heading: normalizeHeading("Pipeline"), isCatastropheSurveyElement: null as any };
   }, [menu, assetTypes]);
 
@@ -130,6 +135,7 @@ export default function AssetMenus() {
           </div>
           {key === "pipeline" && <PipelineNetworkEditor />}
           {key === "valve" && <ValvePointsEditor />}
+          {key === "consumer" && <ConsumerPointsEditor />}
           {key === "catastrophe" && (isCatastropheSurveyElement ? <CatastrophePointsEditor /> : <CatastropheManagement />)}
         </div>
       </main>

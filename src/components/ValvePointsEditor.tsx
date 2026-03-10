@@ -23,9 +23,11 @@ type DynamicRow = Record<string, any>;
 // Map view expects these fields only
 interface MapValve {
   id: string;
-  type: "control" | "emergency" | "isolation";
-  status: "open" | "closed" | "maintenance";
+  type: "control" | "emergency" | "isolation" | "station";
+  status: "open" | "closed" | "maintenance" | "fault";
   segmentId: string;
+  coordinates?: { lat: number; lng: number };
+  name?: string;
 }
 
 // Map pipeline segment shape expected by LeafletMap
@@ -49,27 +51,51 @@ export const ValvePointsEditor = () => {
   const [pipelineRows, setPipelineRows] = useState<DynamicRow[]>([]);
   const [pipelineError, setPipelineError] = useState<string | null>(null);
 
-  // Load valves table from required endpoint
+  // Load valves table from survey-geojson endpoint
   useEffect(() => {
     const controller = new AbortController();
     async function loadValves() {
       setLoading(true);
       setError(null);
       try {
-        //const url = `https://localhost:7215/api/AssetProperties/ByType/valve`;
-        const url = `${API_BASE_PATH}/AssetProperties/ByType/valve`;
+        const url = `${API_BASE_PATH}/SurveyEntries/survey-geojson?atName=Valve`;
+        //const url = `https://localhost:7215/api/SurveyEntries/survey-geojson?atName=Valve`;
         const res = await fetch(url, { signal: controller.signal });
         if (!res.ok) {
           throw new Error(`Request failed: ${res.status}`);
         }
         const json = await res.json();
-        const arr: DynamicRow[] = Array.isArray(json?.data)
-          ? json.data
-          : Array.isArray(json)
-            ? json
-            : [];
 
-        const normalized = arr.map((item) => ({ ...item }));
+        // Parse the GeoJSON from the data field
+        let geojson: any = null;
+        if (json?.data) {
+          try {
+            geojson = typeof json.data === 'string' ? JSON.parse(json.data) : json.data;
+          } catch (parseError) {
+            throw new Error("Failed to parse GeoJSON data");
+          }
+        }
+
+        // Extract features from GeoJSON
+        const features = geojson?.features || [];
+        const normalized = features.map((feature: any, idx: number) => {
+          const props = feature.properties || {};
+          const coords = feature.geometry?.coordinates || [0, 0];
+          return {
+            SE_ID: props.SE_ID || idx,
+            SE_VALUE: props.SE_VALUE || "",
+            bulb_station: props["bulb station"] || "",
+            SE_ENTRY_DATE: props.SE_ENTRY_DATE || "",
+            isolation: props.isolation || "",
+            service_point: props["service point"] || "",
+            control_station: props["control station"] || "",
+            SE_SURVEY_SESSION_ID: props.SE_SURVEY_SESSION_ID || "",
+            SHAPE_LENGTH: props.SHAPE_LENGTH || "",
+            longitude: coords[0] || 0,
+            latitude: coords[1] || 0,
+          };
+        });
+
         setRows(normalized);
         const cols = normalized.length > 0 ? Object.keys(normalized[0]) : [];
         setColumns(cols);
@@ -117,12 +143,16 @@ export const ValvePointsEditor = () => {
   // Derive valves for map layer from dynamic rows
   const mapValves: MapValve[] = useMemo(() => {
     return rows.map((r) => {
-      const rawType = String(r["Type"] ?? r["type"] ?? "").toLowerCase();
-      const mappedType: MapValve["type"] = rawType === "emergency" ? "emergency" : rawType === "isolation" ? "isolation" : "control";
-      const status: MapValve["status"] = mappedType === "emergency" ? "closed" : rawType === "safety" ? "maintenance" : "open";
-      const segment = String(r["Linked Segment"] ?? r["segmentId"] ?? r["Segment"] ?? "Unknown");
-      const id = String(r["id"] ?? r["ID"] ?? "");
-      return { id, type: mappedType, status, segmentId: segment };
+      const rawType = String(r["SE_VALUE"] ?? r["Type"] ?? r["type"] ?? "").toLowerCase();
+      const mappedType: MapValve["type"] = rawType.includes("emergency") ? "emergency" : rawType.includes("isolation") ? "isolation" : "station";
+      const status: MapValve["status"] = "open"; // Default status for valve stations
+      const segment = String(r["SE_ID"] ?? r["Linked Segment"] ?? r["segmentId"] ?? "Unknown");
+      const id = String(r["SE_ID"] ?? r["id"] ?? r["ID"] ?? "");
+      const latitude = Number(r.latitude) || 0;
+      const longitude = Number(r.longitude) || 0;
+      const coordinates = latitude && longitude ? { lat: latitude, lng: longitude } : undefined;
+      const name = r["bulb_station"] || `Valve ${id}`;
+      return { id, type: mappedType, status, segmentId: segment, coordinates, name };
     });
   }, [rows]);
 
@@ -176,7 +206,25 @@ export const ValvePointsEditor = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Valve Network Map</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-96">
+              <LeafletMap
+                devices={[]}
+                pipelines={mapPipelines}
+                valves={mapValves}
+                showDevices={false}
+                showPipelines={showPipelines}
+                showValves={showValves}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -244,24 +292,6 @@ export const ValvePointsEditor = () => {
               canGoPrevious={tableConfig.canGoPrevious}
               pageSizeOptions={[5, 10, 20]}
             />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Valve Network Map</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-96">
-              <LeafletMap
-                devices={mapDevices}
-                pipelines={mapPipelines}
-                valves={mapValves}
-                showDevices={showDevices}
-                showPipelines={showPipelines}
-                showValves={showValves}
-              />
-            </div>
           </CardContent>
         </Card>
       </div>

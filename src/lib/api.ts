@@ -1521,6 +1521,18 @@ class ApiClient {
     }
   }
 
+  async getSurveyGeoJson(atName: string): Promise<any> {
+    try {
+      return await this.request<any>(`/SurveyEntries/survey-geojson?atName=${encodeURIComponent(atName)}`);
+    } catch (_) {
+      return {
+        success: false,
+        data: null,
+        message: "Failed to fetch geojson",
+      };
+    }
+  }
+
   // Survey Categories endpoints
   async getSurveyCategories(params?: { page?: number; limit?: number; search?: string; }): Promise<PaginatedResponse<SurveyCategoryType>> {
     const sp = new URLSearchParams();
@@ -3716,6 +3728,22 @@ class ApiClient {
         data: undefined,
         timestamp: new Date().toISOString(),
       };
+    }
+  }
+
+  async getFlowlines(): Promise<any> {
+    try {
+      return await this.request<any>(`/Map/flowlines`);
+    } catch (error: any) {
+      throw new Error(error?.message ?? "Failed to fetch flowlines");
+    }
+  }
+
+  async getAllValves(): Promise<any> {
+    try {
+      return await this.request<any>(`/Map/valves`);
+    } catch (error: any) {
+      throw new Error(error?.message ?? "Failed to fetch valves");
     }
   }
 }

@@ -43,6 +43,8 @@ export const QUERY_KEYS = {
   pipelineMaterials: "pipelineMaterials",
   statusOptions: "statusOptions",
   surveyCategories: "surveyCategories",
+  assetPropertiesByType: "assetPropertiesByType",
+  consumerPoints: "consumerPoints",
 } as const;
 
 // Device hooks
@@ -593,6 +595,46 @@ export function usePipelineSegmentsByType(type: string = "pipeline") {
   return useQuery({
     queryKey: ["assetPropertiesByType", type],
     queryFn: () => apiClient.getAssetPropertiesByType(type),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+// Asset Properties by Type hooks
+export function useAssetPropertiesByType(type: string) {
+  return useQuery({
+    queryKey: [QUERY_KEYS.assetPropertiesByType, type],
+    queryFn: () => apiClient.getAssetPropertiesByType(type),
+    staleTime: 5 * 60 * 1000,
+    enabled: !!type,
+  });
+}
+
+// Survey GeoJSON hooks
+export function useSurveyGeoJSON(atName: "pipeline" | "Valve" | "consumer") {
+  return useQuery({
+    queryKey: ["surveyGeoJSON", atName],
+    queryFn: () => apiClient.getSurveyGeoJSON(atName),
+    staleTime: 5 * 60 * 1000,
+    enabled: !!atName,
+  });
+}
+
+export function usePipelineGeoJSON() {
+  return useSurveyGeoJSON("pipeline");
+}
+
+export function useValveGeoJSON() {
+  return useSurveyGeoJSON("Valve");
+}
+
+export function useConsumerGeoJSON() {
+  return useSurveyGeoJSON("consumer");
+}
+
+export function useConsumerPoints() {
+  return useQuery({
+    queryKey: [QUERY_KEYS.consumerPoints],
+    queryFn: () => apiClient.getAssetPropertiesByType("consumer"),
     staleTime: 5 * 60 * 1000,
   });
 }

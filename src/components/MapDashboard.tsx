@@ -6,30 +6,21 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { LeafletMap } from "@/components/LeafletMap";
 import {
-  MapPin,
   Layers,
-  Wifi,
-  WifiOff,
-  Activity,
-  Filter,
   RefreshCw,
   AlertCircle,
-  Settings,
-  Shield,
-  Radio,
 } from "lucide-react";
-import { useDeviceLogs, usePipelines, useValves } from "@/hooks/useApiQueries";
 import {
-  mockInfrastructurePipelines,
-  mockInfrastructureValves,
-  mockControlStations,
-  getAssetColorByStatus,
-  getPipelineColorByType,
-  getValveColorByClass,
-  type InfrastructurePipeline,
-  type InfrastructureValve,
-  type ControlStation,
-} from "@/lib/mockAssetData";
+  usePipelineGeoJSON,
+  useValveGeoJSON,
+  useConsumerGeoJSON,
+} from "@/hooks/useApiQueries";
+import {
+  parseGeoJSON,
+  transformPipelineFeatures,
+  transformValveFeatures,
+  transformConsumerFeatures,
+} from "@/lib/geoJsonParser";
 import { useSurveyContext } from "@/contexts/SurveyContext";
 
 // Legacy interfaces for backward compatibility with LeafletMap
@@ -66,110 +57,107 @@ interface ValvePoint {
   criticality?: string;
 }
 
+interface ConsumerPoint {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  type: string;
+  category?: string;
+  status?: "active" | "inactive";
+  estimatedConsumption?: number;
+  consumptionUnit?: string;
+  consumerCode?: string;
+  mobile?: string;
+}
+
 export const MapDashboard = () => {
-  // Enhanced layer controls for comprehensive asset types
+  // Simplified layer controls
   const [showPipelines, setShowPipelines] = useState(true);
   const [showValves, setShowValves] = useState(true);
-  const [showDevices, setShowDevices] = useState(true);
-  const [showControlStations, setShowControlStations] = useState(true);
-  const [showUnderground, setShowUnderground] = useState(true);
-  const [showAboveGround, setShowAboveGround] = useState(true);
-  const [showServiceLines, setShowServiceLines] = useState(true);
+  const [showConsumerPoints, setShowConsumerPoints] = useState(true);
 
   // Get current survey context
   const { currentSurvey } = useSurveyContext();
 
-  // API hooks
+  // API hooks - fetch GeoJSON from survey-geojson endpoint
   const {
-    data: devicesResponse,
-    isLoading: loadingDevices,
-    error: devicesError,
-    refetch: refetchDevices,
-  } = useDeviceLogs({ limit: 100, surveyId: currentSurvey?.id });
-  const {
-    data: pipelinesResponse,
+    data: pipelinesGeoJSON,
     isLoading: loadingPipelines,
     error: pipelinesError,
     refetch: refetchPipelines,
-  } = usePipelines({ limit: 100 });
+  } = usePipelineGeoJSON();
+
   const {
-    data: valvesResponse,
+    data: valvesGeoJSON,
     isLoading: loadingValves,
     error: valvesError,
     refetch: refetchValves,
-  } = useValves({ limit: 100 });
+  } = useValveGeoJSON();
 
-  // Transform device log data to format compatible with existing LeafletMap
-  const transformedDevices: DeviceLocation[] = useMemo(() => {
-    const devices = Array.isArray(devicesResponse?.data) ? devicesResponse.data : [];
-    return devices.map((device) => ({
-      id: device.id,
-      name: device.name,
-      lat: device.coordinates?.lat ?? 0,
-      lng: device.coordinates?.lng ?? 0,
-      status: device.status === "ACTIVE" ? "active" :
-              device.status === "INACTIVE" ? "offline" :
-              device.status === "MAINTENANCE" ? "maintenance" : "error",
-      lastPing: device.lastSeen ? new Date(device.lastSeen).toLocaleString() : "Just now",
-      type: device.type,
-      batteryLevel: device.batteryLevel,
-    }));
-  }, [devicesResponse?.data]);
+  const {
+    data: consumerGeoJSON,
+    isLoading: loadingConsumerPoints,
+    error: consumerPointsError,
+    refetch: refetchConsumerPoints,
+  } = useConsumerGeoJSON();
 
+  // Transform pipeline GeoJSON data
   const transformedPipelines: PipelineSegment[] = useMemo(() => {
-    return mockInfrastructurePipelines
-      .filter(pipeline => {
-        if (!showPipelines) return false;
-        if (pipeline.type === "UNDERGROUND" && !showUnderground) return false;
-        if (pipeline.type === "ABOVE_GROUND" && !showAboveGround) return false;
-        if (pipeline.type === "SERVICE" && !showServiceLines) return false;
-        return true;
-      })
-      .map((pipeline) => ({
-        id: pipeline.id,
-        name: pipeline.name,
-        type: pipeline.type,
-        diameter: pipeline.diameter,
-        depth: pipeline.depth || 1.5,
-        status: pipeline.status === "OPERATIONAL" ? "normal" :
-                pipeline.status === "MAINTENANCE" ? "maintenance" :
-                pipeline.status === "DAMAGED" ? "critical" : "warning",
-        material: pipeline.material,
-        coordinates: pipeline.coordinates,
-      }));
-  }, [showPipelines, showUnderground, showAboveGround, showServiceLines]);
+    if (!showPipelines || !pipelinesGeoJSON?.data) return [];
 
+    const geoJsonString = pipelinesGeoJSON.data;
+    const featureCollection = parseGeoJSON(geoJsonString);
+
+    if (!featureCollection || !featureCollection.features) {
+      return [];
+    }
+
+    return transformPipelineFeatures(featureCollection.features);
+  }, [pipelinesGeoJSON?.data, showPipelines]);
+
+  // Transform valve GeoJSON data
   const transformedValves: ValvePoint[] = useMemo(() => {
-    return mockInfrastructureValves.map((valve) => ({
-      id: valve.id,
-      name: valve.name,
-      type: valve.valveClass === "ISOLATION_POINT" ? "isolation" :
-            valve.valveClass === "VALVE_STATION" ? "station" :
-            valve.type === "EMERGENCY_SHUTDOWN" ? "emergency" : "control",
-      status: valve.status === "OPEN" ? "open" :
-              valve.status === "CLOSED" ? "closed" :
-              valve.status === "MAINTENANCE" ? "maintenance" :
-              valve.status === "FAULT" ? "fault" : "closed",
-      segmentId: valve.pipelineId || "Unknown",
-      coordinates: valve.coordinates,
-      criticality: valve.criticality,
-    }));
-  }, []);
+    if (!showValves || !valvesGeoJSON?.data) return [];
 
-  // Use transformed infrastructure data as primary display data
-  const displayDevices = transformedDevices;
+    const geoJsonString = valvesGeoJSON.data;
+    const featureCollection = parseGeoJSON(geoJsonString);
+
+    if (!featureCollection || !featureCollection.features) {
+      return [];
+    }
+
+    return transformValveFeatures(featureCollection.features);
+  }, [valvesGeoJSON?.data, showValves]);
+
+  // Transform consumer GeoJSON data
+  const transformedConsumerPoints: ConsumerPoint[] = useMemo(() => {
+    if (!showConsumerPoints || !consumerGeoJSON?.data) return [];
+
+    const geoJsonString = consumerGeoJSON.data;
+    const featureCollection = parseGeoJSON(geoJsonString);
+
+    if (!featureCollection || !featureCollection.features) {
+      return [];
+    }
+
+    return transformConsumerFeatures(featureCollection.features);
+  }, [consumerGeoJSON?.data, showConsumerPoints]);
+
+  // Use transformed data as display data
   const displayPipelines = transformedPipelines;
   const displayValves = transformedValves;
-  const displayControlStations = mockControlStations;
+  const displayConsumerPoints = transformedConsumerPoints;
 
   const handleRefresh = () => {
-    refetchDevices();
     refetchPipelines();
     refetchValves();
+    refetchConsumerPoints();
   };
 
-  const isLoading = loadingDevices || loadingPipelines || loadingValves;
-  const hasError = devicesError || pipelinesError || valvesError;
+  const isLoading =
+    loadingPipelines || loadingValves || loadingConsumerPoints;
+  const hasError = pipelinesError || valvesError || consumerPointsError;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -202,7 +190,7 @@ export const MapDashboard = () => {
 
   return (
     <div className="flex h-screen bg-background">
-      {/* Enhanced Layer Controls Panel */}
+      {/* Layer Controls Panel */}
       <div className="w-80 border-r border-border bg-card p-4 space-y-4 overflow-y-auto max-h-screen">
         {/* Error State */}
         {hasError && (
@@ -213,7 +201,7 @@ export const MapDashboard = () => {
                 <div>
                   <p className="text-sm font-medium">API Connection Issue</p>
                   <p className="text-xs text-muted-foreground">
-                    Using comprehensive mock infrastructure data
+                    Data may be incomplete or unavailable
                   </p>
                 </div>
               </div>
@@ -231,57 +219,16 @@ export const MapDashboard = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Pipeline Controls */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="pipelines" className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                  <span>Pipeline Network</span>
-                </Label>
-                <Switch
-                  id="pipelines"
-                  checked={showPipelines}
-                  onCheckedChange={setShowPipelines}
-                />
-              </div>
-              
-              {/* Pipeline Type Filters */}
-              {showPipelines && (
-                <div className="ml-5 space-y-2 text-sm">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="underground" className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-blue-700 rounded-full"></div>
-                      <span>Underground Pipelines</span>
-                    </Label>
-                    <Switch
-                      id="underground"
-                      checked={showUnderground}
-                      onCheckedChange={setShowUnderground}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="aboveground" className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                      <span>Above-Ground Pipelines</span>
-                    </Label>
-                    <Switch
-                      id="aboveground"
-                      checked={showAboveGround}
-                      onCheckedChange={setShowAboveGround}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="service" className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-green-600 rounded-full"></div>
-                      <span>Service Pipelines</span>
-                    </Label>
-                    <Switch
-                      id="service"
-                      checked={showServiceLines}
-                      onCheckedChange={setShowServiceLines}
-                    />
-                  </div>
-                </div>
-              )}
+            <div className="flex items-center justify-between">
+              <Label htmlFor="pipelines" className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                <span>Pipeline Network</span>
+              </Label>
+              <Switch
+                id="pipelines"
+                checked={showPipelines}
+                onCheckedChange={setShowPipelines}
+              />
             </div>
 
             {/* Valve Controls */}
@@ -297,29 +244,19 @@ export const MapDashboard = () => {
               />
             </div>
 
-            {/* Device Controls */}
+            {/* Consumer Points Controls */}
             <div className="flex items-center justify-between">
-              <Label htmlFor="devices" className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span>Monitoring Devices</span>
+              <Label
+                htmlFor="consumer-points"
+                className="flex items-center space-x-2"
+              >
+                <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                <span>Consumer Points</span>
               </Label>
               <Switch
-                id="devices"
-                checked={showDevices}
-                onCheckedChange={setShowDevices}
-              />
-            </div>
-
-            {/* Control Stations */}
-            <div className="flex items-center justify-between">
-              <Label htmlFor="control-stations" className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-indigo-500 rounded-full"></div>
-                <span>Control Stations</span>
-              </Label>
-              <Switch
-                id="control-stations"
-                checked={showControlStations}
-                onCheckedChange={setShowControlStations}
+                id="consumer-points"
+                checked={showConsumerPoints}
+                onCheckedChange={setShowConsumerPoints}
               />
             </div>
 
@@ -336,51 +273,6 @@ export const MapDashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Monitoring Devices Status */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center">
-              <Activity className="w-5 h-5 mr-2" />
-              Monitoring Devices ({displayDevices.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {displayDevices.map((device) => (
-              <div
-                key={device.id}
-                className="flex items-center justify-between p-3 border border-border rounded-lg"
-              >
-                <div className="flex items-center space-x-3">
-                  {device.status === "active" ? (
-                    <Wifi className="w-4 h-4 text-success" />
-                  ) : device.status === "maintenance" ? (
-                    <Settings className="w-4 h-4 text-warning" />
-                  ) : (
-                    <WifiOff className="w-4 h-4 text-destructive" />
-                  )}
-                  <div>
-                    <p className="font-medium text-sm">{device.name}</p>
-                    <p className="text-xs text-muted-foreground">{device.type}</p>
-                    {device.batteryLevel && (
-                      <p className="text-xs text-muted-foreground">
-                        Battery: {device.batteryLevel}%
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <Badge className={getStatusColor(device.status)}>
-                    {device.status.toUpperCase()}
-                  </Badge>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {device.lastPing}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
         {/* Pipeline Network Status */}
         <Card>
           <CardHeader className="pb-3">
@@ -393,26 +285,32 @@ export const MapDashboard = () => {
               </Badge>
             </div>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {displayPipelines.map((pipeline) => (
-              <div
-                key={pipeline.id}
-                className="flex items-center justify-between p-3 border border-border rounded-lg"
-              >
-                <div>
-                  <p className="font-medium text-sm">{pipeline.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {pipeline.type} • ⌀{pipeline.diameter}mm • {pipeline.depth}m deep
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {pipeline.material}
-                  </p>
+          <CardContent className="space-y-3 max-h-64 overflow-y-auto">
+            {displayPipelines.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No pipelines available</p>
+            ) : (
+              displayPipelines.map((pipeline) => (
+                <div
+                  key={pipeline.id}
+                  className="flex items-center justify-between p-3 border border-border rounded-lg"
+                >
+                  <div>
+                    <p className="font-medium text-sm">{pipeline.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      ⌀{pipeline.diameter}mm • {pipeline.depth}m deep
+                    </p>
+                    {pipeline.material && (
+                      <p className="text-xs text-muted-foreground">
+                        {pipeline.material}
+                      </p>
+                    )}
+                  </div>
+                  <Badge className={getStatusColor(pipeline.status)}>
+                    {pipeline.status.toUpperCase()}
+                  </Badge>
                 </div>
-                <Badge className={getStatusColor(pipeline.status)}>
-                  {pipeline.status.toUpperCase()}
-                </Badge>
-              </div>
-            ))}
+              ))
+            )}
           </CardContent>
         </Card>
 
@@ -423,51 +321,68 @@ export const MapDashboard = () => {
               Valves & Isolation Points ({displayValves.length})
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {displayValves.map((valve) => (
-              <div
-                key={valve.id}
-                className="flex items-center justify-between p-3 border border-border rounded-lg"
-              >
-                <div>
-                  <p className="font-medium text-sm">{valve.name}</p>
-                  <p className="text-xs text-muted-foreground capitalize">
-                    {valve.type} • {valve.criticality} criticality
-                  </p>
+          <CardContent className="space-y-3 max-h-64 overflow-y-auto">
+            {displayValves.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No valves available</p>
+            ) : (
+              displayValves.map((valve) => (
+                <div
+                  key={valve.id}
+                  className="flex items-center justify-between p-3 border border-border rounded-lg"
+                >
+                  <div>
+                    <p className="font-medium text-sm">{valve.name}</p>
+                    <p className="text-xs text-muted-foreground capitalize">
+                      {valve.type} • {valve.criticality} criticality
+                    </p>
+                  </div>
+                  <Badge className={getStatusColor(valve.status)}>
+                    {valve.status.toUpperCase()}
+                  </Badge>
                 </div>
-                <Badge className={getStatusColor(valve.status)}>
-                  {valve.status.toUpperCase()}
-                </Badge>
-              </div>
-            ))}
+              ))
+            )}
           </CardContent>
         </Card>
 
-        {/* Control Stations */}
+        {/* Consumer Points */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center">
-              <Shield className="w-5 h-5 mr-2" />
-              Control Stations ({displayControlStations.length})
+            <CardTitle className="text-lg">
+              Consumer Points ({displayConsumerPoints.length})
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {displayControlStations.map((station) => (
-              <div
-                key={station.id}
-                className="flex items-center justify-between p-3 border border-border rounded-lg"
-              >
-                <div>
-                  <p className="font-medium text-sm">{station.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {station.type} • {station.controlledPipelines.length} pipelines
-                  </p>
+          <CardContent className="space-y-3 max-h-64 overflow-y-auto">
+            {displayConsumerPoints.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No consumer points available</p>
+            ) : (
+              displayConsumerPoints.map((consumer) => (
+                <div
+                  key={consumer.id}
+                  className="flex items-center justify-between p-3 border border-border rounded-lg"
+                >
+                  <div>
+                    <p className="font-medium text-sm">{consumer.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {consumer.category}
+                    </p>
+                    {consumer.consumerCode && (
+                      <p className="text-xs text-muted-foreground">
+                        Code: {consumer.consumerCode}
+                      </p>
+                    )}
+                    {consumer.mobile && (
+                      <p className="text-xs text-muted-foreground">
+                        {consumer.mobile}
+                      </p>
+                    )}
+                  </div>
+                  <Badge className={getStatusColor(consumer.status || "active")}>
+                    {consumer.status?.toUpperCase() || "ACTIVE"}
+                  </Badge>
                 </div>
-                <Badge className={getStatusColor(station.status)}>
-                  {station.status}
-                </Badge>
-              </div>
-            ))}
+              ))
+            )}
           </CardContent>
         </Card>
       </div>
@@ -475,10 +390,10 @@ export const MapDashboard = () => {
       {/* Map Area */}
       <div className="flex-1 relative">
         <LeafletMap
-          devices={displayDevices}
+          devices={displayConsumerPoints as unknown as DeviceLocation[]}
           pipelines={displayPipelines}
           valves={displayValves}
-          showDevices={showDevices}
+          showDevices={showConsumerPoints}
           showPipelines={showPipelines}
           showValves={showValves}
         />
@@ -488,34 +403,16 @@ export const MapDashboard = () => {
           <div className="space-y-2 text-sm">
             <div className="font-medium text-base mb-2">Infrastructure Status</div>
             <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-success rounded-full"></div>
-              <span>
-                Active Devices: {displayDevices.filter((d) => d.status === "active").length}
-              </span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-warning rounded-full"></div>
-              <span>
-                Maintenance: {displayDevices.filter((d) => d.status === "maintenance").length}
-              </span>
-            </div>
-            <div className="flex items-center space-x-2">
               <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-              <span>
-                Underground Lines: {displayPipelines.filter((p) => p.type === "UNDERGROUND").length}
-              </span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-              <span>
-                Above-Ground Lines: {displayPipelines.filter((p) => p.type === "ABOVE_GROUND").length}
-              </span>
+              <span>Pipelines: {displayPipelines.length}</span>
             </div>
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-              <span>
-                Critical Valves: {displayValves.filter((v) => v.criticality === "CRITICAL").length}
-              </span>
+              <span>Valves: {displayValves.length}</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+              <span>Consumer Points: {displayConsumerPoints.length}</span>
             </div>
           </div>
         </div>
@@ -526,24 +423,16 @@ export const MapDashboard = () => {
             <div className="font-medium mb-2">Asset Symbology</div>
             <div className="space-y-1">
               <div className="flex items-center space-x-2">
-                <div className="w-4 h-1 bg-blue-700"></div>
-                <span>Underground Pipeline</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-1 bg-purple-500"></div>
-                <span>Above-Ground Pipeline</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-1 bg-green-600 border-dashed border-2 border-green-600"></div>
-                <span>Service Pipeline</span>
+                <div className="w-4 h-1 bg-blue-500"></div>
+                <span>Pipeline</span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-orange-500 rounded-sm"></div>
                 <span>Valve/Isolation Point</span>
               </div>
               <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span>Monitoring Device</span>
+                <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                <span>Consumer Point</span>
               </div>
             </div>
           </div>
