@@ -13,8 +13,8 @@ L.Icon.Default.mergeOptions({
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
 });
 
-const DEFAULT_CENTER: [number, number] = [26.1445, 91.7362];
-const DEFAULT_ZOOM = 13;
+const DEFAULT_CENTER: [number, number] = [23.8315, 91.2868];
+const DEFAULT_ZOOM = 12;
 
 const DEFAULT_PIPELINE_ROUTES: [number, number][][] = [
   [
@@ -135,13 +135,24 @@ interface CatastrophePoint {
   description?: string;
 }
 
+interface ConsumerPoint {
+  id: string;
+  name?: string;
+  code?: string;
+  mobile?: string;
+  status?: string;
+  coordinates: { lat: number; lng: number };
+}
+
 interface LeafletMapProps {
   devices: DeviceLocation[];
   pipelines: PipelineSegment[];
   valves: ValvePoint[];
+  consumers?: ConsumerPoint[];
   showDevices: boolean;
   showPipelines: boolean;
   showValves: boolean;
+  showConsumers?: boolean;
   onMapClick?: (lat: number, lng: number) => void;
   selectedLocation?: { lat: number; lng: number } | null;
   disableAutoFit?: boolean;
@@ -167,9 +178,11 @@ export const LeafletMap = ({
   devices,
   pipelines,
   valves,
+  consumers = [],
   showDevices,
   showPipelines,
   showValves,
+  showConsumers = false,
   onMapClick,
   selectedLocation,
   disableAutoFit,
@@ -181,6 +194,7 @@ export const LeafletMap = ({
   const [markersLayer, setMarkersLayer] = useState<L.LayerGroup | null>(null);
   const [pipelinesLayer, setPipelinesLayer] = useState<L.LayerGroup | null>(null);
   const [valvesLayer, setValvesLayer] = useState<L.LayerGroup | null>(null);
+  const [consumersLayer, setConsumersLayer] = useState<L.LayerGroup | null>(null);
   const [catastrophesLayer, setCatastrophesLayer] = useState<L.LayerGroup | null>(null);
   const [selectionLayer, setSelectionLayer] = useState<L.LayerGroup | null>(null);
   const lastBoundsRef = useRef<LatLngBounds | null>(null);
@@ -219,7 +233,14 @@ export const LeafletMap = ({
       return fallback ? [...fallback] : null;
     });
   }, [valves]);
-
+  const consumerPositions = useMemo<( [number, number] | null )[]>(() => {
+    return consumers.map((valve, index) => {
+      const derived = sanitizeCoordinate(valve.coordinates);
+      if (derived) return derived;
+      const fallback = DEFAULT_VALVE_POSITIONS[index];
+      return fallback ? [...fallback] : null;
+    });
+  }, [valves]);
   const catastrophePositions = useMemo<[number, number][]>(() => {
     return (catastrophes || [])
       .map((c) => sanitizeCoordinate(c.coordinates))
@@ -253,12 +274,14 @@ export const LeafletMap = ({
     const deviceLayer = L.layerGroup().addTo(map);
     const pipelineLayer = L.layerGroup().addTo(map);
     const valveLayer = L.layerGroup().addTo(map);
+    const consumerLayer = L.layerGroup().addTo(map);
     const catastropheLayer = L.layerGroup().addTo(map);
     const selectionLayerGroup = L.layerGroup().addTo(map);
 
     setMarkersLayer(deviceLayer);
     setPipelinesLayer(pipelineLayer);
     setValvesLayer(valveLayer);
+    setConsumersLayer(consumerLayer);
     setCatastrophesLayer(catastropheLayer);
     setSelectionLayer(selectionLayerGroup);
 
@@ -460,6 +483,37 @@ export const LeafletMap = ({
   }, [selectedLocation, selectionLayer]);
 
   useEffect(() => {
+    if (!consumersLayer) return;
+    consumersLayer.clearLayers();
+
+    if (showConsumers && consumers) {
+      consumers.forEach((consumer) => {
+        if (!isFiniteCoordinate(consumer.coordinates.lat, consumer.coordinates.lng)) return;
+
+        const marker = L.circleMarker([consumer.coordinates.lat, consumer.coordinates.lng], {
+          radius: 7,
+          fillColor: "#fb923c", // orange-400
+          color: "white",
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.9,
+        });
+
+        marker.bindPopup(`
+          <div style="font-family: system-ui; padding: 4px; min-width: 180px;">
+            <strong>${consumer.name || "Consumer"}</strong><br/>
+            <span style="color: #666;">Code: ${consumer.code || "N/A"}</span><br/>
+            <span style="color: #666;">Mobile: ${consumer.mobile || "N/A"}</span><br/>
+            <span style="color: #666;">Status: ${consumer.status || "N/A"}</span>
+          </div>
+        `);
+        consumersLayer.addLayer(marker);
+      });
+    }
+  }, [consumers, showConsumers, consumersLayer]);
+
+  
+  useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
 
@@ -483,6 +537,14 @@ export const LeafletMap = ({
       valvePositions.forEach((coord) => {
         if (coord) {
           points.push(coord);
+        }
+      });
+    }
+
+    if (showConsumers && consumers) {
+      consumers.forEach((c) => {
+        if (isFiniteCoordinate(c.coordinates.lat, c.coordinates.lng)) {
+          points.push([c.coordinates.lat, c.coordinates.lng]);
         }
       });
     }
@@ -527,12 +589,12 @@ export const LeafletMap = ({
     map.fitBounds(bounds, { padding: [32, 32], maxZoom: 17 });
     lastBoundsRef.current = bounds;
     lastCenterRef.current = null;
-  }, [devicePositions, pipelineRoutes, valvePositions, catastrophePositions, showDevices, showPipelines, showValves, showCatastrophes, disableAutoFit, selectedLocation]);
+  }, [devicePositions, pipelineRoutes, valvePositions, catastrophePositions, showDevices, showPipelines, showValves, showConsumers, showCatastrophes, disableAutoFit, selectedLocation]);
 
   return (
     <div className="w-full h-full relative">
       <div ref={mapRef} className="w-full h-full rounded-lg leaflet-container" />
-      {(showPipelines || showValves || showCatastrophes) && (
+      {(showPipelines || showValves || showConsumers || showCatastrophes) && (
         <div className="absolute top-2 left-2 z-[10002] bg-background/90 backdrop-blur-sm border border-border rounded-md px-3 py-2 text-xs text-muted-foreground">
           <div className="flex items-center space-x-1">
             <div className="w-2 h-2 bg-muted-foreground rounded-full"></div>
