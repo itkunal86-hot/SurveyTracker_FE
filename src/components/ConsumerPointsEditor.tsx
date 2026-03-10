@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LeafletMap } from "@/components/LeafletMap";
+import { RGISMap } from "@/components/RGISMap";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -30,6 +33,7 @@ interface ConsumerPoint {
 }
 
 export const ConsumerPointsEditor = () => {
+  const [showRGIS, setShowRGIS] = useState(true);
   const [rows, setRows] = useState<DynamicRow[]>([]);
   const [columns, setColumns] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -135,19 +139,40 @@ export const ConsumerPointsEditor = () => {
         <Card>
           <CardHeader>
             <CardTitle>Consumer Points Map</CardTitle>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="show-rgis-consumers"
+                checked={showRGIS}
+                onCheckedChange={setShowRGIS}
+              />
+              <Label htmlFor="show-rgis-consumers">Show RGIS Map</Label>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="h-[500px]">
-              <LeafletMap
-                devices={[]}
-                pipelines={[]}
-                valves={[]}
-                consumers={mapConsumers}
-                showDevices={false}
-                showPipelines={false}
-                showValves={false}
-                showConsumers={mapConsumers.length > 0}
-              />
+              {showRGIS ? (
+                <RGISMap
+                  devices={[]}
+                  pipelines={[]}
+                  valves={[]}
+                  consumers={mapConsumers}
+                  showDevices={false}
+                  showPipelines={false}
+                  showValves={false}
+                  showConsumers={mapConsumers.length > 0}
+                />
+              ) : (
+                <LeafletMap
+                  devices={[]}
+                  pipelines={[]}
+                  valves={[]}
+                  consumers={mapConsumers}
+                  showDevices={false}
+                  showPipelines={false}
+                  showValves={false}
+                  showConsumers={mapConsumers.length > 0}
+                />
+              )}
             </div>
           </CardContent>
         </Card>
