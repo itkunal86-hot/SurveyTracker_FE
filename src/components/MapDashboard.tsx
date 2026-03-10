@@ -6,15 +6,21 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { LeafletMap } from "@/components/LeafletMap";
 import {
-  MapPin,
   Layers,
   RefreshCw,
   AlertCircle,
 } from "lucide-react";
 import {
-  useAssetPropertiesByType,
-  useConsumerPoints,
+  usePipelineGeoJSON,
+  useValveGeoJSON,
+  useConsumerGeoJSON,
 } from "@/hooks/useApiQueries";
+import {
+  parseGeoJSON,
+  transformPipelineFeatures,
+  transformValveFeatures,
+  transformConsumerFeatures,
+} from "@/lib/geoJsonParser";
 import { useSurveyContext } from "@/contexts/SurveyContext";
 
 // Legacy interfaces for backward compatibility with LeafletMap
@@ -61,6 +67,8 @@ interface ConsumerPoint {
   status?: "active" | "inactive";
   estimatedConsumption?: number;
   consumptionUnit?: string;
+  consumerCode?: string;
+  mobile?: string;
 }
 
 export const MapDashboard = () => {
@@ -72,115 +80,69 @@ export const MapDashboard = () => {
   // Get current survey context
   const { currentSurvey } = useSurveyContext();
 
-  // API hooks - fetch from AssetProperties/ByType endpoint
+  // API hooks - fetch GeoJSON from survey-geojson endpoint
   const {
-    data: pipelinesResponse,
+    data: pipelinesGeoJSON,
     isLoading: loadingPipelines,
     error: pipelinesError,
     refetch: refetchPipelines,
-  } = useAssetPropertiesByType("pipeline");
+  } = usePipelineGeoJSON();
 
   const {
-    data: valvesResponse,
+    data: valvesGeoJSON,
     isLoading: loadingValves,
     error: valvesError,
     refetch: refetchValves,
-  } = useAssetPropertiesByType("valve");
+  } = useValveGeoJSON();
 
   const {
-    data: consumerPointsResponse,
+    data: consumerGeoJSON,
     isLoading: loadingConsumerPoints,
     error: consumerPointsError,
     refetch: refetchConsumerPoints,
-  } = useConsumerPoints();
+  } = useConsumerGeoJSON();
 
-  // Transform pipeline data from API
+  // Transform pipeline GeoJSON data
   const transformedPipelines: PipelineSegment[] = useMemo(() => {
-    if (!showPipelines) return [];
+    if (!showPipelines || !pipelinesGeoJSON?.data) return [];
 
-    const pipelines = Array.isArray(pipelinesResponse?.data)
-      ? pipelinesResponse.data
-      : [];
+    const geoJsonString = pipelinesGeoJSON.data;
+    const featureCollection = parseGeoJSON(geoJsonString);
 
-    return pipelines.map((pipeline: any) => ({
-      id: pipeline.id,
-      name: pipeline.name || `Pipeline ${pipeline.id}`,
-      type: pipeline.type || "UNKNOWN",
-      diameter: pipeline.specifications?.diameter?.value || 0,
-      depth: pipeline.installation?.depthBelowGround || 0,
-      status: pipeline.status === "OPERATIONAL"
-        ? "normal"
-        : pipeline.status === "MAINTENANCE"
-        ? "maintenance"
-        : pipeline.status === "DAMAGED"
-        ? "critical"
-        : "warning",
-      material: pipeline.specifications?.material || "UNKNOWN",
-      coordinates: (pipeline.coordinates || []).map((coord: any) => ({
-        lat: typeof coord.lat === "number" ? coord.lat : 0,
-        lng: typeof coord.lng === "number" ? coord.lng : 0,
-        elevation: coord.elevation,
-      })),
-    }));
-  }, [pipelinesResponse?.data, showPipelines]);
+    if (!featureCollection || !featureCollection.features) {
+      return [];
+    }
 
-  // Transform valve data from API
+    return transformPipelineFeatures(featureCollection.features);
+  }, [pipelinesGeoJSON?.data, showPipelines]);
+
+  // Transform valve GeoJSON data
   const transformedValves: ValvePoint[] = useMemo(() => {
-    if (!showValves) return [];
+    if (!showValves || !valvesGeoJSON?.data) return [];
 
-    const valves = Array.isArray(valvesResponse?.data) ? valvesResponse.data : [];
+    const geoJsonString = valvesGeoJSON.data;
+    const featureCollection = parseGeoJSON(geoJsonString);
 
-    return valves.map((valve: any) => ({
-      id: valve.id,
-      name: valve.name || `Valve ${valve.id}`,
-      type: valve.type === "ISOLATION" ? "isolation" : "station",
-      status: valve.status === "OPEN"
-        ? "open"
-        : valve.status === "CLOSED"
-        ? "closed"
-        : valve.status === "MAINTENANCE"
-        ? "maintenance"
-        : "fault",
-      segmentId: valve.pipelineId || "Unknown",
-      coordinates: valve.coordinates
-        ? {
-            lat: typeof valve.coordinates.lat === "number" ? valve.coordinates.lat : 0,
-            lng: typeof valve.coordinates.lng === "number" ? valve.coordinates.lng : 0,
-            elevation: valve.coordinates.elevation,
-          }
-        : undefined,
-      criticality: valve.criticality || "MEDIUM",
-    }));
-  }, [valvesResponse?.data, showValves]);
+    if (!featureCollection || !featureCollection.features) {
+      return [];
+    }
 
-  // Transform consumer points data from API
+    return transformValveFeatures(featureCollection.features);
+  }, [valvesGeoJSON?.data, showValves]);
+
+  // Transform consumer GeoJSON data
   const transformedConsumerPoints: ConsumerPoint[] = useMemo(() => {
-    if (!showConsumerPoints) return [];
+    if (!showConsumerPoints || !consumerGeoJSON?.data) return [];
 
-    const consumers = Array.isArray(consumerPointsResponse?.data)
-      ? consumerPointsResponse.data
-      : [];
+    const geoJsonString = consumerGeoJSON.data;
+    const featureCollection = parseGeoJSON(geoJsonString);
 
-    return consumers
-      .filter((consumer: any) => consumer.coordinates)
-      .map((consumer: any) => ({
-        id: consumer.id,
-        name: consumer.name || `Consumer ${consumer.id}`,
-        lat: typeof consumer.coordinates.lat === "number"
-          ? consumer.coordinates.lat
-          : 0,
-        lng: typeof consumer.coordinates.lng === "number"
-          ? consumer.coordinates.lng
-          : 0,
-        type: consumer.type || "DOMESTIC",
-        category: consumer.consumerCategory?.type || "DOMESTIC",
-        status: consumer.status || "active",
-        estimatedConsumption:
-          consumer.consumerCategory?.estimatedConsumption || 0,
-        consumptionUnit: "m³/day",
-      }))
-      .filter((c) => c.lat !== 0 && c.lng !== 0); // Filter out points with invalid coordinates
-  }, [consumerPointsResponse?.data, showConsumerPoints]);
+    if (!featureCollection || !featureCollection.features) {
+      return [];
+    }
+
+    return transformConsumerFeatures(featureCollection.features);
+  }, [consumerGeoJSON?.data, showConsumerPoints]);
 
   // Use transformed data as display data
   const displayPipelines = transformedPipelines;
@@ -323,7 +285,7 @@ export const MapDashboard = () => {
               </Badge>
             </div>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-3 max-h-64 overflow-y-auto">
             {displayPipelines.length === 0 ? (
               <p className="text-xs text-muted-foreground">No pipelines available</p>
             ) : (
@@ -337,9 +299,11 @@ export const MapDashboard = () => {
                     <p className="text-xs text-muted-foreground">
                       ⌀{pipeline.diameter}mm • {pipeline.depth}m deep
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {pipeline.material}
-                    </p>
+                    {pipeline.material && (
+                      <p className="text-xs text-muted-foreground">
+                        {pipeline.material}
+                      </p>
+                    )}
                   </div>
                   <Badge className={getStatusColor(pipeline.status)}>
                     {pipeline.status.toUpperCase()}
@@ -357,7 +321,7 @@ export const MapDashboard = () => {
               Valves & Isolation Points ({displayValves.length})
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-3 max-h-64 overflow-y-auto">
             {displayValves.length === 0 ? (
               <p className="text-xs text-muted-foreground">No valves available</p>
             ) : (
@@ -384,9 +348,11 @@ export const MapDashboard = () => {
         {/* Consumer Points */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Consumer Points ({displayConsumerPoints.length})</CardTitle>
+            <CardTitle className="text-lg">
+              Consumer Points ({displayConsumerPoints.length})
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-3 max-h-64 overflow-y-auto">
             {displayConsumerPoints.length === 0 ? (
               <p className="text-xs text-muted-foreground">No consumer points available</p>
             ) : (
@@ -398,9 +364,18 @@ export const MapDashboard = () => {
                   <div>
                     <p className="font-medium text-sm">{consumer.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {consumer.category} • {consumer.estimatedConsumption}{" "}
-                      {consumer.consumptionUnit}
+                      {consumer.category}
                     </p>
+                    {consumer.consumerCode && (
+                      <p className="text-xs text-muted-foreground">
+                        Code: {consumer.consumerCode}
+                      </p>
+                    )}
+                    {consumer.mobile && (
+                      <p className="text-xs text-muted-foreground">
+                        {consumer.mobile}
+                      </p>
+                    )}
                   </div>
                   <Badge className={getStatusColor(consumer.status || "active")}>
                     {consumer.status?.toUpperCase() || "ACTIVE"}
@@ -433,10 +408,7 @@ export const MapDashboard = () => {
             </div>
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-              <span>
-                Operational Valves:{" "}
-                {displayValves.filter((v) => v.status === "open").length}
-              </span>
+              <span>Valves: {displayValves.length}</span>
             </div>
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
