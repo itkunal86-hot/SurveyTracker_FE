@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LeafletMap } from "@/components/LeafletMap";
+import { RGISMap } from "@/components/RGISMap";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -43,6 +46,7 @@ interface MapPipelineSegment {
 }
 
 export const ValvePointsEditor = () => {
+  const [showRGIS, setShowRGIS] = useState(true);
   const [rows, setRows] = useState<DynamicRow[]>([]);
   const [columns, setColumns] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -210,17 +214,36 @@ export const ValvePointsEditor = () => {
         <Card>
           <CardHeader>
             <CardTitle>Valve Network Map</CardTitle>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="show-rgis-valves"
+                checked={showRGIS}
+                onCheckedChange={setShowRGIS}
+              />
+              <Label htmlFor="show-rgis-valves">Show RGIS Map</Label>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="h-96">
-              <LeafletMap
-                devices={[]}
-                pipelines={mapPipelines}
-                valves={mapValves}
-                showDevices={false}
-                showPipelines={showPipelines}
-                showValves={showValves}
-              />
+              {showRGIS ? (
+                <RGISMap
+                  devices={[]}
+                  pipelines={mapPipelines}
+                  valves={mapValves}
+                  showDevices={false}
+                  showPipelines={showPipelines}
+                  showValves={showValves}
+                />
+              ) : (
+                <LeafletMap
+                  devices={[]}
+                  pipelines={mapPipelines}
+                  valves={mapValves}
+                  showDevices={false}
+                  showPipelines={showPipelines}
+                  showValves={showValves}
+                />
+              )}
             </div>
           </CardContent>
         </Card>

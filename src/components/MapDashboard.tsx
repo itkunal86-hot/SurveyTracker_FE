@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { LeafletMap } from "@/components/LeafletMap";
+import { RGISMap } from "@/components/RGISMap";
 import {
   Layers,
   RefreshCw,
@@ -73,6 +74,7 @@ interface ConsumerPoint {
 
 export const MapDashboard = () => {
   // Simplified layer controls
+  const [showRGIS, setShowRGIS] = useState(true);
   const [showPipelines, setShowPipelines] = useState(true);
   const [showValves, setShowValves] = useState(true);
   const [showConsumerPoints, setShowConsumerPoints] = useState(true);
@@ -218,6 +220,21 @@ export const MapDashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Map Type Control */}
+            <div className="flex items-center justify-between border-b pb-3 mb-3">
+              <Label htmlFor="rgis-map" className="text-base font-semibold">
+                Map Type
+              </Label>
+              <Switch
+                id="rgis-map"
+                checked={showRGIS}
+                onCheckedChange={setShowRGIS}
+              />
+            </div>
+            <div className="text-xs text-muted-foreground mb-3">
+              {showRGIS ? "RGIS Map" : "Leaflet Map"}
+            </div>
+
             {/* Pipeline Controls */}
             <div className="flex items-center justify-between">
               <Label htmlFor="pipelines" className="flex items-center space-x-2">
@@ -389,14 +406,25 @@ export const MapDashboard = () => {
 
       {/* Map Area */}
       <div className="flex-1 relative">
-        <LeafletMap
-          devices={displayConsumerPoints as unknown as DeviceLocation[]}
-          pipelines={displayPipelines}
-          valves={displayValves}
-          showDevices={showConsumerPoints}
-          showPipelines={showPipelines}
-          showValves={showValves}
-        />
+        {showRGIS ? (
+          <RGISMap
+            devices={displayConsumerPoints as unknown as DeviceLocation[]}
+            pipelines={displayPipelines}
+            valves={displayValves}
+            showDevices={showConsumerPoints}
+            showPipelines={showPipelines}
+            showValves={showValves}
+          />
+        ) : (
+          <LeafletMap
+            devices={displayConsumerPoints as unknown as DeviceLocation[]}
+            pipelines={displayPipelines}
+            valves={displayValves}
+            showDevices={showConsumerPoints}
+            showPipelines={showPipelines}
+            showValves={showValves}
+          />
+        )}
 
         {/* Enhanced Map Overlay Info */}
         <div className="absolute top-4 right-4 bg-card border border-border rounded-lg p-4 shadow-lg">
