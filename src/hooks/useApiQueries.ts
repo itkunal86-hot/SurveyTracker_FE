@@ -609,6 +609,28 @@ export function useAssetPropertiesByType(type: string) {
   });
 }
 
+// Survey GeoJSON hooks
+export function useSurveyGeoJSON(atName: "pipeline" | "Valve" | "consumer") {
+  return useQuery({
+    queryKey: ["surveyGeoJSON", atName],
+    queryFn: () => apiClient.getSurveyGeoJSON(atName),
+    staleTime: 5 * 60 * 1000,
+    enabled: !!atName,
+  });
+}
+
+export function usePipelineGeoJSON() {
+  return useSurveyGeoJSON("pipeline");
+}
+
+export function useValveGeoJSON() {
+  return useSurveyGeoJSON("Valve");
+}
+
+export function useConsumerGeoJSON() {
+  return useSurveyGeoJSON("consumer");
+}
+
 export function useConsumerPoints() {
   return useQuery({
     queryKey: [QUERY_KEYS.consumerPoints],
