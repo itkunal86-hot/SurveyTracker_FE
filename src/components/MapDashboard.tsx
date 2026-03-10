@@ -414,6 +414,7 @@ export const MapDashboard = () => {
             showDevices={showConsumerPoints}
             showPipelines={showPipelines}
             showValves={showValves}
+            showConsumers={showConsumerPoints}
           />
         ) : (
           <LeafletMap

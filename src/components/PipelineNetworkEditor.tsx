@@ -470,9 +470,11 @@ export const PipelineNetworkEditor = () => {
                       devices={[]}
                       pipelines={mapPipelines}
                       valves={[]}
+                      consumers={[]}
                       showDevices={false}
                       showPipelines={showPipelinesOnMap}
                       showValves={false}
+                      showConsumers={false}
                     />
                   ) : (
                     <LeafletMap

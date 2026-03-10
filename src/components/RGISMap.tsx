@@ -102,23 +102,36 @@ interface ValvePoint {
   segmentId: string;
   coordinates?: { lat: number; lng: number };
 }
+interface ConsumerPoint {
+  id: string;
+  name?: string;
+  code?: string;
+  mobile?: string;
+  status?: string;
+  coordinates: { lat: number; lng: number };
+}
 
 interface RGISMapProps {
   devices: DeviceLocation[];
   pipelines: PipelineSegment[];
   valves: ValvePoint[];
+  consumers?: ConsumerPoint[];
   showDevices: boolean;
   showPipelines: boolean;
   showValves: boolean;
+  showConsumers:boolean;
+  
 }
 
 export const RGISMap = ({
   devices,
   pipelines,
   valves,
+  consumers=[],
   showDevices,
   showPipelines,
   showValves,
+  showConsumers = false,
 }: RGISMapProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<MapView | null>(null);
