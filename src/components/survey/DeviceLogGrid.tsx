@@ -12,7 +12,7 @@ import { ActiveDeviceListModal } from "./ActiveDeviceListModal";
 
 interface DeviceLog {
   id: string;
-  deviceLogId:string;
+  deviceLogId: string;
   name: string;
   type?: string;
   status: string;
@@ -26,15 +26,16 @@ interface DeviceLog {
   location?: string;
   surveyCount?: string;
   controllerId?: string;
-  uniqueId:string;
+  uniqueId: string;
   currentCircle?: string;
+  initialCircle?: string;
 }
 
 interface DeviceLogGridProps {
-  summaryType?: [string,string];
+  summaryType?: [string, string];
   selectedTime?: string;
-  selectedZone?: string ;
-  selectedCircle?: string ;
+  selectedZone?: string;
+  selectedCircle?: string;
   customStartDate?: string | null;
   customEndDate?: string | null;
   selectedDeviceIds?: string[];
@@ -42,7 +43,7 @@ interface DeviceLogGridProps {
 }
 
 export const DeviceLogGrid = ({
-  summaryType = ["",""],
+  summaryType = ["", ""],
   selectedTime = "7-days",
   selectedZone = "all",
   selectedCircle = "all",
@@ -125,16 +126,16 @@ export const DeviceLogGrid = ({
       default:
         return { startDate: null, endDate: null };
     }
-     return {
+    return {
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString()
     };
-   // return { startDate, endDate };
+    // return { startDate, endDate };
   };
 
   // Fetch device logs
   const fetchDeviceLogs = async (page: number = 1) => {
-    
+
     try {
       setIsLoading(true);
       setError(null);
@@ -211,36 +212,36 @@ export const DeviceLogGrid = ({
       const mapped: DeviceLog[] = rawItems.map((item: any) => ({
         id: String(
           item.id ??
-            item.ID ??
-            item.deviceId ??
-            item.DeviceId ??
-            item.device_id ??
-            item.instrumentId ??
-            item.InstrumentId ??
-            `device-${Date.now()}`
+          item.ID ??
+          item.deviceId ??
+          item.DeviceId ??
+          item.device_id ??
+          item.instrumentId ??
+          item.InstrumentId ??
+          `device-${Date.now()}`
         ),
-         deviceLogId: String(
+        deviceLogId: String(
           item.deviceLogId ??
-            item.dlId ??
-            `device-${Date.now()}`
+          item.dlId ??
+          `device-${Date.now()}`
         ),
         name: String(
           item.name ??
-            item.Name ??
-            item.deviceName ??
-            item.DeviceName ??
-            item.instrument ??
-            item.Instrument ??
-            "Unknown"
+          item.Name ??
+          item.deviceName ??
+          item.DeviceName ??
+          item.instrument ??
+          item.Instrument ??
+          "Unknown"
         ),
         type: String(
           item.type ??
-            item.Type ??
-            item.deviceType ??
-            item.DeviceType ??
-            item.model ??
-            item.Model ??
-            "DEVICE"
+          item.Type ??
+          item.deviceType ??
+          item.DeviceType ??
+          item.model ??
+          item.Model ??
+          "DEVICE"
         ),
         status: normalizeStatus(
           item.status ?? item.Status ?? item.state ?? item.State
@@ -248,18 +249,18 @@ export const DeviceLogGrid = ({
         batteryLevel: Number(item.battery ?? item.Battery ?? item.batteryLevel ?? item.BatteryLevel) || undefined,
         lastSeen: String(
           item.lastUpdate ??
-            item.LastUpdated ??
-            item.lastUpdate ??
-            item.LastUpdate ??
-            item.lastSeen ??
-            item.LastSeen ??
-            item.lastPing ??
-            item.LastPing ??
-            item.timestamp ??
-            item.Timestamp ??
-            item.logTime ??
-            item.LogTime ??
-            ""
+          item.LastUpdated ??
+          item.lastUpdate ??
+          item.LastUpdate ??
+          item.lastSeen ??
+          item.LastSeen ??
+          item.lastPing ??
+          item.LastPing ??
+          item.timestamp ??
+          item.Timestamp ??
+          item.logTime ??
+          item.LogTime ??
+          ""
         ) || undefined,
         coordinates:
           item.coordinates && typeof item.coordinates.lat === "number"
@@ -268,12 +269,13 @@ export const DeviceLogGrid = ({
         surveyor: item.surveyor ?? item.Surveyor ?? undefined,
         serialNumber: String(item.serialNumber ?? item.SerialNumber ?? item.serial_no ?? item.SERIAL_NO ?? "") || undefined,
         modelName: item.modelName ?? item.ModelName ?? undefined,
-        currentLocation: item.currentLocation  ?? undefined,
-        location: item.location  ?? undefined,
+        currentLocation: item.currentLocation ?? undefined,
+        location: item.location ?? undefined,
         surveyCount: item.surveyCount ?? undefined,
-        uniqueId:item.uniqueId ?? undefined,
-        controllerId : item.controllerId ?? undefined,
-        currentCircle: item.currentCircle  ?? undefined,
+        uniqueId: item.uniqueId ?? undefined,
+        controllerId: item.controllerId ?? undefined,
+        currentCircle: item.currentCircle ?? undefined,
+        initialCircle: item.initialCircle ?? undefined,
       }));
 
       setDeviceLogs(mapped);
@@ -373,6 +375,18 @@ export const DeviceLogGrid = ({
     }
   };
 
+  const getCircleBackgroundColor = (initialCircle?: string, currentCircle?: string, isInitial: boolean = false) => {
+    if (isInitial) {
+      // Initial Circle always green
+      return "bg-green-100 text-green-800 px-2 py-1 rounded font-medium";
+    }
+    // Current Circle: green if matches, red if different
+    if (initialCircle === currentCircle) {
+      return "bg-green-100 text-green-800 px-2 py-1 rounded font-medium";
+    }
+    return "bg-red-100 text-red-800 px-2 py-1 rounded font-medium";
+  };
+
   const formatLastSeen = (dateString?: string): string => {
     if (!dateString) return "-";
 
@@ -459,9 +473,10 @@ export const DeviceLogGrid = ({
               <TableRow>
                 {/* <TableHead>Device ID</TableHead> */}
                 <TableHead>Name</TableHead>
-                <TableHead>Contoller Name</TableHead> 
-                <TableHead>Initial Location</TableHead>
-                <TableHead>Current Location</TableHead>
+                <TableHead>Contoller Name</TableHead>
+                <TableHead>Initial District</TableHead>
+                <TableHead>Initial Circle</TableHead>
+                <TableHead>Current District</TableHead>
                 <TableHead>Current Circle</TableHead>
                 <TableHead>Survey Count</TableHead>
                 {/* <TableHead>Status</TableHead>
@@ -490,11 +505,25 @@ export const DeviceLogGrid = ({
                   <TableRow key={log.uniqueId || log.deviceLogId || log.id}>
                     {/* <TableCell className="font-medium">{log.id}</TableCell> */}
                     <TableCell>{log.name}</TableCell>
-                     <TableCell>{log.controllerId}</TableCell>
+                    <TableCell>{log.controllerId}</TableCell>
                     {/* <TableCell className="text-sm">{log.type}</TableCell> */}
-                    <TableCell className="text-sm">{log.location}</TableCell>
+                    <TableCell className="text-sm">
+                      {log.location}
+
+                    </TableCell>
+                    {/* <TableCell className="text-sm">{log.location}</TableCell> */}
+                    <TableCell className="text-sm">
+                      <span className={getCircleBackgroundColor(log.initialCircle, log.currentCircle, true)}>
+                        {log.initialCircle}
+                      </span>
+
+                    </TableCell>
                     <TableCell className="text-sm">{log.currentLocation}</TableCell>
-                     <TableCell className="text-sm">{log.currentCircle}</TableCell>
+                    <TableCell className="text-sm">
+                      <span className={getCircleBackgroundColor(log.initialCircle, log.currentCircle, false)}>
+                        {log.currentCircle}
+                      </span>
+                    </TableCell>
                     <TableCell className="text-sm">{log.surveyCount}</TableCell>
                     {/* <TableCell>{getStatusBadge(log.status)}</TableCell>
                     <TableCell>

@@ -134,6 +134,8 @@ export interface Device {
   mobileaccuracy?: number;
   mcoordinates?: Coordinates;
   currentCircle?: string;
+  currentDistrict?: string;
+  initialCircle?:string;
   summery:{}
 }
 
@@ -142,6 +144,8 @@ export interface DeviceCreateUpdate {
   type: string;
   status: Device["status"];
   modelName?: string;
+  district?: string;
+  circle?: string;
 }
 
 export interface DeviceAlert {
@@ -1019,7 +1023,10 @@ class ApiClient {
           batteryLevel,
           lastSeen,
           horizontalAccuracy,
-          verticalAccuracy
+          verticalAccuracy,
+          currentCircle: it.currentCircle ?? it.circle ?? undefined,
+          currentDistrict: it.currentDistrict ?? it.district ?? undefined,
+          initialCircle: it.initialCircle ?? it.circle ?? undefined,
         } as Device;
       });
 
@@ -1124,7 +1131,10 @@ class ApiClient {
           batteryLevel,
           lastSeen,
           horizontalAccuracy,
-          verticalAccuracy
+          verticalAccuracy,
+          currentCircle: it.currentCircle ?? it.circle ?? undefined,
+          currentDistrict: it.currentDistrict ?? it.district ?? undefined,
+          initialCircle:it.initialCircle ?? it.circle ?? undefined,
         } as Device;
       });
 
@@ -1193,6 +1203,8 @@ class ApiClient {
         status: device.status,
         performedBy: parsed.userData.udId,
         ...(device.modelName !== undefined ? { modelName: device.modelName } : {}),
+        ...(device.district !== undefined ? { district: device.district } : {}),
+        ...(device.circle !== undefined ? { circle: device.circle } : {}),
       };
     }
 
@@ -1309,6 +1321,8 @@ class ApiClient {
       ...(device.type !== undefined && { type: device.type }),
       ...(device.status !== undefined && { status: device.status }),
       ...(device.modelName !== undefined && { modelName: device.modelName }),
+      ...(device.district !== undefined && { district: device.district }),
+      ...(device.circle !== undefined && { circle: device.circle }),
       ...(performedBy !== null && { performedBy }),
     };
 
@@ -1856,6 +1870,44 @@ class ApiClient {
           total: 0,
           totalPages: 0,
         },
+      };
+    }
+  }
+
+  async getCirclesByDistrict(districtName: string): Promise<ApiResponse<Circle[]>> {
+    try {
+      const raw: any = await this.request<any>(
+        `/DeviceLog/getcirclebydistrict?districtName=${encodeURIComponent(districtName)}`
+      );
+
+      const timestamp = raw?.timestamp || new Date().toISOString();
+      const rawItems = Array.isArray(raw?.data) ? raw.data : [];
+
+      const mapped: Circle[] = rawItems.map((it: any) => {
+        const fallbackId = (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function")
+          ? crypto.randomUUID()
+          : `${Date.now()}`;
+
+        const id = String(it.id ?? it.ID ?? it.circleId ?? it.CircleId ?? it.Id ?? fallbackId);
+        const name = String(it.circleName ?? it.CircleName ?? it.name ?? it.Name ?? "");
+        const description = it.description ?? it.Description ?? undefined;
+        const status = it.status ?? it.Status ?? undefined;
+
+        return { id, name, description, status } as Circle;
+      });
+
+      return {
+        success: true,
+        data: mapped,
+        message: raw?.message,
+        timestamp,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        data: [],
+        message: "Failed to fetch circles by district",
+        timestamp: new Date().toISOString(),
       };
     }
   }
@@ -2933,6 +2985,7 @@ class ApiClient {
         const location = it.location ?? "";
         const currentLocation = it.currentLocation ?? ""
         const currentCircle = it.currentCircle ?? ""
+        const initialCircle = it.initialCircle ?? ""
         const surveyCount = it.surveyCount ?? ""
         const mobileaccuracy = it.mobileAccuracy ;
         const controllerId = it.controllerId ;
@@ -2960,7 +3013,8 @@ class ApiClient {
           mobileaccuracy,
           controllerId,
           mcoordinates,
-          currentCircle
+          currentCircle,
+          initialCircle
         } as Device;
       });
 
@@ -3107,9 +3161,10 @@ class ApiClient {
         const serialNumber = serialRaw != null ? String(serialRaw) : undefined;
         const location = it.location ?? "";
         const currentLocation = it.currentLocation ?? ""
-         const currentCircle = it.currentCircle ?? ""
+        const currentCircle = it.currentCircle ?? ""
         const surveyCount = it.surveyCount ?? ""
         const controllerId = it.controllerId ?? ""
+        const initialCircle = it.initialCircle ?? ""
         return {
           id,
           name,
@@ -3127,7 +3182,8 @@ class ApiClient {
           currentLocation,
           surveyCount,
           controllerId,
-          currentCircle
+          currentCircle,
+          initialCircle
         } as Device;
       });
 
