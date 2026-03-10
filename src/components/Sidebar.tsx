@@ -74,18 +74,18 @@ const adminManagerMenuItems: MenuItem[] = [
     icon: Map,
     roles: ["admin", "manager"],
   },
-  {
-    id: "flowlines-map",
-    label: "Flowlines Map",
-    icon: Map,
-    roles: ["admin", "manager"],
-  },
-  {
-    id: "valves-map",
-    label: "Valves Map",
-    icon: Map,
-    roles: ["admin", "manager"],
-  },
+  // {
+  //   id: "flowlines-map",
+  //   label: "Flowlines Map",
+  //   icon: Map,
+  //   roles: ["admin", "manager"],
+  // },
+  // {
+  //   id: "valves-map",
+  //   label: "Valves Map",
+  //   icon: Map,
+  //   roles: ["admin", "manager"],
+  // },
   {
     id: "alerts-notifications",
     label: "Alerts & Notifications",
@@ -190,7 +190,10 @@ export const Sidebar = ({
     ) {
       return false;
     }
-    if (userRole === "manager" && (item.id === "alerts-notifications" || item.id === "reports")) {
+    if (userRole === "manager" && (item.id === "alerts-notifications" 
+      || item.id === "reports" 
+      || item.id === "devices" // Instrument List
+      || item.id === "settings")) {
       return false;
     }
     return true;

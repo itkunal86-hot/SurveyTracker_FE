@@ -179,7 +179,7 @@ export const PipelineNetworkEditor = () => {
       //const response = await apiClient.getAssetPropertiesByType("pipeline");
       const response = await apiClient.getPipelines({ limit: 100 });
       setSegments(Array.isArray(response?.data) ? response.data : []);
-      } catch (error) {
+    } catch (error) {
       console.error("Failed to fetch pipeline segments:", error);
       toast({
         title: "Error",
@@ -319,8 +319,8 @@ export const PipelineNetworkEditor = () => {
             unit: "METERS" as const,
           },
         },
-        coordinates: [{ 
-          lat: 40.7589, 
+        coordinates: [{
+          lat: 40.7589,
           lng: -73.9851,
           pointType: "START" as const,
         }], // Default coordinates with proper GeolocationPoint format
@@ -441,17 +441,52 @@ export const PipelineNetworkEditor = () => {
         <Card>
           <CardHeader>
             <CardTitle>Pipeline Network Map</CardTitle>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="show-rgis"
+                checked={showRGIS}
+                onCheckedChange={setShowRGIS}
+              />
+              <Label htmlFor="show-rgis">Show RGIS Map</Label>
+            </div>
+
           </CardHeader>
           <CardContent>
             <div className="h-96">
-              <LeafletMap
+              {/* <LeafletMap
                 devices={[]}
                 pipelines={mapPipelines}
                 valves={mapValves}
                 showDevices={false}
                 showPipelines={showPipelinesOnMap}
                 showValves={showValvesOnMap}
-              />
+              /> */}
+
+
+              <CardContent>
+                <div className="h-96">
+                  {showRGIS ? (
+                    <RGISMap
+                      devices={[]}
+                      pipelines={mapPipelines}
+                      valves={[]}
+                      showDevices={false}
+                      showPipelines={showPipelinesOnMap}
+                      showValves={false}
+                    />
+                  ) : (
+                    <LeafletMap
+                      devices={[]}
+                      pipelines={mapPipelines}
+                      valves={[]}
+                      showDevices={false}
+                      showPipelines={showPipelinesOnMap}
+                      showValves={false}
+                    />
+                  )}
+                </div>
+              </CardContent>
+
             </div>
           </CardContent>
         </Card>
@@ -537,44 +572,7 @@ export const PipelineNetworkEditor = () => {
         </Card>
 
         {/* Map View */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Pipeline Network Map</CardTitle>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="show-rgis"
-                  checked={showRGIS}
-                  onCheckedChange={setShowRGIS}
-                />
-                <Label htmlFor="show-rgis">Show RGIS Map</Label>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="h-96">
-              {showRGIS ? (
-                <RGISMap
-                  devices={mapDevices}
-                  pipelines={mapPipelines}
-                  valves={mapValves}
-                  showDevices={showDevicesOnMap}
-                  showPipelines={showPipelinesOnMap}
-                  showValves={showValvesOnMap}
-                />
-              ) : (
-                <LeafletMap
-                  devices={mapDevices}
-                  pipelines={mapPipelines}
-                  valves={mapValves}
-                  showDevices={showDevicesOnMap}
-                  showPipelines={showPipelinesOnMap}
-                  showValves={showValvesOnMap}
-                />
-              )}
-            </div>
-          </CardContent>
-        </Card>
+
       </div>
 
       {/* Add/Edit Dialog */}
