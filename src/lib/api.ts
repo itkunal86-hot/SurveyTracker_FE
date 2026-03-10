@@ -1520,7 +1520,6 @@ class ApiClient {
       };
     }
   }
-
   async getSurveyGeoJson(atName: string): Promise<any> {
     try {
       return await this.request<any>(`/SurveyEntries/survey-geojson?atName=${encodeURIComponent(atName)}`);
