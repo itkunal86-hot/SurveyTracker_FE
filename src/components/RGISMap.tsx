@@ -308,6 +308,39 @@ export const RGISMap = ({
       });
     }
 
+    if (showConsumers) {
+      consumers.forEach((consumer) => {
+        if (consumer.coordinates.lat === undefined || consumer.coordinates.lng === undefined) return;
+
+        const pt = new Point({
+          longitude: consumer.coordinates.lng,
+          latitude: consumer.coordinates.lat,
+        });
+        allPoints.push(pt);
+
+        const markerSymbol = {
+          type: "simple-marker",
+          color: [251, 146, 60], // orange-400
+          outline: {
+            color: [255, 255, 255],
+            width: 2,
+          },
+        };
+
+        const graphic = new Graphic({
+          geometry: pt,
+          symbol: markerSymbol as any,
+          attributes: consumer,
+          popupTemplate: {
+            title: consumer.name ?? `Consumer ${consumer.id}`,
+            content: "Code: {code}<br>Mobile: {mobile}<br>Status: {status}",
+          },
+        });
+
+        graphicsLayer.add(graphic);
+      });
+    }
+
     // Zoom to fit all graphics
     if (allPoints.length > 0) {
         view.when(() => {
@@ -315,7 +348,7 @@ export const RGISMap = ({
         });
     }
 
-  }, [devices, pipelines, valves, showDevices, showPipelines, showValves]);
+  }, [devices, pipelines, valves, consumers, showDevices, showPipelines, showValves, showConsumers]);
 
   return (
     <div className="w-full h-full relative">
