@@ -3,7 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LeafletMap } from "@/components/LeafletMap";
+import { RGISMap } from "@/components/RGISMap";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -46,6 +48,7 @@ import { API_BASE_PATH, apiClient, PipelineSegment } from "@/lib/api";
 import { useDeviceLogs } from "@/hooks/useApiQueries";
 
 export const PipelineNetworkEditor = () => {
+  const [showRGIS, setShowRGIS] = useState(true);
   const [segments, setSegments] = useState<PipelineSegment[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -474,18 +477,39 @@ export const PipelineNetworkEditor = () => {
         {/* Map View */}
         <Card>
           <CardHeader>
-            <CardTitle>Pipeline Network Map</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Pipeline Network Map</CardTitle>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="show-rgis"
+                  checked={showRGIS}
+                  onCheckedChange={setShowRGIS}
+                />
+                <Label htmlFor="show-rgis">Show RGIS Map</Label>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="h-96">
-              <LeafletMap
-                devices={mapDevices}
-                pipelines={mapPipelines}
-                valves={mapValves}
-                showDevices={showDevicesOnMap}
-                showPipelines={showPipelinesOnMap}
-                showValves={showValvesOnMap}
-              />
+              {showRGIS ? (
+                <RGISMap
+                  devices={mapDevices}
+                  pipelines={mapPipelines}
+                  valves={mapValves}
+                  showDevices={showDevicesOnMap}
+                  showPipelines={showPipelinesOnMap}
+                  showValves={showValvesOnMap}
+                />
+              ) : (
+                <LeafletMap
+                  devices={mapDevices}
+                  pipelines={mapPipelines}
+                  valves={mapValves}
+                  showDevices={showDevicesOnMap}
+                  showPipelines={showPipelinesOnMap}
+                  showValves={showValvesOnMap}
+                />
+              )}
             </div>
           </CardContent>
         </Card>
