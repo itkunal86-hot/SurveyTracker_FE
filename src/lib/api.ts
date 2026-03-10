@@ -1521,6 +1521,30 @@ class ApiClient {
     }
   }
 
+  // Survey GeoJSON endpoint (e.g., /SurveyEntries/survey-geojson?atName=pipeline)
+  async getSurveyGeoJSON(atName: "pipeline" | "Valve" | "consumer"): Promise<ApiResponse<string>> {
+    try {
+      const raw: any = await this.request<any>(
+        `/SurveyEntries/survey-geojson?atName=${encodeURIComponent(atName)}`
+      );
+      const geoJsonString = typeof raw?.data === "string" ? raw.data : JSON.stringify(raw?.data || "");
+      return {
+        success: true,
+        data: geoJsonString,
+        message: raw?.message ?? raw?.status_message ?? "",
+        timestamp: raw?.timestamp ?? new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error(`Failed to fetch GeoJSON for ${atName}:`, error);
+      return {
+        success: false,
+        data: "",
+        message: `Failed to fetch ${atName} data`,
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
   // Survey Categories endpoints
   async getSurveyCategories(params?: { page?: number; limit?: number; search?: string; }): Promise<PaginatedResponse<SurveyCategoryType>> {
     const sp = new URLSearchParams();
