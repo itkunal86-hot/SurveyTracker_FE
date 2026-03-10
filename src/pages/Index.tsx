@@ -9,6 +9,7 @@ import { DeviceStatus } from "@/components/DeviceStatus";
 import { DailyPersonalMaps } from "./DailyPersonalMaps";
 import { PipelineNetworkEditor } from "@/components/PipelineNetworkEditor";
 import { ValvePointsEditor } from "@/components/ValvePointsEditor";
+import { ConsumerPointsEditor } from "@/components/ConsumerPointsEditor";
 import CatastropheManagement from "@/components/CatastropheManagement";
 import ValveOperationLog from "@/components/ValveOperationLog";
 import { ReportsDashboard } from "@/components/ReportsDashboard";
@@ -110,6 +111,8 @@ const Index = () => {
         return <PipelineNetworkEditor />;
       case "valve-editor":
         return <ValvePointsEditor />;
+      case "consumer-editor":
+        return <ConsumerPointsEditor />;
       case "catastrophe":
         return <CatastropheManagement />;
       case "valve-operations":

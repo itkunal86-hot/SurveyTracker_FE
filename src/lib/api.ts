@@ -1521,26 +1521,14 @@ class ApiClient {
     }
   }
 
-  // Survey GeoJSON endpoint (e.g., /SurveyEntries/survey-geojson?atName=pipeline)
-  async getSurveyGeoJSON(atName: "pipeline" | "Valve" | "consumer"): Promise<ApiResponse<string>> {
+  async getSurveyGeoJson(atName: string): Promise<any> {
     try {
-      const raw: any = await this.request<any>(
-        `/SurveyEntries/survey-geojson?atName=${encodeURIComponent(atName)}`
-      );
-      const geoJsonString = typeof raw?.data === "string" ? raw.data : JSON.stringify(raw?.data || "");
-      return {
-        success: true,
-        data: geoJsonString,
-        message: raw?.message ?? raw?.status_message ?? "",
-        timestamp: raw?.timestamp ?? new Date().toISOString(),
-      };
-    } catch (error) {
-      console.error(`Failed to fetch GeoJSON for ${atName}:`, error);
+      return await this.request<any>(`/SurveyEntries/survey-geojson?atName=${encodeURIComponent(atName)}`);
+    } catch (_) {
       return {
         success: false,
-        data: "",
-        message: `Failed to fetch ${atName} data`,
-        timestamp: new Date().toISOString(),
+        data: null,
+        message: "Failed to fetch geojson",
       };
     }
   }
@@ -3740,6 +3728,22 @@ class ApiClient {
         data: undefined,
         timestamp: new Date().toISOString(),
       };
+    }
+  }
+
+  async getFlowlines(): Promise<any> {
+    try {
+      return await this.request<any>(`/Map/flowlines`);
+    } catch (error: any) {
+      throw new Error(error?.message ?? "Failed to fetch flowlines");
+    }
+  }
+
+  async getAllValves(): Promise<any> {
+    try {
+      return await this.request<any>(`/Map/valves`);
+    } catch (error: any) {
+      throw new Error(error?.message ?? "Failed to fetch valves");
     }
   }
 }

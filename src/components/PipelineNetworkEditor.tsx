@@ -82,19 +82,54 @@ export const PipelineNetworkEditor = () => {
       setPropLoading(true);
       setPropError(null);
       try {
-        const url = `${API_BASE_PATH}/AssetProperties/ByType/pipeline`;
-        //const url = `https://localhost:7215/api/AssetProperties/ByType/pipeline`;
+        const url = `${API_BASE_PATH}/SurveyEntries/survey-geojson?atName=PipeLine`;
+        //const url = `https://localhost:7215/api/SurveyEntries/survey-geojson?atName=PipeLine`;
         const res = await fetch(url, { signal: controller.signal });
         if (!res.ok) throw new Error(`Request failed: ${res.status}`);
         const json = await res.json();
-        const arr: DynamicRow[] = Array.isArray(json?.data)
-          ? json.data
-          : Array.isArray(json)
-            ? json
-            : [];
-        const normalized = arr.map((item) => ({ ...item }));
+
+        // Parse the GeoJSON from the data field
+        let geojson: any = null;
+        if (json?.data) {
+          try {
+            geojson = typeof json.data === 'string' ? JSON.parse(json.data) : json.data;
+          } catch (parseError) {
+            throw new Error("Failed to parse GeoJSON data");
+          }
+        }
+
+        // Extract features from GeoJSON
+        const features = geojson?.features || [];
+        const normalized = features.map((feature: any, idx: number) => {
+          const props = feature.properties || {};
+          const coords = feature.geometry?.coordinates || [];
+
+          // Convert MultiLineString coordinates to array of coordinate objects
+          let coordinateObjects: Array<{ lat: number; lng: number }> = [];
+          if (coords.length > 0 && Array.isArray(coords[0])) {
+            // For MultiLineString, take the first line
+            const lineCoords = coords[0];
+            coordinateObjects = lineCoords.map((coord: any) => ({
+              lat: coord[1], // latitude is second
+              lng: coord[0], // longitude is first
+            }));
+          }
+
+          return {
+            SE_ID: props.SE_ID || idx,
+            SE_VALUE: props.SE_VALUE || "",
+            depth: props.depth || "",
+            depth_meter: props["depth meter"] || "",
+            SE_ENTRY_DATE: props.SE_ENTRY_DATE || "",
+            pipe_diameter: props["pipe diameter"] || "",
+            SHAPE_LENGTH: props.SHAPE_LENGTH || "",
+            SE_SURVEY_SESSION_ID: props.SE_SURVEY_SESSION_ID || "",
+            coordinates: coordinateObjects,
+          };
+        });
+
         setPropRows(normalized);
-        const cols = normalized.length > 0 ? Object.keys(normalized[0]) : [];
+        const cols = normalized.length > 0 ? Object.keys(normalized[0]).filter(c => c !== 'coordinates') : [];
         setPropColumns(cols);
       } catch (e: any) {
         setPropError(e?.message || "Failed to load data");
@@ -114,7 +149,7 @@ export const PipelineNetworkEditor = () => {
     async function loadValves() {
       setValveError(null);
       try {
-        const url = `${API_BASE_PATH}/AssetProperties/ByType/valve`;
+        const url = `${API_BASE_PATH}/api/AssetProperties/ByType/valve`;
         //const url = `https://localhost:7215/api/AssetProperties/ByType/valve`;
         const res = await fetch(url, { signal: controller.signal });
         if (!res.ok) throw new Error(`Request failed: ${res.status}`);
@@ -179,17 +214,20 @@ export const PipelineNetworkEditor = () => {
     }));
   }, [deviceLogsResponse]);
 
-  // Pipelines for map from AssetProperties/ByType/pipeline
+  // Pipelines for map from survey-geojson endpoint
   const mapPipelines = useMemo(() => {
-    return propRows.map((r, idx) => {
-      const id = String(r["id"] ?? r["ID"] ?? r["segmentId"] ?? r["SegmentId"] ?? `PS-${idx + 1}`);
-      const diameterVal = Number(r["diameter"] ?? r["Diameter"] ?? r["pipeDiameter"] ?? r["PipeDiameter"] ?? 200);
-      const depthVal = Number(r["depth"] ?? r["Depth"] ?? r["installationDepth"] ?? r["InstallationDepth"] ?? 1.5);
+    return propRows.map((r: any, idx) => {
+      const id = String(r["SE_ID"] ?? r["id"] ?? r["ID"] ?? `PS-${idx + 1}`);
+      const diameterVal = Number(r["pipe_diameter"] ?? r["diameter"] ?? r["Diameter"] ?? r["pipeDiameter"] ?? r["PipeDiameter"] ?? 200);
+      const depthVal = Number(r["depth_meter"] ?? r["depth"] ?? r["Depth"] ?? r["installationDepth"] ?? r["InstallationDepth"] ?? 1.5);
+      const coordinates = Array.isArray(r.coordinates) && r.coordinates.length >= 2 ? r.coordinates : undefined;
       return {
         id,
+        name: `Pipeline ${id}`,
         diameter: Number.isFinite(diameterVal) ? diameterVal : 200,
         depth: Number.isFinite(depthVal) ? depthVal : 1.5,
         status: "normal" as const,
+        coordinates,
       };
     });
   }, [propRows]);
@@ -395,24 +433,48 @@ export const PipelineNetworkEditor = () => {
       </div>
 
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="space-y-6">
+        {/* Map View */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Pipeline Network Map</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-96">
+              <LeafletMap
+                devices={[]}
+                pipelines={mapPipelines}
+                valves={mapValves}
+                showDevices={false}
+                showPipelines={showPipelinesOnMap}
+                showValves={showValvesOnMap}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Pipeline Segments List */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
                 <MapPin className="h-5 w-5" />
-                Valve Points ({propRows.length})
+                Pipeline Segments ({propRows.length})
               </CardTitle>
             </div>
           </CardHeader>
           <CardContent className="p-0">
             <div className="p-6 pb-0">
-              
+              {propError && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>{propError}</AlertDescription>
+                </Alert>
+              )}
               {propLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin" />
-                  <span className="ml-2">Loading asset properties...</span>
+                  <span className="ml-2">Loading pipeline data...</span>
                 </div>
               ) : (
                 <Table>
@@ -468,25 +530,6 @@ export const PipelineNetworkEditor = () => {
                 pageSizeOptions={[5, 10, 20]}
               />
             )}
-          </CardContent>
-        </Card>
-
-        {/* Map View */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Pipeline Network Map</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-96">
-              <LeafletMap
-                devices={mapDevices}
-                pipelines={mapPipelines}
-                valves={mapValves}
-                showDevices={showDevicesOnMap}
-                showPipelines={showPipelinesOnMap}
-                showValves={showValvesOnMap}
-              />
-            </div>
           </CardContent>
         </Card>
       </div>
