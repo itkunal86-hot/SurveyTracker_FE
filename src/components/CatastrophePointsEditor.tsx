@@ -158,25 +158,25 @@ export const CatastrophePointsEditor = () => {
   }, []);
 
   // Devices from DeviceLog for the active survey
-  const { data: deviceLogsResponse } = useDeviceLogs({ limit: 100 });
-  const mapDevices = useMemo(() => {
-    const items = Array.isArray(deviceLogsResponse?.data) ? deviceLogsResponse!.data : [];
-    return items.map((device: any) => ({
-      id: device.id,
-      name: device.name,
-      lat: Number(device.coordinates?.lat) || 0,
-      lng: Number(device.coordinates?.lng) || 0,
-      status:
-        String(device.status).toUpperCase() === "ACTIVE"
-          ? ("active" as const)
-          : String(device.status).toUpperCase() === "MAINTENANCE"
-            ? ("maintenance" as const)
-            : String(device.status).toUpperCase() === "ERROR"
-              ? ("error" as const)
-              : ("offline" as const),
-      lastPing: device.lastSeen || "Unknown",
-    }));
-  }, [deviceLogsResponse]);
+  // const { data: deviceLogsResponse } = useDeviceLogs({ limit: 100 });
+  // const mapDevices = useMemo(() => {
+  //   const items = Array.isArray(deviceLogsResponse?.data) ? deviceLogsResponse!.data : [];
+  //   return items.map((device: any) => ({
+  //     id: device.id,
+  //     name: device.name,
+  //     lat: Number(device.coordinates?.lat) || 0,
+  //     lng: Number(device.coordinates?.lng) || 0,
+  //     status:
+  //       String(device.status).toUpperCase() === "ACTIVE"
+  //         ? ("active" as const)
+  //         : String(device.status).toUpperCase() === "MAINTENANCE"
+  //           ? ("maintenance" as const)
+  //           : String(device.status).toUpperCase() === "ERROR"
+  //             ? ("error" as const)
+  //             : ("offline" as const),
+  //     lastPing: device.lastSeen || "Unknown",
+  //   }));
+  // }, [deviceLogsResponse]);
 
   // Transform pipeline GeoJSON data
   const transformedPipelines: PipelineSegment[] = useMemo(() => {
@@ -243,7 +243,7 @@ export const CatastrophePointsEditor = () => {
       setError(null);
       try {
         // Fetch actual catastrophe records with coordinates
-        const url = `${API_BASE_PATH}/catastrophes`;
+        const url = `${API_BASE_PATH}/AssetProperties/ByType/catastrophes`;
         //const url = `https://localhost:7215/api/catastrophes`;
         const res = await fetch(url, { signal: controller.signal });
         if (!res.ok) {
@@ -347,23 +347,6 @@ export const CatastrophePointsEditor = () => {
         </Alert>
       )}
 
-<<<<<<< HEAD
-        <Card>
-          <CardHeader>
-            <CardTitle>Network Map</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-96">
-              <LeafletMap
-                devices={[]}
-                pipelines={mapPipelines}
-                valves={mapValves}
-                showDevices={false}
-                showPipelines={mapPipelines.length > 0}
-                showValves={mapValves.length > 0}
-                catastrophes={mapCatastrophes}
-                showCatastrophes={mapCatastrophes.some((c) => c.coordinates && Number.isFinite(c.coordinates.lat) && Number.isFinite(c.coordinates.lng))}
-=======
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Layer Controls Sidebar */}
         <div className="space-y-4">
@@ -514,7 +497,6 @@ export const CatastrophePointsEditor = () => {
                 canGoNext={tableConfig.canGoNext}
                 canGoPrevious={tableConfig.canGoPrevious}
                 pageSizeOptions={[5, 10, 20]}
->>>>>>> 0e2ef3948eabcb297789c33ff9333531a8298299
               />
             </CardContent>
           </Card>
@@ -530,7 +512,7 @@ export const CatastrophePointsEditor = () => {
                     devices={transformedConsumerPoints as unknown as any[]}
                     pipelines={transformedPipelines}
                     valves={transformedValves}
-                    consumers={transformedConsumerPoints}
+                    //consumers={transformedConsumerPoints}
                     showDevices={showConsumerPoints}
                     showPipelines={showPipelines}
                     showValves={showValves}
@@ -538,10 +520,10 @@ export const CatastrophePointsEditor = () => {
                   />
                 ) : (
                   <LeafletMap
-                    devices={mapDevices}
+                    devices={[]}
                     pipelines={mapPipelines}
                     valves={mapValves}
-                    showDevices={mapDevices.length > 0}
+                    showDevices={false}
                     showPipelines={showPipelines}
                     showValves={showValves}
                     catastrophes={mapCatastrophes}
