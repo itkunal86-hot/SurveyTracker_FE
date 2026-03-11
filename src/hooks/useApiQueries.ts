@@ -6,6 +6,7 @@ import {
   PipelineSegment,
   LegacyPipelineSegment,
   Valve,
+  Consumer,
   Catastrophe,
   SurveyData,
   ValveOperation,
@@ -24,6 +25,8 @@ export const QUERY_KEYS = {
   pipeline: "pipeline",
   valves: "valves",
   valve: "valve",
+  consumers: "consumers",
+  consumer: "consumer",
   catastrophes: "catastrophes",
   catastrophe: "catastrophe",
   surveys: "surveys",
@@ -263,6 +266,37 @@ export function useDeleteValve() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.valves] });
     },
+  });
+}
+
+// Consumer hooks
+export function useConsumers(params?: {
+  page?: number;
+  limit?: number;
+  status?: string;
+  type?: string;
+}) {
+  return useQuery({
+    queryKey: [QUERY_KEYS.consumers, params],
+    queryFn: async () => {
+      const response = await apiClient.getConsumers(params);
+      const items = Array.isArray(response?.data) ? response.data : [];
+      return { ...response, data: items };
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useConsumer(id: string) {
+  return useQuery({
+    queryKey: [QUERY_KEYS.consumer, id],
+    queryFn: async () => {
+      const response = await apiClient.getConsumers();
+      const consumer = response.data.find(c => c.id === id);
+      if (!consumer) throw new Error(`Consumer with id ${id} not found`);
+      return { success: true, data: consumer, message: "", timestamp: new Date().toISOString() };
+    },
+    enabled: !!id,
   });
 }
 

@@ -261,6 +261,19 @@ export interface Valve {
   pipelineId?: string;
 }
 
+export interface Consumer {
+  id: string;
+  name: string;
+  type: "INDUSTRIAL" | "DOMESTIC" | "COMMERCIAL" | "MUNICIPAL" | "AGRICULTURAL";
+  status: "ACTIVE" | "INACTIVE" | "TEMPORARY" | "DISCONNECTED";
+  coordinates: Coordinates;
+  estimatedConsumption?: number; // in cubic meters per day
+  priority?: "HIGH" | "MEDIUM" | "LOW";
+  pipelineId?: string;
+  contactPerson?: string;
+  contactPhone?: string;
+}
+
 export interface Catastrophe {
   id: string;
   type:
@@ -1360,6 +1373,127 @@ class ApiClient {
     });
   }
 
+  // GeoJSON transformation methods
+  private transformGeoJsonToValves(geoJson: any): Valve[] {
+    if (!geoJson || !geoJson.features) return [];
+
+    return geoJson.features.map((feature: any, index: number) => {
+      const props = feature.properties || {};
+      const geometry = feature.geometry || {};
+
+      // Extract coordinates from GeoJSON (format: [lng, lat])
+      let lat = 0;
+      let lng = 0;
+
+      if (geometry.type === 'Point' && Array.isArray(geometry.coordinates)) {
+        [lng, lat] = geometry.coordinates;
+      } else if (props.coordinates) {
+        // Fallback to properties if available
+        lat = props.coordinates.lat || props.lat || 0;
+        lng = props.coordinates.lng || props.lng || 0;
+      }
+
+      return {
+        id: props.id || feature.id || `valve_${index}`,
+        name: props.name || props.Name || `Valve ${index + 1}`,
+        type: (props.type || props.Type || "GATE") as any,
+        status: (props.status || props.Status || "CLOSED") as any,
+        coordinates: { lat, lng },
+        diameter: props.diameter || props.Diameter,
+        pressure: props.pressure || props.Pressure,
+        pipelineId: props.pipelineId || props.PipelineId,
+      } as Valve;
+    });
+  }
+
+  private transformGeoJsonToPipelines(geoJson: any): PipelineSegment[] {
+    if (!geoJson || !geoJson.features) return [];
+
+    return geoJson.features.map((feature: any, index: number) => {
+      const props = feature.properties || {};
+      const geometry = feature.geometry || {};
+
+      // Extract coordinates for pipeline (LineString or array of coordinates)
+      let coordinates: GeolocationPoint[] = [];
+
+      if (geometry.type === 'LineString' && Array.isArray(geometry.coordinates)) {
+        coordinates = geometry.coordinates.map(([lng, lat]: [number, number], idx: number) => ({
+          lat,
+          lng,
+          pointType: idx === 0 ? 'START' : idx === geometry.coordinates.length - 1 ? 'END' : 'NODE' as any,
+        }));
+      } else if (Array.isArray(props.coordinates)) {
+        coordinates = props.coordinates;
+      }
+
+      return {
+        id: props.id || feature.id || `pipeline_${index}`,
+        name: props.name || props.Name || `Pipeline ${index + 1}`,
+        status: (props.status || props.Status || "OPERATIONAL") as any,
+        specifications: {
+          diameter: {
+            value: props.diameter || props.Diameter || 100,
+            unit: "MM",
+          },
+          material: (props.material || props.Material || "STEEL") as any,
+        },
+        operatingPressure: {
+          nominal: props.operatingPressure?.nominal || props.nominalPressure || 10,
+          minimum: props.operatingPressure?.minimum || props.minimumPressure || 5,
+          maximum: props.operatingPressure?.maximum || props.maximumPressure || 20,
+          unit: "BAR",
+        },
+        installation: {
+          installationYear: props.installationYear || new Date().getFullYear(),
+          commissioningDate: props.commissioningDate || props.CommissioningDate,
+          installationMethod: props.installationMethod || props.InstallationMethod,
+          depth: props.depth ? { value: props.depth, unit: "METERS" as const } : undefined,
+          soilType: props.soilType || props.SoilType,
+          contractor: props.contractor || props.Contractor,
+          inspector: props.inspector || props.Inspector,
+          asBuiltDrawingRef: props.asBuiltDrawingRef || props.AsBuiltDrawingRef,
+        },
+        coordinates,
+        pipelineId: props.pipelineId || props.PipelineId,
+        consumerCategory: props.consumerCategory,
+      } as PipelineSegment;
+    });
+  }
+
+  private transformGeoJsonToConsumers(geoJson: any): Consumer[] {
+    if (!geoJson || !geoJson.features) return [];
+
+    return geoJson.features.map((feature: any, index: number) => {
+      const props = feature.properties || {};
+      const geometry = feature.geometry || {};
+
+      // Extract coordinates from GeoJSON (format: [lng, lat])
+      let lat = 0;
+      let lng = 0;
+
+      if (geometry.type === 'Point' && Array.isArray(geometry.coordinates)) {
+        [lng, lat] = geometry.coordinates;
+      } else if (props.coordinates) {
+        // Fallback to properties if available
+        lat = props.coordinates.lat || props.lat || 0;
+        lng = props.coordinates.lng || props.lng || 0;
+      }
+
+      return {
+        id: props.id || feature.id || `consumer_${index}`,
+        name: props.name || props.Name || `Consumer ${index + 1}`,
+        type: (props.type || props.Type || "DOMESTIC") as any,
+        status: (props.status || props.Status || "ACTIVE") as any,
+        coordinates: { lat, lng },
+        estimatedConsumption: props.estimatedConsumption || props.EstimatedConsumption,
+        priority: props.priority || props.Priority,
+        pipelineId: props.pipelineId || props.PipelineId,
+        contactPerson: props.contactPerson || props.ContactPerson,
+        contactPhone: props.contactPhone || props.ContactPhone,
+      } as Consumer;
+    });
+  }
+
   // Pipeline endpoints
   async getPipelines(params?: {
     page?: number;
@@ -1376,15 +1510,29 @@ class ApiClient {
 
     try {
       const searchParams = new URLSearchParams();
-      if (params?.page) searchParams.append("page", params.page.toString());
+      searchParams.append("atName", "Pipeline");
       if (params?.limit) searchParams.append("limit", params.limit.toString());
-      if (params?.status) searchParams.append("status", params.status);
-      if (params?.material) searchParams.append("material", params.material);
 
       const query = searchParams.toString();
-      return await this.request<PaginatedResponse<PipelineSegment>>(
-        `/pipelines/getpipelines${query ? `?${query}` : ""}`,
+      const response = await this.request<any>(
+        `/SurveyEntries/survey-geojson${query ? `?${query}` : ""}`,
       );
+
+      // Transform GeoJSON response to PipelineSegment format
+      const pipelines = this.transformGeoJsonToPipelines(response);
+
+      return {
+        success: true,
+        data: pipelines,
+        message: "Pipelines retrieved successfully",
+        timestamp: new Date().toISOString(),
+        pagination: {
+          page: params?.page || 1,
+          limit: params?.limit || 50,
+          total: pipelines.length,
+          totalPages: Math.ceil(pipelines.length / (params?.limit || 50)),
+        },
+      };
     } catch (error) {
       // Fallback to mock data
       console.log("📊 API failed, falling back to mock data for pipelines");
@@ -1447,15 +1595,29 @@ class ApiClient {
 
     try {
       const searchParams = new URLSearchParams();
-      if (params?.page) searchParams.append("page", params.page.toString());
+      searchParams.append("atName", "Valve");
       if (params?.limit) searchParams.append("limit", params.limit.toString());
-      if (params?.status) searchParams.append("status", params.status);
-      if (params?.type) searchParams.append("type", params.type);
 
       const query = searchParams.toString();
-      return await this.request<PaginatedResponse<Valve>>(
-        `/valves/getvalves${query ? `?${query}` : ""}`,
+      const response = await this.request<any>(
+        `/SurveyEntries/survey-geojson${query ? `?${query}` : ""}`,
       );
+
+      // Transform GeoJSON response to Valve format
+      const valves = this.transformGeoJsonToValves(response);
+
+      return {
+        success: true,
+        data: valves,
+        message: "Valves retrieved successfully",
+        timestamp: new Date().toISOString(),
+        pagination: {
+          page: params?.page || 1,
+          limit: params?.limit || 50,
+          total: valves.length,
+          totalPages: Math.ceil(valves.length / (params?.limit || 50)),
+        },
+      };
     } catch (error) {
       // Fallback to mock data
       console.log("📊 API failed, falling back to mock data for valves");
@@ -1498,6 +1660,51 @@ class ApiClient {
     return this.request<ApiResponse<void>>(`/valves/deletevalve?id=${encodeURIComponent(id)}`, {
       method: "DELETE",
     });
+  }
+
+  // Consumer endpoints
+  async getConsumers(params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    type?: string;
+  }): Promise<PaginatedResponse<Consumer>> {
+    // If already in mock mode, return mock data immediately
+    if (this.useMockData) {
+      console.log("📊 Using mock data for consumers");
+      return createMockPaginatedResponse([], params);
+    }
+
+    try {
+      const searchParams = new URLSearchParams();
+      searchParams.append("atName", "Consumer");
+      if (params?.limit) searchParams.append("limit", params.limit.toString());
+
+      const query = searchParams.toString();
+      const response = await this.request<any>(
+        `/SurveyEntries/survey-geojson${query ? `?${query}` : ""}`,
+      );
+
+      // Transform GeoJSON response to Consumer format
+      const consumers = this.transformGeoJsonToConsumers(response);
+
+      return {
+        success: true,
+        data: consumers,
+        message: "Consumers retrieved successfully",
+        timestamp: new Date().toISOString(),
+        pagination: {
+          page: params?.page || 1,
+          limit: params?.limit || 50,
+          total: consumers.length,
+          totalPages: Math.ceil(consumers.length / (params?.limit || 50)),
+        },
+      };
+    } catch (error) {
+      // Fallback to mock data
+      console.log("📊 API failed, falling back to mock data for consumers");
+      return createMockPaginatedResponse([], params);
+    }
   }
 
   // AssetProperties ByType endpoint (e.g., /AssetProperties/ByType/pipeline)
