@@ -230,9 +230,11 @@ export const ValvePointsEditor = () => {
                   devices={[]}
                   pipelines={mapPipelines}
                   valves={mapValves}
+                  consumers={[]}
                   showDevices={false}
                   showPipelines={showPipelines}
                   showValves={showValves}
+                  showConsumers={false}
                 />
               ) : (
                 <LeafletMap

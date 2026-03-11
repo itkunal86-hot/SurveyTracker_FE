@@ -293,10 +293,10 @@ export const CatastrophePointsEditor = () => {
           <CardContent>
             <div className="h-96">
               <LeafletMap
-                devices={mapDevices}
+                devices={[]}
                 pipelines={mapPipelines}
                 valves={mapValves}
-                showDevices={mapDevices.length > 0}
+                showDevices={false}
                 showPipelines={mapPipelines.length > 0}
                 showValves={mapValves.length > 0}
                 catastrophes={mapCatastrophes}
