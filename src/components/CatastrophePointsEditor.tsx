@@ -19,7 +19,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { MapPin, AlertTriangle, Layers, RefreshCw, AlertCircle } from "lucide-react";
 import { useTable } from "@/hooks/use-table";
 import { useEffect, useMemo, useState } from "react";
-import { useDeviceLogs, usePipelineGeoJSON, useValveGeoJSON, useConsumerGeoJSON } from "@/hooks/useApiQueries";
+import { usePipelineGeoJSON, useValveGeoJSON, useConsumerGeoJSON } from "@/hooks/useApiQueries";
 import { API_BASE_PATH } from "@/lib/api";
 import {
   parseGeoJSON,
