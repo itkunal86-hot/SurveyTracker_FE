@@ -19,7 +19,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { MapPin, AlertTriangle, Layers, RefreshCw, AlertCircle } from "lucide-react";
 import { useTable } from "@/hooks/use-table";
 import { useEffect, useMemo, useState } from "react";
-import { useDeviceLogs, usePipelineGeoJSON, useValveGeoJSON, useConsumerGeoJSON } from "@/hooks/useApiQueries";
+import { usePipelineGeoJSON, useValveGeoJSON, useConsumerGeoJSON } from "@/hooks/useApiQueries";
 import { API_BASE_PATH } from "@/lib/api";
 import {
   parseGeoJSON,
@@ -158,26 +158,6 @@ export const CatastrophePointsEditor = () => {
     return () => controller.abort();
   }, []);
 
-  // Devices from DeviceLog for the active survey
-  const { data: deviceLogsResponse } = useDeviceLogs({ limit: 100 });
-  const mapDevices = useMemo(() => {
-    const items = Array.isArray(deviceLogsResponse?.data) ? deviceLogsResponse!.data : [];
-    return items.map((device: any) => ({
-      id: device.id,
-      name: device.name,
-      lat: Number(device.coordinates?.lat) || 0,
-      lng: Number(device.coordinates?.lng) || 0,
-      status:
-        String(device.status).toUpperCase() === "ACTIVE"
-          ? ("active" as const)
-          : String(device.status).toUpperCase() === "MAINTENANCE"
-            ? ("maintenance" as const)
-            : String(device.status).toUpperCase() === "ERROR"
-              ? ("error" as const)
-              : ("offline" as const),
-      lastPing: device.lastSeen || "Unknown",
-    }));
-  }, [deviceLogsResponse]);
 
   // Transform pipeline GeoJSON data
   const transformedPipelines: PipelineSegment[] = useMemo(() => {
@@ -674,10 +654,10 @@ export const CatastrophePointsEditor = () => {
                   />
                 ) : (
                   <LeafletMap
-                    devices={mapDevices}
+                    devices={[]}
                     pipelines={mapPipelines}
                     valves={mapValves}
-                    showDevices={mapDevices.length > 0}
+                    showDevices={false}
                     showPipelines={showPipelines}
                     showValves={showValves}
                     catastrophes={mapCatastrophes}
