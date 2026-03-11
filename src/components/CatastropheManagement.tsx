@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   Plus,
   Edit,
@@ -10,15 +12,22 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { LeafletMap } from "@/components/LeafletMap";
+import { RGISMap } from "@/components/RGISMap";
 import { CatastropheForm } from "./CatastropheForm";
 import { CatastropheList } from "./CatastropheList";
 import {
-  useDevices,
-  usePipelines,
-  useValves,
+  usePipelineGeoJSON,
+  useValveGeoJSON,
+  useConsumerGeoJSON,
   useCreateCatastrophe,
   useUpdateCatastrophe,
 } from "@/hooks/useApiQueries";
+import {
+  parseGeoJSON,
+  transformPipelineFeatures,
+  transformValveFeatures,
+  transformConsumerFeatures,
+} from "@/lib/geoJsonParser";
 import apiClient from "@/lib/api";
 import { toast } from "sonner";
 
@@ -40,16 +49,30 @@ const CatastropheManagement = () => {
   const [catastrophes, setCatastrophes] = useState<Catastrophe[]>([]);
   const [loadingCatastrophes, setLoadingCatastrophes] = useState(false);
   const [catastrophesError, setCatastrophesError] = useState<Error | null>(null);
+  const [showRGIS, setShowRGIS] = useState(true);
 
-  const { data: devicesResponse, isLoading: loadingDevices } = useDevices({
-    limit: 50,
-  });
-  const { data: pipelinesResponse, isLoading: loadingPipelines } = usePipelines(
-    { limit: 50 },
-  );
-  const { data: valvesResponse, isLoading: loadingValves } = useValves({
-    limit: 50,
-  });
+  // API hooks - fetch GeoJSON from survey-geojson endpoint
+  const {
+    data: pipelinesGeoJSON,
+    isLoading: loadingPipelines,
+    error: pipelinesError,
+    refetch: refetchPipelines,
+  } = usePipelineGeoJSON();
+
+  const {
+    data: valvesGeoJSON,
+    isLoading: loadingValves,
+    error: valvesError,
+    refetch: refetchValves,
+  } = useValveGeoJSON();
+
+  const {
+    data: consumerGeoJSON,
+    isLoading: loadingConsumerPoints,
+    error: consumerPointsError,
+    refetch: refetchConsumerPoints,
+  } = useConsumerGeoJSON();
+
   const createCatastropheMutation = useCreateCatastrophe();
   const updateCatastropheMutation = useUpdateCatastrophe();
 
@@ -213,102 +236,57 @@ const CatastropheManagement = () => {
     setSelectedLocation({ lat, lng });
   };
 
-  // Transform API data for map
-  const mapDevices = useMemo(() => {
-    if (!Array.isArray(devicesResponse?.data)) return [];
-    return devicesResponse.data.map((device) => ({
-      id: device.id,
-      name: device.name,
-      lat: device.coordinates.lat,
-      lng: device.coordinates.lng,
-      status:
-        device.status === "ACTIVE" ? ("active" as const) : ("offline" as const),
-      lastPing: device.lastSeen
-        ? new Date(device.lastSeen).toLocaleString()
-        : "Unknown",
-    }));
-  }, [devicesResponse]);
-
+  // Transform pipeline GeoJSON data
   const mapPipelines = useMemo(() => {
-    if (!Array.isArray(pipelinesResponse?.data)) return [];
-    return pipelinesResponse.data.map((pipeline) => ({
-      id: pipeline.id,
-      diameter: pipeline.diameter,
-      depth: pipeline.depth || 1.5,
-      status:
-        pipeline.status === "OPERATIONAL"
-          ? ("normal" as const)
-          : pipeline.status === "MAINTENANCE"
-            ? ("warning" as const)
-            : pipeline.status === "DAMAGED"
-              ? ("critical" as const)
-              : ("normal" as const),
-      coordinates: Array.isArray(pipeline.coordinates)
-        ? pipeline.coordinates
-            .map((pt) => {
-              const latRaw = (pt as any)?.coordinates?.lat ?? (pt as any)?.lat;
-              const lngRaw = (pt as any)?.coordinates?.lng ?? (pt as any)?.lng;
-              const elevRaw = (pt as any)?.coordinates?.elevation ?? (pt as any)?.elevation;
+    if (!pipelinesGeoJSON?.data) return [];
 
-              const latNum = typeof latRaw === "number" ? latRaw : parseFloat(String(latRaw));
-              const lngNum = typeof lngRaw === "number" ? lngRaw : parseFloat(String(lngRaw));
+    const geoJsonString = pipelinesGeoJSON.data;
+    const featureCollection = parseGeoJSON(geoJsonString);
 
-              let elevationNum: number | undefined;
-              if (typeof elevRaw === "number") {
-                elevationNum = elevRaw;
-              } else if (elevRaw != null) {
-                const n = parseFloat(String(elevRaw));
-                elevationNum = Number.isFinite(n) ? n : undefined;
-              }
+    if (!featureCollection || !featureCollection.features) {
+      return [];
+    }
 
-              return Number.isFinite(latNum) && Number.isFinite(lngNum)
-                ? { lat: latNum, lng: lngNum, elevation: elevationNum }
-                : null;
-            })
-            .filter((pt): pt is { lat: number; lng: number; elevation?: number } => pt !== null)
-        : undefined,
-    }));
-  }, [pipelinesResponse]);
+    return transformPipelineFeatures(featureCollection.features);
+  }, [pipelinesGeoJSON?.data]);
 
+  // Transform valve GeoJSON data
   const mapValves = useMemo(() => {
-    if (!Array.isArray(valvesResponse?.data)) return [];
-    return valvesResponse.data.map((valve) => ({
-      id: valve.id,
-      type:
-        valve.type === "GATE"
-          ? ("control" as const)
-          : valve.type === "BALL"
-            ? ("control" as const)
-            : valve.type === "BUTTERFLY"
-              ? ("control" as const)
-              : valve.type === "CHECK"
-                ? ("isolation" as const)
-                : valve.type === "RELIEF"
-                  ? ("emergency" as const)
-                  : ("control" as const),
-      status:
-        valve.status === "OPEN"
-          ? ("open" as const)
-          : valve.status === "CLOSED"
-            ? ("closed" as const)
-            : valve.status === "PARTIALLY_OPEN"
-              ? ("open" as const)
-              : valve.status === "FAULT"
-                ? ("maintenance" as const)
-                : ("closed" as const),
-      segmentId: valve.pipelineId || "Unknown",
-      coordinates: valve.coordinates && Number.isFinite(valve.coordinates.lat) && Number.isFinite(valve.coordinates.lng)
-        ? { lat: valve.coordinates.lat, lng: valve.coordinates.lng }
-        : undefined,
-    }));
-  }, [valvesResponse]);
+    if (!valvesGeoJSON?.data) return [];
+
+    const geoJsonString = valvesGeoJSON.data;
+    const featureCollection = parseGeoJSON(geoJsonString);
+
+    if (!featureCollection || !featureCollection.features) {
+      return [];
+    }
+
+    return transformValveFeatures(featureCollection.features);
+  }, [valvesGeoJSON?.data]);
+
+  // Transform consumer GeoJSON data
+  const mapConsumers = useMemo(() => {
+    if (!consumerGeoJSON?.data) return [];
+
+    const geoJsonString = consumerGeoJSON.data;
+    const featureCollection = parseGeoJSON(geoJsonString);
+
+    if (!featureCollection || !featureCollection.features) {
+      return [];
+    }
+
+    return transformConsumerFeatures(featureCollection.features);
+  }, [consumerGeoJSON?.data]);
 
   const handleRefresh = () => {
     fetchCatastrophes();
+    refetchPipelines();
+    refetchValves();
+    refetchConsumerPoints();
   };
 
   const isLoading =
-    loadingCatastrophes || loadingDevices || loadingPipelines || loadingValves;
+    loadingCatastrophes || loadingPipelines || loadingValves || loadingConsumerPoints;
 
   return (
     <div className="p-6 space-y-6">
@@ -448,31 +426,55 @@ const CatastropheManagement = () => {
           {/* Map View */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="h-5 w-5" />
-                Catastrophe Locations Map
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  Catastrophe Locations Map
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="rgis-map" className="text-sm font-medium">
+                    {showRGIS ? "RGIS Map" : "Leaflet Map"}
+                  </Label>
+                  <Switch
+                    id="rgis-map"
+                    checked={showRGIS}
+                    onCheckedChange={setShowRGIS}
+                  />
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="h-96">
-                <LeafletMap
-                  devices={mapDevices}
-                  pipelines={mapPipelines}
-                  valves={mapValves}
-                  showDevices={true}
-                  showPipelines={mapPipelines.some(p => (p.coordinates?.length ?? 0) >= 2)}
-                  showValves={mapValves.some(v => !!v.coordinates)}
-                  catastrophes={catastrophes.map((c) => ({
-                    id: c.id,
-                    name: c.type,
-                    coordinates: { lat: c.location.lat, lng: c.location.lng },
-                    description: c.description,
-                  }))}
-                  showCatastrophes={true}
-                  onMapClick={handleMapClick}
-                  selectedLocation={selectedLocation}
-                  disableAutoFit={!!selectedLocation}
-                />
+                {showRGIS ? (
+                  <RGISMap
+                    devices={mapConsumers as any[]}
+                    pipelines={mapPipelines}
+                    valves={mapValves}
+                    showDevices={false}
+                    showPipelines={mapPipelines.some(p => (p.coordinates?.length ?? 0) >= 2)}
+                    showValves={mapValves.some(v => !!v.coordinates)}
+                    showConsumers={false}
+                  />
+                ) : (
+                  <LeafletMap
+                    devices={[]}
+                    pipelines={mapPipelines}
+                    valves={mapValves}
+                    showDevices={false}
+                    showPipelines={mapPipelines.some(p => (p.coordinates?.length ?? 0) >= 2)}
+                    showValves={mapValves.some(v => !!v.coordinates)}
+                    catastrophes={catastrophes.map((c) => ({
+                      id: c.id,
+                      name: c.type,
+                      coordinates: { lat: c.location.lat, lng: c.location.lng },
+                      description: c.description,
+                    }))}
+                    showCatastrophes={true}
+                    onMapClick={handleMapClick}
+                    selectedLocation={selectedLocation}
+                    disableAutoFit={!!selectedLocation}
+                  />
+                )}
               </div>
             </CardContent>
           </Card>
