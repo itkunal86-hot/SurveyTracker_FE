@@ -91,9 +91,9 @@ export const CatastropheForm = ({
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.segmentId) {
-      newErrors.segmentId = "Segment is required";
-    }
+    // if (!formData.segmentId) {
+    //   newErrors.segmentId = "Segment is required";
+    // }
 
     if (!formData.type) {
       newErrors.type = "Type is required";
@@ -183,7 +183,7 @@ export const CatastropheForm = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Segment Selection */}
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="segment">Pipeline Segment *</Label>
                 <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
@@ -222,7 +222,7 @@ export const CatastropheForm = ({
               {errors.segmentId && (
                 <p className="text-sm text-destructive">{errors.segmentId}</p>
               )}
-            </div>
+            </div> */}
 
             {/* Type Selection */}
             <div className="space-y-2">

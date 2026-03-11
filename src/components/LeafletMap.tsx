@@ -601,9 +601,9 @@ export const LeafletMap = ({
             {/* <span>
               Pipeline, Valve & Catastrophe markers (read-only)
             </span> */}
-             <span>
+             {/* <span>
              Survey Points (read-only)
-            </span>
+            </span> */}
           </div>
         </div>
       )}
