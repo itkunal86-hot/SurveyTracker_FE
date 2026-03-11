@@ -4,6 +4,7 @@ import { RGISMap } from "@/components/RGISMap";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -15,7 +16,7 @@ import {
 import { SortableTableHead } from "@/components/ui/sortable-table-head";
 import { Pagination } from "@/components/ui/pagination";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { MapPin, AlertTriangle, Layers, RefreshCw } from "lucide-react";
+import { MapPin, AlertTriangle, Layers, RefreshCw, AlertCircle } from "lucide-react";
 import { useTable } from "@/hooks/use-table";
 import { useEffect, useMemo, useState } from "react";
 import { useDeviceLogs, usePipelineGeoJSON, useValveGeoJSON, useConsumerGeoJSON } from "@/hooks/useApiQueries";
@@ -285,6 +286,35 @@ export const CatastrophePointsEditor = () => {
     loadingPipelinesGeoJSON || loadingValvesGeoJSON || loadingConsumerGeoJSON;
   const hasError = pipelinesGeoJSONError || valvesGeoJSONError || consumerGeoJSONError;
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "active":
+      case "normal":
+      case "open":
+      case "ACTIVE":
+      case "OPERATIONAL":
+      case "OPEN":
+        return "bg-success text-success-foreground";
+      case "warning":
+      case "maintenance":
+      case "MAINTENANCE":
+      case "PARTIALLY_OPEN":
+        return "bg-warning text-warning-foreground";
+      case "offline":
+      case "critical":
+      case "closed":
+      case "error":
+      case "INACTIVE":
+      case "DAMAGED":
+      case "CLOSED":
+      case "ERROR":
+      case "FAULT":
+        return "bg-destructive text-destructive-foreground";
+      default:
+        return "bg-muted text-muted-foreground";
+    }
+  };
+
   // Derive simple valves for map layer from dynamic rows (best-effort mapping)
   const mapValves: MapValve[] = useMemo(() => {
     return rows.map((r, idx) => {
@@ -332,105 +362,229 @@ export const CatastrophePointsEditor = () => {
   }, [rows]);
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+    <div className="flex h-screen bg-background">
+      {/* Layer Controls Sidebar */}
+      <div className="w-80 border-r border-border bg-card p-4 space-y-4 overflow-y-auto max-h-screen">
+        {/* Error State */}
+        {hasError && (
+          <Card className="border-destructive">
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-2 text-destructive">
+                <AlertCircle className="w-4 h-4" />
+                <div>
+                  <p className="text-sm font-medium">API Connection Issue</p>
+                  <p className="text-xs text-muted-foreground">
+                    Data may be incomplete or unavailable
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Asset Type Controls */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center">
+              <Layers className="w-5 h-5 mr-2" />
+              Infrastructure Assets
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Map Type Control */}
+            <div className="flex items-center justify-between border-b pb-3 mb-3">
+              <Label htmlFor="rgis-map" className="text-base font-semibold">
+                Map Type
+              </Label>
+              <Switch
+                id="rgis-map"
+                checked={showRGIS}
+                onCheckedChange={setShowRGIS}
+              />
+            </div>
+            <div className="text-xs text-muted-foreground mb-3">
+              {showRGIS ? "RGIS Map" : "Leaflet Map"}
+            </div>
+
+            {/* Pipeline Controls */}
+            <div className="flex items-center justify-between">
+              <Label htmlFor="pipelines" className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                <span>Pipeline Network</span>
+              </Label>
+              <Switch
+                id="pipelines"
+                checked={showPipelines}
+                onCheckedChange={setShowPipelines}
+              />
+            </div>
+
+            {/* Valve Controls */}
+            <div className="flex items-center justify-between">
+              <Label htmlFor="valves" className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                <span>Valve Stations & Isolation Points</span>
+              </Label>
+              <Switch
+                id="valves"
+                checked={showValves}
+                onCheckedChange={setShowValves}
+              />
+            </div>
+
+            {/* Consumer Points Controls */}
+            <div className="flex items-center justify-between">
+              <Label
+                htmlFor="consumer-points"
+                className="flex items-center space-x-2"
+              >
+                <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                <span>Consumer Points</span>
+              </Label>
+              <Switch
+                id="consumer-points"
+                checked={showConsumerPoints}
+                onCheckedChange={setShowConsumerPoints}
+              />
+            </div>
+
+            <Button
+              onClick={handleRefresh}
+              className="w-full"
+              disabled={isLoading}
+            >
+              <RefreshCw
+                className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin" : ""}`}
+              />
+              {isLoading ? "Loading..." : "Refresh Map"}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Pipeline Network Status */}
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">
+                Pipeline Network ({transformedPipelines.length})
+              </CardTitle>
+              <Badge variant="secondary" className="text-xs">
+                Geo-referenced
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3 max-h-64 overflow-y-auto">
+            {transformedPipelines.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No pipelines available</p>
+            ) : (
+              transformedPipelines.map((pipeline) => (
+                <div
+                  key={pipeline.id}
+                  className="flex items-center justify-between p-3 border border-border rounded-lg"
+                >
+                  <div>
+                    <p className="font-medium text-sm">{pipeline.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      ⌀{pipeline.diameter}mm • {pipeline.depth}m deep
+                    </p>
+                    {pipeline.material && (
+                      <p className="text-xs text-muted-foreground">
+                        {pipeline.material}
+                      </p>
+                    )}
+                  </div>
+                  <Badge className={getStatusColor(pipeline.status)}>
+                    {pipeline.status.toUpperCase()}
+                  </Badge>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Valve & Isolation Points */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">
+              Valves & Isolation Points ({transformedValves.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 max-h-64 overflow-y-auto">
+            {transformedValves.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No valves available</p>
+            ) : (
+              transformedValves.map((valve) => (
+                <div
+                  key={valve.id}
+                  className="flex items-center justify-between p-3 border border-border rounded-lg"
+                >
+                  <div>
+                    <p className="font-medium text-sm">{valve.name}</p>
+                    <p className="text-xs text-muted-foreground capitalize">
+                      {valve.type} • {valve.criticality} criticality
+                    </p>
+                  </div>
+                  <Badge className={getStatusColor(valve.status)}>
+                    {valve.status.toUpperCase()}
+                  </Badge>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Consumer Points */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">
+              Consumer Points ({transformedConsumerPoints.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 max-h-64 overflow-y-auto">
+            {transformedConsumerPoints.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No consumer points available</p>
+            ) : (
+              transformedConsumerPoints.map((consumer) => (
+                <div
+                  key={consumer.id}
+                  className="flex items-center justify-between p-3 border border-border rounded-lg"
+                >
+                  <div>
+                    <p className="font-medium text-sm">{consumer.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {consumer.category}
+                    </p>
+                    {consumer.consumerCode && (
+                      <p className="text-xs text-muted-foreground">
+                        Code: {consumer.consumerCode}
+                      </p>
+                    )}
+                    {consumer.mobile && (
+                      <p className="text-xs text-muted-foreground">
+                        {consumer.mobile}
+                      </p>
+                    )}
+                  </div>
+                  <Badge className={getStatusColor(consumer.status || "active")}>
+                    {consumer.status?.toUpperCase() || "ACTIVE"}
+                  </Badge>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <div className="border-b border-border bg-card p-6">
           <h1 className="text-3xl font-bold">Catastrophe Points Viewer</h1>
           <p className="text-muted-foreground">View catastrophe metadata and related pipeline segments</p>
         </div>
-      </div>
 
-      {hasError && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>API Connection Issue - Data may be incomplete or unavailable</AlertDescription>
-        </Alert>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Layer Controls Sidebar */}
-        <div className="space-y-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center">
-                <Layers className="w-5 h-5 mr-2" />
-                Infrastructure Assets
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Map Type Control */}
-              <div className="flex items-center justify-between border-b pb-3 mb-3">
-                <Label htmlFor="rgis-map" className="text-base font-semibold">
-                  Map Type
-                </Label>
-                <Switch
-                  id="rgis-map"
-                  checked={showRGIS}
-                  onCheckedChange={setShowRGIS}
-                />
-              </div>
-              <div className="text-xs text-muted-foreground mb-3">
-                {showRGIS ? "RGIS Map" : "Leaflet Map"}
-              </div>
-
-              {/* Pipeline Controls */}
-              <div className="flex items-center justify-between">
-                <Label htmlFor="pipelines" className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                  <span>Pipeline Network</span>
-                </Label>
-                <Switch
-                  id="pipelines"
-                  checked={showPipelines}
-                  onCheckedChange={setShowPipelines}
-                />
-              </div>
-
-              {/* Valve Controls */}
-              <div className="flex items-center justify-between">
-                <Label htmlFor="valves" className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                  <span>Valve Stations</span>
-                </Label>
-                <Switch
-                  id="valves"
-                  checked={showValves}
-                  onCheckedChange={setShowValves}
-                />
-              </div>
-
-              {/* Consumer Points Controls */}
-              <div className="flex items-center justify-between">
-                <Label
-                  htmlFor="consumer-points"
-                  className="flex items-center space-x-2"
-                >
-                  <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                  <span>Consumer Points</span>
-                </Label>
-                <Switch
-                  id="consumer-points"
-                  checked={showConsumerPoints}
-                  onCheckedChange={setShowConsumerPoints}
-                />
-              </div>
-
-              <Button
-                onClick={handleRefresh}
-                className="w-full"
-                disabled={isLoading}
-              >
-                <RefreshCw
-                  className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin" : ""}`}
-                />
-                {isLoading ? "Loading..." : "Refresh Map"}
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Table and Map */}
-        <div className="lg:col-span-2 space-y-6">
+        {/* Table and Map Container */}
+        <div className="flex-1 overflow-auto space-y-6 p-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -505,8 +659,8 @@ export const CatastrophePointsEditor = () => {
             <CardHeader>
               <CardTitle>Network Map</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="h-96">
+            <CardContent className="p-0">
+              <div className="h-96 w-full">
                 {showRGIS ? (
                   <RGISMap
                     devices={transformedConsumerPoints as unknown as any[]}
