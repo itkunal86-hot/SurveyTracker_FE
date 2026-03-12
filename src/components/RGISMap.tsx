@@ -10,6 +10,15 @@ import "@arcgis/core/assets/esri/themes/light/main.css";
 const DEFAULT_CENTER: [number, number] = [91.7362, 26.1445]; // longitude, latitude
 const DEFAULT_ZOOM = 13;
 
+const getCatastropheColor = (severity?: string): [number, number, number] => {
+  const s = String(severity || "").toLowerCase();
+  if (s.includes("critical")) return [153, 27, 27]; // #991b1b - red-900
+  if (s.includes("high") || s.includes("major")) return [239, 68, 68]; // #ef4444 - red-500
+  if (s.includes("medium") || s.includes("moderate")) return [245, 158, 11]; // #f59e0b - amber-500
+  if (s.includes("low") || s.includes("minor")) return [34, 197, 94]; // #22c55e - green-500
+  return [168, 85, 247]; // #a855f7 - purple-500
+};
+
 const DEFAULT_PIPELINE_ROUTES: [number, number][][] = [
   [
     [-73.9851, 40.7589],
@@ -111,27 +120,45 @@ interface ConsumerPoint {
   coordinates: { lat: number; lng: number };
 }
 
+interface CatastrophePoint {
+  id: string;
+  name?: string;
+  severity?: string;
+  status?: string;
+  coordinates?: { lat: number; lng: number };
+  description?: string;
+}
+
 interface RGISMapProps {
   devices: DeviceLocation[];
   pipelines: PipelineSegment[];
   valves: ValvePoint[];
   consumers?: ConsumerPoint[];
+  catastrophes?: CatastrophePoint[];
   showDevices: boolean;
   showPipelines: boolean;
   showValves: boolean;
-  showConsumers:boolean;
-  
+  showConsumers: boolean;
+  showCatastrophes?: boolean;
+  onMapClick?: (lat: number, lng: number) => void;
+  selectedLocation?: { lat: number; lng: number } | null;
+  disableAutoFit?: boolean;
 }
 
 export const RGISMap = ({
   devices,
   pipelines,
   valves,
-  consumers=[],
+  consumers = [],
+  catastrophes = [],
   showDevices,
   showPipelines,
   showValves,
   showConsumers = false,
+  showCatastrophes = false,
+  onMapClick,
+  selectedLocation,
+  disableAutoFit = false,
 }: RGISMapProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<MapView | null>(null);
@@ -152,13 +179,23 @@ export const RGISMap = ({
 
     viewRef.current = view;
 
+    // Add click handler
+    if (onMapClick) {
+      view.on("click", (event: any) => {
+        const pt = view.toMap({ x: event.x, y: event.y });
+        if (pt) {
+          onMapClick(pt.latitude, pt.longitude);
+        }
+      });
+    }
+
     return () => {
       if (viewRef.current) {
         viewRef.current.destroy();
         viewRef.current = null;
       }
     };
-  }, []);
+  }, [onMapClick]);
 
   useEffect(() => {
     if (!viewRef.current) return;
@@ -341,14 +378,80 @@ export const RGISMap = ({
       });
     }
 
+    if (showCatastrophes) {
+      (catastrophes || []).forEach((catastrophe) => {
+        if (!catastrophe.coordinates?.lat || !catastrophe.coordinates?.lng) return;
+
+        const pt = new Point({
+          longitude: catastrophe.coordinates.lng,
+          latitude: catastrophe.coordinates.lat,
+        });
+        allPoints.push(pt);
+
+        const color = getCatastropheColor(catastrophe.severity);
+        const markerSymbol = {
+          type: "simple-marker",
+          color: color,
+          size: "10px",
+          outline: {
+            color: [255, 255, 255],
+            width: 1.5,
+          },
+        };
+
+        const graphic = new Graphic({
+          geometry: pt,
+          symbol: markerSymbol as any,
+          attributes: catastrophe,
+          popupTemplate: {
+            title: catastrophe.name ?? `Catastrophe ${catastrophe.id}`,
+            content: `Severity: {severity}<br>Status: {status}<br>Description: {description}`,
+          },
+        });
+
+        graphicsLayer.add(graphic);
+      });
+    }
+
+    // Add selected location marker if present
+    if (selectedLocation && Number.isFinite(selectedLocation.lat) && Number.isFinite(selectedLocation.lng)) {
+      const pt = new Point({
+        longitude: selectedLocation.lng,
+        latitude: selectedLocation.lat,
+      });
+
+      const markerSymbol = {
+        type: "simple-marker",
+        color: [14, 165, 233], // cyan-500 (#0ea5e9)
+        size: "10px",
+        outline: {
+          color: [255, 255, 255],
+          width: 2,
+        },
+      };
+
+      const graphic = new Graphic({
+        geometry: pt,
+        symbol: markerSymbol as any,
+        attributes: { name: "Selected Location" },
+        popupTemplate: {
+          title: "Selected Location",
+          content: `Latitude: ${selectedLocation.lat.toFixed(4)}<br>Longitude: ${selectedLocation.lng.toFixed(4)}`,
+        },
+      });
+
+      graphicsLayer.add(graphic);
+      allPoints.push(pt);
+    }
+
     // Zoom to fit all graphics
-    if (allPoints.length > 0) {
+    if (allPoints.length > 0 && !disableAutoFit && !selectedLocation) {
         view.when(() => {
             view.goTo(graphicsLayer.graphics);
         });
     }
 
-  }, [devices, pipelines, valves, consumers, showDevices, showPipelines, showValves, showConsumers]);
+  }, [devices, pipelines, valves, consumers, catastrophes, showDevices, showPipelines, showValves, showConsumers, showCatastrophes, selectedLocation, disableAutoFit]);
 
   return (
     <div className="w-full h-full relative">
