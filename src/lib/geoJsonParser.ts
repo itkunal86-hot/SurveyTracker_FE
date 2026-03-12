@@ -198,3 +198,53 @@ export function transformConsumerFeatures(
     })
     .filter((item): item is Exclude<typeof item, null> => item !== null);
 }
+
+/**
+ * Transform GeoJSON features to catastrophe points
+ */
+export function transformCatastropheFeatures(
+  features: GeoJSONFeature[],
+): Array<{
+  id: string;
+  type: string;
+  description: string;
+  lat: number;
+  lng: number;
+  severity: "low" | "medium" | "high" | "critical";
+  reportedDate: string;
+  point: number;
+}> {
+  return features
+    .filter((feature) => feature.geometry.type === "Point")
+    .map((feature, index) => {
+      const props = feature.properties;
+      const coords = getPointCoordinates(feature);
+
+      if (!coords) {
+        return null;
+      }
+
+      // Determine severity based on type or properties
+      let severity: "low" | "medium" | "high" | "critical" = "medium";
+      const catastropheType = props.Type || props.SE_VALUE || "UNKNOWN";
+      if (catastropheType === "BLOCKAGE") {
+        severity = "high";
+      } else if (catastropheType === "BREAK" || catastropheType === "BURST") {
+        severity = "critical";
+      } else if (catastropheType === "LEAK") {
+        severity = "medium";
+      }
+
+      return {
+        id: props.SE_ID?.toString() || `catastrophe-${index}`,
+        type: catastropheType,
+        description: props.Description || props.SE_VALUE || "No description provided",
+        lat: coords.lat,
+        lng: coords.lng,
+        severity,
+        reportedDate: props.SE_ENTRY_DATE || new Date().toISOString(),
+        point: props.POINT || index,
+      };
+    })
+    .filter((item): item is Exclude<typeof item, null> => item !== null);
+}
