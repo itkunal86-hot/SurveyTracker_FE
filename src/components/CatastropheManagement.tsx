@@ -492,10 +492,21 @@ const CatastropheManagement = () => {
                     devices={mapConsumers as any[]}
                     pipelines={mapPipelines}
                     valves={mapValves}
+                    catastrophes={mapCatastrophes.map((c) => ({
+                      id: c.id,
+                      name: c.type,
+                      severity: c.severity,
+                      coordinates: { lat: c.lat, lng: c.lng },
+                      description: c.description,
+                    }))}
                     showDevices={false}
                     showPipelines={mapPipelines.some(p => (p.coordinates?.length ?? 0) >= 2)}
                     showValves={mapValves.some(v => !!v.coordinates)}
                     showConsumers={false}
+                    showCatastrophes={mapCatastrophes.length > 0}
+                    onMapClick={handleMapClick}
+                    selectedLocation={selectedLocation}
+                    disableAutoFit={!!selectedLocation}
                   />
                 ) : (
                   <LeafletMap
