@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -241,9 +241,9 @@ const CatastropheManagement = () => {
     setEditingCatastrophe(null);
   };
 
-  const handleMapClick = (lat: number, lng: number) => {
+  const handleMapClick = useCallback((lat: number, lng: number) => {
     setSelectedLocation({ lat, lng });
-  };
+  }, []);
 
   // Transform pipeline GeoJSON data
   const mapPipelines = useMemo(() => {
