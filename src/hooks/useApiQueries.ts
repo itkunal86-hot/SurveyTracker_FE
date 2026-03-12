@@ -610,7 +610,7 @@ export function useAssetPropertiesByType(type: string) {
 }
 
 // Survey GeoJSON hooks
-export function useSurveyGeoJSON(atName: "PipeLine" | "Valve" | "Consumer") {
+export function useSurveyGeoJSON(atName: "PipeLine" | "Valve" | "Consumer" | "Catastrophe") {
   return useQuery({
     queryKey: ["surveyGeoJSON", atName],
     queryFn: () => apiClient.getSurveyGeoJson(atName),
@@ -637,4 +637,8 @@ export function useConsumerPoints() {
     queryFn: () => apiClient.getAssetPropertiesByType("consumer"),
     staleTime: 5 * 60 * 1000,
   });
+}
+
+export function useCatastropheGeoJSON() {
+  return useSurveyGeoJSON("Catastrophe");
 }

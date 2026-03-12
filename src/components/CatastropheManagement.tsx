@@ -19,6 +19,7 @@ import {
   usePipelineGeoJSON,
   useValveGeoJSON,
   useConsumerGeoJSON,
+  useCatastropheGeoJSON,
   useCreateCatastrophe,
   useUpdateCatastrophe,
 } from "@/hooks/useApiQueries";
@@ -27,6 +28,7 @@ import {
   transformPipelineFeatures,
   transformValveFeatures,
   transformConsumerFeatures,
+  transformCatastropheFeatures,
 } from "@/lib/geoJsonParser";
 import apiClient from "@/lib/api";
 import { toast } from "sonner";
@@ -72,6 +74,13 @@ const CatastropheManagement = () => {
     error: consumerPointsError,
     refetch: refetchConsumerPoints,
   } = useConsumerGeoJSON();
+
+  const {
+    data: catastropheGeoJSON,
+    isLoading: loadingCatastropheGeoJSON,
+    error: catastropheGeoJSONError,
+    refetch: refetchCatastropheGeoJSON,
+  } = useCatastropheGeoJSON();
 
   const createCatastropheMutation = useCreateCatastrophe();
   const updateCatastropheMutation = useUpdateCatastrophe();
@@ -278,15 +287,48 @@ const CatastropheManagement = () => {
     return transformConsumerFeatures(featureCollection.features);
   }, [consumerGeoJSON?.data]);
 
+  // Transform catastrophe GeoJSON data for map display
+  const mapCatastrophes = useMemo(() => {
+    if (!catastropheGeoJSON?.data) return [];
+
+    const geoJsonString = catastropheGeoJSON.data;
+    const featureCollection = parseGeoJSON(geoJsonString);
+
+    if (!featureCollection || !featureCollection.features) {
+      return [];
+    }
+
+    return transformCatastropheFeatures(featureCollection.features);
+  }, [catastropheGeoJSON?.data]);
+
+  // Update catastrophes grid to use GeoJSON data
+  useEffect(() => {
+    if (mapCatastrophes.length > 0) {
+      const geoJsonCatastrophes: Catastrophe[] = mapCatastrophes.map((cat) => ({
+        id: cat.id,
+        segmentId: "Unknown",
+        type: cat.type,
+        description: cat.description,
+        location: {
+          lat: cat.lat,
+          lng: cat.lng,
+          address: `${cat.lat.toFixed(4)}, ${cat.lng.toFixed(4)}`,
+        },
+        reportedDate: cat.reportedDate ? new Date(cat.reportedDate) : null,
+      }));
+      setCatastrophes(geoJsonCatastrophes);
+    }
+  }, [mapCatastrophes]);
+
   const handleRefresh = () => {
-    fetchCatastrophes();
+    refetchCatastropheGeoJSON();
     refetchPipelines();
     refetchValves();
     refetchConsumerPoints();
   };
 
   const isLoading =
-    loadingCatastrophes || loadingPipelines || loadingValves || loadingConsumerPoints;
+    loadingCatastropheGeoJSON || loadingPipelines || loadingValves || loadingConsumerPoints;
 
   return (
     <div className="p-6 space-y-6">
@@ -463,13 +505,14 @@ const CatastropheManagement = () => {
                     showDevices={false}
                     showPipelines={mapPipelines.some(p => (p.coordinates?.length ?? 0) >= 2)}
                     showValves={mapValves.some(v => !!v.coordinates)}
-                    catastrophes={catastrophes.map((c) => ({
+                    catastrophes={mapCatastrophes.map((c) => ({
                       id: c.id,
                       name: c.type,
-                      coordinates: { lat: c.location.lat, lng: c.location.lng },
+                      severity: c.severity,
+                      coordinates: { lat: c.lat, lng: c.lng },
                       description: c.description,
                     }))}
-                    showCatastrophes={true}
+                    showCatastrophes={mapCatastrophes.length > 0}
                     onMapClick={handleMapClick}
                     selectedLocation={selectedLocation}
                     disableAutoFit={!!selectedLocation}
