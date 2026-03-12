@@ -23,6 +23,8 @@ interface CatastropheListProps {
 const getTypeColor = (type: string) => {
   const colors: Record<string, string> = {
     leak: "destructive",
+    "blockage": "secondary",
+    "burst": "destructive",
     "pressure-drop": "secondary",
     "pipe-damage": "destructive",
     "valve-failure": "default",
@@ -95,14 +97,14 @@ export const CatastropheList = ({
                     >
                       ID
                     </SortableTableHead>
-                    <SortableTableHead
+                    {/* <SortableTableHead
                       sortKey="segmentId"
                       currentSortKey={tableConfig.sortConfig.key as string}
                       sortDirection={tableConfig.sortConfig.direction}
                       onSort={tableConfig.handleSort}
                     >
                       Segment
-                    </SortableTableHead>
+                    </SortableTableHead> */}
                     <SortableTableHead
                       sortKey="type"
                       currentSortKey={tableConfig.sortConfig.key as string}
@@ -141,9 +143,9 @@ export const CatastropheList = ({
                       <TableCell className="font-mono text-sm">
                         {catastrophe.id}
                       </TableCell>
-                      <TableCell>
+                      {/* <TableCell>
                         <Badge variant="outline">{catastrophe.segmentId}</Badge>
-                      </TableCell>
+                      </TableCell> */}
                       <TableCell>
                         <Badge
                           variant={

@@ -2847,7 +2847,7 @@ class ApiClient {
 
   async getCatastropheTypes(): Promise<ApiResponse<any[]>> {
     try {
-      return await this.request<ApiResponse<any[]>>("/config/catastrophe-types");
+      return await this.request<ApiResponse<any[]>>("/config/master_data/catastropheTypes");
     } catch (error) {
       // Fallback to mock data
       return createMockApiResponse(mockCatastropheTypes);

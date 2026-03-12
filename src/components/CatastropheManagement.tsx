@@ -152,7 +152,7 @@ const CatastropheManagement = () => {
   };
 
   useEffect(() => {
-    fetchCatastrophes();
+    //fetchCatastrophes();
   }, []);
 
   const [showForm, setShowForm] = useState(false);
