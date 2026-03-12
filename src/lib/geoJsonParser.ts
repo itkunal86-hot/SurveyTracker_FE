@@ -213,6 +213,7 @@ export function transformCatastropheFeatures(
   severity: "low" | "medium" | "high" | "critical";
   reportedDate: string;
   point: number;
+  location?:string
 }> {
   return features
     .filter((feature) => feature.geometry.type === "Point")
@@ -244,6 +245,7 @@ export function transformCatastropheFeatures(
         severity,
         reportedDate: props.SE_ENTRY_DATE || new Date().toISOString(),
         point: props.POINT || index,
+        location:props.Location || ""
       };
     })
     .filter((item): item is Exclude<typeof item, null> => item !== null);

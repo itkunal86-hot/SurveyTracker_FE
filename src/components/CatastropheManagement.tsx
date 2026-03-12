@@ -205,6 +205,7 @@ const CatastropheManagement = () => {
             pipelineId: catastropheData.segmentId,
             reportedDate: new Date(catastropheData.reportedDate),
             location: catastropheData.location.lat + "," + catastropheData.location.lng,
+            //location: catastropheData.location.address,
             address: catastropheData.location.address,
             segment: catastropheData.segmentId,
           },
@@ -214,6 +215,7 @@ const CatastropheManagement = () => {
         await createCatastropheMutation.mutateAsync({
           type: catastropheData.type.toUpperCase().replace("-", "_") as any,
           location: catastropheData.location.lat + "," + catastropheData.location.lng,
+          //location: catastropheData.location.address,
           address: catastropheData.location.address,
           coordinates: {
             lat: catastropheData.location.lat,
@@ -314,7 +316,8 @@ const CatastropheManagement = () => {
         location: {
           lat: cat.lat,
           lng: cat.lng,
-          address: `${cat.lat.toFixed(4)}, ${cat.lng.toFixed(4)}`,
+          //address: `${cat.lat.toFixed(4)}, ${cat.lng.toFixed(4)}`,
+          address: `${cat.location}`,
         },
         reportedDate: cat.reportedDate ? new Date(cat.reportedDate) : null,
       }));

@@ -55,7 +55,8 @@ export const CatastropheForm = ({
   // Transform API data or use fallbacks
   const catastropheTypes =
     catastropheTypesResponse?.data?.map((type) => ({
-      value: type.value.toLowerCase().replace("_", "-"),
+      //value: type.value.toLowerCase().replace("_", "-"),
+      value: type.value,
       label: type.label,
     })) || FALLBACK_CATASTROPHE_TYPES;
 

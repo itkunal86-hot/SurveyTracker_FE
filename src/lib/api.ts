@@ -284,6 +284,7 @@ export interface Catastrophe {
   reportedDate?: Date;
   location?: string;
   segment?: string;
+  address?: string;
 }
 
 export interface AssetType {
@@ -1677,7 +1678,7 @@ class ApiClient {
     const { coordinates, severity, status, pipelineId, ...filteredData } = catastrophe;
 
     console.log(filteredData);
-    return this.request<ApiResponse<Catastrophe>>("/surveyEntries/createcatastrophe", {
+    return this.request<ApiResponse<Catastrophe>>("/surveyEntries/createorupdatecatastrophe", {
       method: "POST",
       body: JSON.stringify(filteredData),
     });
@@ -1687,8 +1688,8 @@ class ApiClient {
     id: string,
     catastrophe: Partial<Catastrophe>,
   ): Promise<ApiResponse<Catastrophe>> {
-    return this.request<ApiResponse<Catastrophe>>(`/catastrophes/updatecatastrophe?id=${encodeURIComponent(id)}`, {
-      method: "PUT",
+    return this.request<ApiResponse<Catastrophe>>(`/surveyEntries/createorupdatecatastrophe?id=${encodeURIComponent(id)}`, {
+      method: "POST",
       body: JSON.stringify(catastrophe),
     });
   }
