@@ -19,6 +19,7 @@ import {
   Check,
   Activity,
   Lock,
+  Download,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -103,6 +104,12 @@ const adminManagerMenuItems: MenuItem[] = [
     id: "reports",
     label: "Reports & Export",
     icon: FileText,
+    roles: ["admin", "manager"],
+  },
+  {
+    id: "export-import",
+    label: "Export Import",
+    icon: Download,
     roles: ["admin", "manager"],
   },
   {
@@ -211,6 +218,10 @@ export const Sidebar = ({
     }
     if (tabId === "valves-map") {
       navigate("/valves-map");
+      return;
+    }
+    if (tabId === "export-import") {
+      navigate("/export-import");
       return;
     }
     if (tabId.startsWith("assets:")) {
