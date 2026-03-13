@@ -15,7 +15,14 @@ import {
 import { SortableTableHead } from "@/components/ui/sortable-table-head";
 import { Pagination } from "@/components/ui/pagination";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { MapPin, AlertTriangle, Loader2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { MapPin, AlertTriangle, Loader2, X } from "lucide-react";
 import { useTable } from "@/hooks/use-table";
 import { useDeviceLogs } from "@/hooks/useApiQueries";
 import { apiClient } from "@/lib/api";
@@ -38,6 +45,33 @@ export const ConsumerPointsEditor = () => {
   const [columns, setColumns] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedPoint, setSelectedPoint] = useState<{ lat: number; lng: number } | null>(null);
+  const [pointConsumers, setPointConsumers] = useState<DynamicRow[]>([]);
+  const [loadingConsumers, setLoadingConsumers] = useState(false);
+  const [consumerModalOpen, setConsumerModalOpen] = useState(false);
+
+  // Handle map point click to show consumers at that point
+  const handleMapPointClick = (lat: number, lng: number) => {
+    setSelectedPoint({ lat, lng });
+    setLoadingConsumers(true);
+
+    // Filter consumers at the clicked point (with small tolerance for floating point)
+    const tolerance = 0.0001; // ~10 meters at equator
+    const consumersAtPoint = rows.filter(
+      (row) => {
+        const rowLat = Number(row.lat || row.CONSUMER_LAT || 0);
+        const rowLng = Number(row.lng || row.CONSUMER_LNG || 0);
+        return (
+          Math.abs(rowLat - lat) < tolerance &&
+          Math.abs(rowLng - lng) < tolerance
+        );
+      }
+    );
+
+    setPointConsumers(consumersAtPoint);
+    setLoadingConsumers(false);
+    setConsumerModalOpen(true);
+  };
 
   // Load consumers from survey-geojson endpoint
   useEffect(() => {
@@ -160,6 +194,7 @@ export const ConsumerPointsEditor = () => {
                   showPipelines={false}
                   showValves={false}
                   showConsumers={mapConsumers.length > 0}
+                  onMapClick={handleMapPointClick}
                 />
               ) : (
                 <LeafletMap
@@ -171,6 +206,7 @@ export const ConsumerPointsEditor = () => {
                   showPipelines={false}
                   showValves={false}
                   showConsumers={mapConsumers.length > 0}
+                  onMapClick={handleMapPointClick}
                 />
               )}
             </div>
@@ -252,6 +288,58 @@ export const ConsumerPointsEditor = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Consumer Modal Dialog */}
+      <Dialog open={consumerModalOpen} onOpenChange={setConsumerModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MapPin className="h-5 w-5" />
+              Consumers at Point ({selectedPoint?.lat.toFixed(4)}, {selectedPoint?.lng.toFixed(4)})
+            </DialogTitle>
+            <DialogClose />
+          </DialogHeader>
+
+          {loadingConsumers ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin" />
+              <span className="ml-2 text-sm text-muted-foreground">Loading consumers...</span>
+            </div>
+          ) : pointConsumers.length === 0 ? (
+            <Alert>
+              <AlertDescription>No consumers found at this location.</AlertDescription>
+            </Alert>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    {Object.keys(pointConsumers[0] || {}).map((col) => (
+                      <TableHead key={col} className="whitespace-nowrap">
+                        {col}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pointConsumers.map((consumer, idx) => (
+                    <TableRow key={String(consumer.id ?? idx)}>
+                      {Object.keys(consumer).map((col) => {
+                        const value = consumer[col];
+                        return (
+                          <TableCell key={col} className="whitespace-nowrap">
+                            {value === null || value === undefined || value === "" ? "-" : String(value)}
+                          </TableCell>
+                        );
+                      })}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
