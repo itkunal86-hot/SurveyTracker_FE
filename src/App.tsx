@@ -7,7 +7,7 @@ import { HelmetProvider } from "react-helmet-async";
 import { SurveyProvider } from "@/contexts/SurveyContext";
 import { ApiStatusProvider } from "@/contexts/ApiStatusContext";
 import SpatialFeaturesManagement from "./components/SpatialFeaturesManagement";
-import ExportImport from "./components/ExportImport";
+import ExportImportPage from "./pages/ExportImportPage";
 import Index from "./pages/Index";
 import DailyPersonalMapsPage from "./pages/DailyPersonalMapsPage";
 import SurveyDetailsPage from "./pages/SurveyDetailsPage";
@@ -39,7 +39,7 @@ const App = () => (
               <Route path="/pipeline-operations" element={<PipelineOperations />} />
               <Route path="/flowlines-map" element={<FlowlinesMapPage />} />
               <Route path="/valves-map" element={<ValvesMapPage />} />
-              <Route path="/export-import" element={<ExportImport />} />
+              <Route path="/export-import" element={<ExportImportPage />} />
               <Route path="/assets/:menu" element={<AssetMenus />} />
               <Route path="/admin" element={<Admin />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
