@@ -292,7 +292,7 @@ export const ConsumerPointsEditor = () => {
 
       {/* Consumer Modal Dialog */}
       <Dialog open={consumerModalOpen} onOpenChange={setConsumerModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <MapPin className="h-5 w-5" />
@@ -315,24 +315,27 @@ export const ConsumerPointsEditor = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    {Object.keys(pointConsumers[0] || {}).map((col) => (
-                      <TableHead key={col} className="whitespace-nowrap">
-                        {col}
-                      </TableHead>
-                    ))}
+                    <TableHead className="whitespace-nowrap">Name</TableHead>
+                    <TableHead className="whitespace-nowrap">Code</TableHead>
+                    <TableHead className="whitespace-nowrap">Mobile</TableHead>
+                    <TableHead className="whitespace-nowrap">Point</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {pointConsumers.map((consumer, idx) => (
                     <TableRow key={String(consumer.id ?? idx)}>
-                      {Object.keys(consumer).map((col) => {
-                        const value = consumer[col];
-                        return (
-                          <TableCell key={col} className="whitespace-nowrap">
-                            {value === null || value === undefined || value === "" ? "-" : String(value)}
-                          </TableCell>
-                        );
-                      })}
+                      <TableCell className="whitespace-nowrap">
+                        {consumer.Consumer_Name ? String(consumer.Consumer_Name) : "-"}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {consumer.Consumer_Code ? String(consumer.Consumer_Code) : "-"}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {consumer.Mobile ? String(consumer.Mobile) : "-"}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {consumer.SE_VALUE ? String(consumer.SE_VALUE) : "-"}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
