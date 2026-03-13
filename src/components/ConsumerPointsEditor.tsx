@@ -22,7 +22,7 @@ import {
   DialogTitle,
   DialogClose,
 } from "@/components/ui/dialog";
-import { MapPin, AlertTriangle, Loader2, X } from "lucide-react";
+import { MapPin, AlertTriangle, Loader2, X, ChevronDown, ChevronRight } from "lucide-react";
 import { useTable } from "@/hooks/use-table";
 import { useDeviceLogs } from "@/hooks/useApiQueries";
 import { apiClient } from "@/lib/api";
@@ -49,6 +49,7 @@ export const ConsumerPointsEditor = () => {
   const [pointConsumers, setPointConsumers] = useState<DynamicRow[]>([]);
   const [loadingConsumers, setLoadingConsumers] = useState(false);
   const [consumerModalOpen, setConsumerModalOpen] = useState(false);
+  const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
 
   // Handle map point click to show consumers at that point
   const handleMapPointClick = (lat: number, lng: number) => {
@@ -106,8 +107,18 @@ export const ConsumerPointsEditor = () => {
 
         setRows(normalized);
         if (normalized.length > 0) {
-          // Filter out internal id or messy props if needed, but following ValvePointsEditor style
-          setColumns(Object.keys(normalized[0]));
+          // Filter out complex objects and arrays from columns (like consumers array)
+          const allKeys = Object.keys(normalized[0]);
+          const primitiveColumns = allKeys.filter((key) => {
+            const value = normalized[0][key];
+            return (
+              value === null ||
+              value === undefined ||
+              typeof value !== "object" ||
+              value instanceof Date
+            );
+          });
+          setColumns(primitiveColumns);
         }
       } catch (e: any) {
         setError(e?.message || "Failed to load consumer data");
@@ -237,6 +248,10 @@ export const ConsumerPointsEditor = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      {/* Expand column header */}
+                      {sortedAndPaginatedData.some((row) => Array.isArray(row.consumers) && row.consumers.length > 0) && (
+                        <TableHead className="w-10"></TableHead>
+                      )}
                       {columns.length === 0 ? (
                         <TableHead>No data</TableHead>
                       ) : (
@@ -255,18 +270,81 @@ export const ConsumerPointsEditor = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {sortedAndPaginatedData.map((row, idx) => (
-                      <TableRow key={String(row.id ?? idx)}>
-                        {columns.map((col) => {
-                          const value = row[col];
-                          return (
-                            <TableCell key={col} className="whitespace-nowrap">
-                              {value === null || value === undefined || value === "" ? "-" : String(value)}
+                    {sortedAndPaginatedData.flatMap((row, idx) => {
+                      const rowId = String(row.id ?? idx);
+                      const isExpanded = expandedRowId === rowId;
+                      const hasConsumers = Array.isArray(row.consumers) && row.consumers.length > 0;
+                      const mainRowCells: JSX.Element[] = [];
+
+                      // Main row
+                      if (hasConsumers) {
+                        mainRowCells.push(
+                          <TableCell
+                            key={`expand-${rowId}`}
+                            className="w-10 p-2 text-center cursor-pointer hover:bg-muted"
+                            onClick={() => setExpandedRowId(isExpanded ? null : rowId)}
+                          >
+                            {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                          </TableCell>
+                        );
+                      }
+
+                      columns.forEach((col) => {
+                        const value = row[col];
+                        mainRowCells.push(
+                          <TableCell key={col} className="whitespace-nowrap">
+                            {value === null || value === undefined || value === "" ? "-" : String(value)}
+                          </TableCell>
+                        );
+                      });
+
+                      const result: JSX.Element[] = [
+                        <TableRow key={rowId}>
+                          {mainRowCells}
+                        </TableRow>
+                      ];
+
+                      // Expanded consumer row
+                      if (isExpanded && hasConsumers) {
+                        result.push(
+                          <TableRow key={`expanded-${rowId}`} className="bg-muted/30">
+                            <TableCell colSpan={columns.length + (hasConsumers ? 1 : 0)} className="p-4">
+                              <div className="space-y-3">
+                                <p className="font-semibold text-sm">Consumers ({row.consumers.length})</p>
+                                <div className="overflow-x-auto rounded-md border">
+                                  <Table className="text-xs">
+                                    <TableHeader>
+                                      <TableRow className="bg-background hover:bg-background">
+                                        <TableHead className="whitespace-nowrap h-8">Code</TableHead>
+                                        <TableHead className="whitespace-nowrap h-8">Name</TableHead>
+                                        <TableHead className="whitespace-nowrap h-8">Mobile</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {row.consumers.map((consumer: any, consumerIdx: number) => (
+                                        <TableRow key={consumerIdx} className="hover:bg-muted/50">
+                                          <TableCell className="whitespace-nowrap py-2">
+                                            {consumer.code || "-"}
+                                          </TableCell>
+                                          <TableCell className="whitespace-nowrap py-2">
+                                            {consumer.name || "-"}
+                                          </TableCell>
+                                          <TableCell className="whitespace-nowrap py-2">
+                                            {consumer.mobile || "-"}
+                                          </TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                              </div>
                             </TableCell>
-                          );
-                        })}
-                      </TableRow>
-                    ))}
+                          </TableRow>
+                        );
+                      }
+
+                      return result;
+                    })}
                   </TableBody>
                 </Table>
               )}
