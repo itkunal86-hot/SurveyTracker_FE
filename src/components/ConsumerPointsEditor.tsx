@@ -92,6 +92,7 @@ export const ConsumerPointsEditor = () => {
 
   // Derive map points
   const mapConsumers: ConsumerPoint[] = useMemo(() => {
+    debugger
     return rows.map((r) => ({
       id: String(r.id || r.SE_ID || ""),
       name: String(r.Consumer_Name || "Consumer"),
