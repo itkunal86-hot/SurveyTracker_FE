@@ -111,6 +111,11 @@ interface ValvePoint {
   segmentId: string;
   coordinates?: { lat: number; lng: number };
 }
+type Consumer = {
+  name: string
+  code: string
+  mobile: string
+}
 interface ConsumerPoint {
   id: string;
   name?: string;
@@ -118,6 +123,7 @@ interface ConsumerPoint {
   mobile?: string;
   status?: string;
   coordinates: { lat: number; lng: number };
+   consumers: Consumer[];
 }
 
 interface CatastrophePoint {
@@ -345,38 +351,96 @@ export const RGISMap = ({
       });
     }
 
+    // if (showConsumers) {
+    //   consumers.forEach((consumer) => {
+    //     if (consumer.coordinates.lat === undefined || consumer.coordinates.lng === undefined) return;
+
+    //     const pt = new Point({
+    //       longitude: consumer.coordinates.lng,
+    //       latitude: consumer.coordinates.lat,
+    //     });
+    //     allPoints.push(pt);
+
+    //     const markerSymbol = {
+    //       type: "simple-marker",
+    //       color: [251, 146, 60], // orange-400
+    //       outline: {
+    //         color: [255, 255, 255],
+    //         width: 2,
+    //       },
+    //     };
+
+    //     const graphic = new Graphic({
+    //       geometry: pt,
+    //       symbol: markerSymbol as any,
+    //       attributes: consumer,
+    //       popupTemplate: {
+    //         title: consumer.name ?? `Consumer ${consumer.id}`,
+    //         content: "Code: {code}<br>Mobile: {mobile}<br>Status: {status}",
+    //       },
+    //     });
+
+    //     graphicsLayer.add(graphic);
+    //   });
+    // }
+
     if (showConsumers) {
-      consumers.forEach((consumer) => {
-        if (consumer.coordinates.lat === undefined || consumer.coordinates.lng === undefined) return;
+  consumers.forEach((consumerPoint) => {
+    if (
+      consumerPoint.coordinates.lat === undefined ||
+      consumerPoint.coordinates.lng === undefined
+    ) return;
 
-        const pt = new Point({
-          longitude: consumer.coordinates.lng,
-          latitude: consumer.coordinates.lat,
-        });
-        allPoints.push(pt);
+    const pt = new Point({
+      longitude: consumerPoint.coordinates.lng,
+      latitude: consumerPoint.coordinates.lat,
+    });
 
-        const markerSymbol = {
-          type: "simple-marker",
-          color: [251, 146, 60], // orange-400
-          outline: {
-            color: [255, 255, 255],
-            width: 2,
-          },
-        };
+    allPoints.push(pt);
 
-        const graphic = new Graphic({
-          geometry: pt,
-          symbol: markerSymbol as any,
-          attributes: consumer,
-          popupTemplate: {
-            title: consumer.name ?? `Consumer ${consumer.id}`,
-            content: "Code: {code}<br>Mobile: {mobile}<br>Status: {status}",
-          },
-        });
+    const markerSymbol = {
+      type: "simple-marker",
+      color: [251, 146, 60],
+      outline: {
+        color: [255, 255, 255],
+        width: 2,
+      },
+    };
 
-        graphicsLayer.add(graphic);
-      });
-    }
+    // Build popup HTML for all consumers
+    const consumersHtml = (consumerPoint.consumers || [])
+      .map((c: any) => `
+        <div style="margin-bottom:6px;">
+          <strong>${c.name || "Consumer"}</strong><br/>
+          <span style="color:#666;">Code: ${c.code || "N/A"}</span><br/>
+          <span style="color:#666;">Mobile: ${c.mobile || "N/A"}</span>
+        </div>
+      `)
+      .join("<hr/>");
+
+    const popupHtml = `
+      <div style="font-family: system-ui; min-width:200px;">
+        <div style="max-height:220px; overflow:auto;">
+          ${consumersHtml}
+        </div>
+        <br/>
+        <span style="color:#666;">Status: ${consumerPoint.status || "N/A"}</span>
+      </div>
+    `;
+
+    const graphic = new Graphic({
+      geometry: pt,
+      symbol: markerSymbol as any,
+      attributes: consumerPoint,
+      popupTemplate: {
+        title: "Consumers",
+        content: popupHtml,
+      },
+    });
+
+    graphicsLayer.add(graphic);
+  });
+}
 
     if (showCatastrophes) {
       (catastrophes || []).forEach((catastrophe) => {

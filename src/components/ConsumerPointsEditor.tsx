@@ -30,6 +30,12 @@ import { apiClient } from "@/lib/api";
 // Dynamic row type for arbitrary property names
 type DynamicRow = Record<string, any>;
 
+type Consumer = {
+  name: string
+  code: string
+  mobile: string
+}
+
 interface ConsumerPoint {
   id: string;
   name?: string;
@@ -37,6 +43,7 @@ interface ConsumerPoint {
   mobile?: string;
   status?: string;
   coordinates: { lat: number; lng: number };
+  consumers: Consumer[];
 }
 
 export const ConsumerPointsEditor = () => {
@@ -51,27 +58,27 @@ export const ConsumerPointsEditor = () => {
   const [consumerModalOpen, setConsumerModalOpen] = useState(false);
 
   // Handle map point click to show consumers at that point
-  const handleMapPointClick = (lat: number, lng: number) => {
-    setSelectedPoint({ lat, lng });
-    setLoadingConsumers(true);
+  // const handleMapPointClick = (lat: number, lng: number) => {
+  //   setSelectedPoint({ lat, lng });
+  //   setLoadingConsumers(true);
 
-    // Filter consumers at the clicked point (with small tolerance for floating point)
-    const tolerance = 0.0001; // ~10 meters at equator
-    const consumersAtPoint = rows.filter(
-      (row) => {
-        const rowLat = Number(row.lat || row.CONSUMER_LAT || 0);
-        const rowLng = Number(row.lng || row.CONSUMER_LNG || 0);
-        return (
-          Math.abs(rowLat - lat) < tolerance &&
-          Math.abs(rowLng - lng) < tolerance
-        );
-      }
-    );
+  //   // Filter consumers at the clicked point (with small tolerance for floating point)
+  //   const tolerance = 0.0001; // ~10 meters at equator
+  //   const consumersAtPoint = rows.filter(
+  //     (row) => {
+  //       const rowLat = Number(row.lat || row.CONSUMER_LAT || 0);
+  //       const rowLng = Number(row.lng || row.CONSUMER_LNG || 0);
+  //       return (
+  //         Math.abs(rowLat - lat) < tolerance &&
+  //         Math.abs(rowLng - lng) < tolerance
+  //       );
+  //     }
+  //   );
 
-    setPointConsumers(consumersAtPoint);
-    setLoadingConsumers(false);
-    setConsumerModalOpen(true);
-  };
+  //   setPointConsumers(consumersAtPoint);
+  //   setLoadingConsumers(false);
+  //   setConsumerModalOpen(true);
+  // };
 
   // Load consumers from survey-geojson endpoint
   useEffect(() => {
@@ -126,7 +133,6 @@ export const ConsumerPointsEditor = () => {
 
   // Derive map points
   const mapConsumers: ConsumerPoint[] = useMemo(() => {
-    debugger
     return rows.map((r) => ({
       id: String(r.id || r.SE_ID || ""),
       name: String(r.Consumer_Name || "Consumer"),
@@ -137,6 +143,7 @@ export const ConsumerPointsEditor = () => {
         lat: Number(r.lat || r.CONSUMER_LAT || 0),
         lng: Number(r.lng || r.CONSUMER_LNG || 0),
       },
+      consumers: r.consumers || []
     }));
   }, [rows]);
 
@@ -195,7 +202,7 @@ export const ConsumerPointsEditor = () => {
                   showPipelines={false}
                   showValves={false}
                   showConsumers={mapConsumers.length > 0}
-                  onMapClick={handleMapPointClick}
+                  //onMapClick={handleMapPointClick}
                 />
               ) : (
                 <LeafletMap
@@ -207,7 +214,7 @@ export const ConsumerPointsEditor = () => {
                   showPipelines={false}
                   showValves={false}
                   showConsumers={mapConsumers.length > 0}
-                  onMapClick={handleMapPointClick}
+                  //onMapClick={handleMapPointClick}
                 />
               )}
             </div>
@@ -290,60 +297,7 @@ export const ConsumerPointsEditor = () => {
         </Card>
       </div>
 
-      {/* Consumer Modal Dialog */}
-      <Dialog open={consumerModalOpen} onOpenChange={setConsumerModalOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5" />
-              Consumers at Point ({selectedPoint?.lat.toFixed(4)}, {selectedPoint?.lng.toFixed(4)})
-            </DialogTitle>
-            <DialogClose />
-          </DialogHeader>
-
-          {loadingConsumers ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin" />
-              <span className="ml-2 text-sm text-muted-foreground">Loading consumers...</span>
-            </div>
-          ) : pointConsumers.length === 0 ? (
-            <Alert>
-              <AlertDescription>No consumers found at this location.</AlertDescription>
-            </Alert>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="whitespace-nowrap">Name</TableHead>
-                    <TableHead className="whitespace-nowrap">Code</TableHead>
-                    <TableHead className="whitespace-nowrap">Mobile</TableHead>
-                    <TableHead className="whitespace-nowrap">Point</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pointConsumers.map((consumer, idx) => (
-                    <TableRow key={String(consumer.id ?? idx)}>
-                      <TableCell className="whitespace-nowrap">
-                        {consumer.Consumer_Name ? String(consumer.Consumer_Name) : "-"}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {consumer.Consumer_Code ? String(consumer.Consumer_Code) : "-"}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {consumer.Mobile ? String(consumer.Mobile) : "-"}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {consumer.SE_VALUE ? String(consumer.SE_VALUE) : "-"}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+    
     </div>
   );
 };

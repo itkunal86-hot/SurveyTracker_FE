@@ -134,6 +134,11 @@ interface CatastrophePoint {
   coordinates?: { lat: number; lng: number };
   description?: string;
 }
+type Consumer = {
+  name: string
+  code: string
+  mobile: string
+}
 
 interface ConsumerPoint {
   id: string;
@@ -142,6 +147,7 @@ interface ConsumerPoint {
   mobile?: string;
   status?: string;
   coordinates: { lat: number; lng: number };
+  consumers: Consumer[];
 }
 
 interface LeafletMapProps {
@@ -225,7 +231,7 @@ export const LeafletMap = ({
     });
   }, [pipelines]);
 
-  const valvePositions = useMemo<( [number, number] | null )[]>(() => {
+  const valvePositions = useMemo<([number, number] | null)[]>(() => {
     return valves.map((valve, index) => {
       const derived = sanitizeCoordinate(valve.coordinates);
       if (derived) return derived;
@@ -233,7 +239,7 @@ export const LeafletMap = ({
       return fallback ? [...fallback] : null;
     });
   }, [valves]);
-  const consumerPositions = useMemo<( [number, number] | null )[]>(() => {
+  const consumerPositions = useMemo<([number, number] | null)[]>(() => {
     return consumers.map((valve, index) => {
       const derived = sanitizeCoordinate(valve.coordinates);
       if (derived) return derived;
@@ -498,21 +504,36 @@ export const LeafletMap = ({
           opacity: 1,
           fillOpacity: 0.9,
         });
+        const consumersHtml = consumer.consumers
+          .map(c => `
+          <div style="margin-bottom:6px;">
+            <strong>${c.name || "Consumer"}</strong><br/>
+            <span style="color:#666;">Code: ${c.code || "N/A"}</span><br/>
+            <span style="color:#666;">Mobile: ${c.mobile || "N/A"}</span>
+          </div>
+        `)
+          .join("<hr/>");
 
         marker.bindPopup(`
-          <div style="font-family: system-ui; padding: 4px; min-width: 180px;">
-            <strong>${consumer.name || "Consumer"}</strong><br/>
-            <span style="color: #666;">Code: ${consumer.code || "N/A"}</span><br/>
-            <span style="color: #666;">Mobile: ${consumer.mobile || "N/A"}</span><br/>
-            <span style="color: #666;">Status: ${consumer.status || "N/A"}</span>
+          <div style="font-family: system-ui; padding:4px; min-width:200px;">
+            ${consumersHtml}
+            <span style="color:#666;">Status: ${consumer.status || "N/A"}</span>
           </div>
         `);
+        // marker.bindPopup(`
+        //   <div style="font-family: system-ui; padding: 4px; min-width: 180px;">
+        //     <strong>${consumer.name || "Consumer"}</strong><br/>
+        //     <span style="color: #666;">Code: ${consumer.code || "N/A"}</span><br/>
+        //     <span style="color: #666;">Mobile: ${consumer.mobile || "N/A"}</span><br/>
+        //     <span style="color: #666;">Status: ${consumer.status || "N/A"}</span>
+        //   </div>
+        // `);
         consumersLayer.addLayer(marker);
       });
     }
   }, [consumers, showConsumers, consumersLayer]);
 
-  
+
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
@@ -601,7 +622,7 @@ export const LeafletMap = ({
             {/* <span>
               Pipeline, Valve & Catastrophe markers (read-only)
             </span> */}
-             {/* <span>
+            {/* <span>
              Survey Points (read-only)
             </span> */}
           </div>
