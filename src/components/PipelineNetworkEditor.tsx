@@ -147,75 +147,75 @@ export const PipelineNetworkEditor = () => {
   }, []);
 
   // Load valves from external endpoint for map layer
-  useEffect(() => {
-    const controller = new AbortController();
-    async function loadValves() {
-      setValveError(null);
-      try {
-        const url = `${API_BASE_PATH}/api/AssetProperties/ByType/valve`;
-        //const url = `https://localhost:7215/api/AssetProperties/ByType/valve`;
-        const res = await fetch(url, { signal: controller.signal });
-        if (!res.ok) throw new Error(`Request failed: ${res.status}`);
-        const json = await res.json();
-        const arr: DynamicRow[] = Array.isArray(json?.data)
-          ? json.data
-          : Array.isArray(json)
-            ? json
-            : [];
-        setValveRows(arr.map((it) => ({ ...it })));
-      } catch (e: any) {
-        setValveRows([]);
-        setValveError(e?.message || "Failed to load valve data");
-      }
-    }
-    loadValves();
-    return () => controller.abort();
-  }, []);
+  // useEffect(() => {
+  //   const controller = new AbortController();
+  //   async function loadValves() {
+  //     setValveError(null);
+  //     try {
+  //       const url = `${API_BASE_PATH}/api/AssetProperties/ByType/valve`;
+  //       //const url = `https://localhost:7215/api/AssetProperties/ByType/valve`;
+  //       const res = await fetch(url, { signal: controller.signal });
+  //       if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+  //       const json = await res.json();
+  //       const arr: DynamicRow[] = Array.isArray(json?.data)
+  //         ? json.data
+  //         : Array.isArray(json)
+  //           ? json
+  //           : [];
+  //       setValveRows(arr.map((it) => ({ ...it })));
+  //     } catch (e: any) {
+  //       setValveRows([]);
+  //       setValveError(e?.message || "Failed to load valve data");
+  //     }
+  //   }
+  //   loadValves();
+  //   return () => controller.abort();
+  // }, []);
 
   // Fetch pipeline segments from API
-  const fetchSegments = async () => {
-    try {
-      setLoading(true);
-      //const response = await apiClient.getAssetPropertiesByType("pipeline");
-      const response = await apiClient.getPipelines({ limit: 100 });
-      setSegments(Array.isArray(response?.data) ? response.data : []);
-    } catch (error) {
-      console.error("Failed to fetch pipeline segments:", error);
-      toast({
-        title: "Error",
-        description:
-          "Failed to load pipeline segments. Please check if the server is running.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  // const fetchSegments = async () => {
+  //   try {
+  //     setLoading(true);
+  //     //const response = await apiClient.getAssetPropertiesByType("pipeline");
+  //     const response = await apiClient.getPipelines({ limit: 100 });
+  //     setSegments(Array.isArray(response?.data) ? response.data : []);
+  //   } catch (error) {
+  //     console.error("Failed to fetch pipeline segments:", error);
+  //     toast({
+  //       title: "Error",
+  //       description:
+  //         "Failed to load pipeline segments. Please check if the server is running.",
+  //       variant: "destructive",
+  //     });
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   useEffect(() => {
-    fetchSegments();
+    //fetchSegments();
   }, []);
 
   // Devices for map from DeviceLog endpoint (selected survey)
-  const { data: deviceLogsResponse } = useDeviceLogs({ limit: 100 });
-  const mapDevices = useMemo(() => {
-    const items = Array.isArray(deviceLogsResponse?.data) ? deviceLogsResponse!.data : [];
-    return items.map((device: any) => ({
-      id: device.id,
-      name: device.name,
-      lat: Number(device.coordinates?.lat) || 0,
-      lng: Number(device.coordinates?.lng) || 0,
-      status:
-        String(device.status).toUpperCase() === "ACTIVE"
-          ? ("active" as const)
-          : String(device.status).toUpperCase() === "MAINTENANCE"
-            ? ("maintenance" as const)
-            : String(device.status).toUpperCase() === "ERROR"
-              ? ("error" as const)
-              : ("offline" as const),
-      lastPing: device.lastSeen || "Unknown",
-    }));
-  }, [deviceLogsResponse]);
+  // const { data: deviceLogsResponse } = useDeviceLogs({ limit: 100 });
+  // const mapDevices = useMemo(() => {
+  //   const items = Array.isArray(deviceLogsResponse?.data) ? deviceLogsResponse!.data : [];
+  //   return items.map((device: any) => ({
+  //     id: device.id,
+  //     name: device.name,
+  //     lat: Number(device.coordinates?.lat) || 0,
+  //     lng: Number(device.coordinates?.lng) || 0,
+  //     status:
+  //       String(device.status).toUpperCase() === "ACTIVE"
+  //         ? ("active" as const)
+  //         : String(device.status).toUpperCase() === "MAINTENANCE"
+  //           ? ("maintenance" as const)
+  //           : String(device.status).toUpperCase() === "ERROR"
+  //             ? ("error" as const)
+  //             : ("offline" as const),
+  //     lastPing: device.lastSeen || "Unknown",
+  //   }));
+  // }, [deviceLogsResponse]);
 
   // Pipelines for map from survey-geojson endpoint
   const mapPipelines = useMemo(() => {
@@ -253,7 +253,7 @@ export const PipelineNetworkEditor = () => {
     });
   }, [valveRows]);
 
-  const showDevicesOnMap = mapDevices.length > 0;
+  //const showDevicesOnMap = mapDevices.length > 0;
   //const showPipelinesOnMap = hasPipelineGeometry || mapPipelines.length > 0;
   const showPipelinesOnMap = mapPipelines.length > 0;
   const showValvesOnMap = mapValves.length > 0;
@@ -336,7 +336,7 @@ export const PipelineNetworkEditor = () => {
         toast({ title: "Pipeline segment added successfully" });
       }
 
-      await fetchSegments(); // Refresh the list
+      //await fetchSegments(); // Refresh the list
       setIsDialogOpen(false);
       setEditingSegment(null);
       setFormData({
@@ -378,7 +378,7 @@ export const PipelineNetworkEditor = () => {
     try {
       await apiClient.deletePipeline(segmentId);
       toast({ title: "Pipeline segment deleted successfully" });
-      await fetchSegments(); // Refresh the list
+      //await fetchSegments(); // Refresh the list
     } catch (error) {
       console.error("Failed to delete pipeline segment:", error);
       toast({

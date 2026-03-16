@@ -119,49 +119,60 @@ export default function ExportImport() {
   const handleImport = async () => {
     if (!selectedAssetType) return;
 
-    // Create a file input element
     const fileInput = document.createElement("input");
     fileInput.type = "file";
-    fileInput.accept = ".json,.csv";
+    fileInput.accept = ".csv,.xlsx,.kml";
+
     fileInput.onchange = async (e: any) => {
       const file = e.target.files[0];
       if (!file) return;
 
       setIsImporting(true);
       setMessage(null);
+
       try {
         const formData = new FormData();
         formData.append("file", file);
-        formData.append("assetTypeId", selectedAssetType.id);
+        formData.append("assetType", selectedAssetType.name);
 
-        const response = await fetch(
-          `https://localhost:7215/api/AssetTypes/import`,
-          {
-            method: "POST",
-            body: formData,
-          }
-        );
+        // detect extension
+        const fileName = file.name.toLowerCase();
+
+        let apiUrl = "";
+        if (fileName.endsWith(".kml")) {
+          apiUrl = `https://localhost:7215/api/SurveyEntries/upload-kml`;
+        } else {
+          apiUrl = `https://localhost:7215/api/SurveyEntries/upload-assets`;
+        }
+
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          body: formData,
+        });
 
         if (!response.ok) {
           throw new Error(`Import failed with status ${response.status}`);
         }
 
         const result = await response.json();
-
+       
         setMessage({
           type: "success",
           text: `Successfully imported data for ${selectedAssetType.name}`,
         });
+
         toast({
           title: "Import Successful",
           description: `Data for ${selectedAssetType.name} has been imported`,
         });
       } catch (error) {
         console.error("Error importing data:", error);
+
         setMessage({
           type: "error",
           text: `Failed to import data for ${selectedAssetType.name}`,
         });
+
         toast({
           title: "Import Failed",
           description: "There was an error importing the data",
@@ -170,6 +181,7 @@ export default function ExportImport() {
         setIsImporting(false);
       }
     };
+
     fileInput.click();
   };
 
