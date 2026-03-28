@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Download, Upload } from "lucide-react";
+import { Download, Upload, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,12 +8,17 @@ import { apiClient, type AssetType } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, CheckCircle } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function ExportImport() {
   const [assetTypes, setAssetTypes] = useState<AssetType[]>([]);
   const [selectedAssetTypeId, setSelectedAssetTypeId] = useState<string>("");
   const [selectedAssetType, setSelectedAssetType] = useState<AssetType | null>(null);
-  const [fileType, setFileType] = useState<"kml" | "xlsx">("kml");
   const [isLoading, setIsLoading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
@@ -60,13 +65,13 @@ export default function ExportImport() {
       baseFileName = assetName.replace(/\s+/g, "");
     }
 
-    return `${baseFileName}.${fileType}`;
+    return baseFileName;
   };
 
-  const handleExport = async () => {
+  const handleExport = async (format: "kml" | "xlsx") => {
     if (!selectedAssetType) return;
 
-    const filename = getDownloadFilename();
+    const filename = `${getDownloadFilename().split(".")[0]}.${format}`;
     if (!filename) return;
 
     setIsExporting(true);
@@ -98,11 +103,11 @@ export default function ExportImport() {
 
       setMessage({
         type: "success",
-        text: `Successfully exported ${selectedAssetType.name} data as ${fileType.toUpperCase()}`,
+        text: `Successfully exported ${selectedAssetType.name} data as ${format.toUpperCase()}`,
       });
       toast({
         title: "Export Successful",
-        description: `${selectedAssetType.name} data has been exported as ${fileType.toUpperCase()}`,
+        description: `${selectedAssetType.name} data has been exported as ${format.toUpperCase()}`,
       });
     } catch (error) {
       console.error("Error exporting data:", error);
@@ -237,24 +242,6 @@ export default function ExportImport() {
               </Select>
             </div>
 
-            {/* File Type Selector for Export */}
-            {selectedAssetType && (
-              <div className="space-y-2">
-                <Label htmlFor="file-type-select">Export File Type</Label>
-                <Select
-                  value={fileType}
-                  onValueChange={(value) => setFileType(value as "kml" | "xlsx")}
-                >
-                  <SelectTrigger id="file-type-select" className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="kml">KML File (.kml)</SelectItem>
-                    <SelectItem value="xlsx">Excel File (.xlsx)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
 
             {/* Selected Asset Type Info */}
             {selectedAssetType && (
@@ -290,15 +277,27 @@ export default function ExportImport() {
 
             {/* Export and Import Buttons */}
             <div className="flex gap-4 pt-4">
-              <Button
-                onClick={handleExport}
-                disabled={!selectedAssetType || isExporting}
-                className="flex-1"
-                variant="default"
-              >
-                <Download className="mr-2 h-4 w-4" />
-                {isExporting ? "Exporting..." : "Export Data"}
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    disabled={!selectedAssetType || isExporting}
+                    className="flex-1"
+                    variant="default"
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    {isExporting ? "Exporting..." : "Export"}
+                    <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48">
+                  <DropdownMenuItem onClick={() => handleExport("kml")}>
+                    Export KML
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExport("xlsx")}>
+                    Export XLSX
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Button
                 onClick={handleImport}
                 disabled={!selectedAssetType || isImporting}
