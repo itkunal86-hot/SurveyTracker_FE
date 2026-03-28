@@ -13,6 +13,7 @@ export default function ExportImport() {
   const [assetTypes, setAssetTypes] = useState<AssetType[]>([]);
   const [selectedAssetTypeId, setSelectedAssetTypeId] = useState<string>("");
   const [selectedAssetType, setSelectedAssetType] = useState<AssetType | null>(null);
+  const [fileType, setFileType] = useState<"kml" | "xlsx">("kml");
   const [isLoading, setIsLoading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
@@ -43,15 +44,36 @@ export default function ExportImport() {
     setMessage(null);
   };
 
+  const getDownloadFilename = (): string => {
+    if (!selectedAssetType) return "";
+
+    const assetName = selectedAssetType.name.toLowerCase();
+    let baseFileName = "";
+
+    if (assetName === "customer data points") {
+      baseFileName = "customerdatapoints";
+    } else if (assetName === "pipeline") {
+      baseFileName = "pipeline";
+    } else if (assetName === "valve") {
+      baseFileName = "valve";
+    } else {
+      baseFileName = assetName.replace(/\s+/g, "");
+    }
+
+    return `${baseFileName}.${fileType}`;
+  };
+
   const handleExport = async () => {
     if (!selectedAssetType) return;
+
+    const filename = getDownloadFilename();
+    if (!filename) return;
 
     setIsExporting(true);
     setMessage(null);
     try {
-      // API endpoint call for export with selected asset type ID
       const response = await fetch(
-        `https://localhost:7215/api/AssetTypes/export?assetTypeId=${selectedAssetType.id}`,
+        `https://localhost:7215/api/SurveyEntries/download?filename=${encodeURIComponent(filename)}`,
         {
           method: "GET",
           headers: {
@@ -64,42 +86,23 @@ export default function ExportImport() {
         throw new Error(`Export failed with status ${response.status}`);
       }
 
-      // Handle the response (could be JSON or file download)
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
-        const data = await response.json();
-        // Trigger download if data contains file information
-        const blob = new Blob([JSON.stringify(data, null, 2)], {
-          type: "application/json",
-        });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `export-${selectedAssetType.name}-${Date.now()}.json`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      } else {
-        // Handle file download directly
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `export-${selectedAssetType.name}-${Date.now()}`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
 
       setMessage({
         type: "success",
-        text: `Successfully exported ${selectedAssetType.name} data`,
+        text: `Successfully exported ${selectedAssetType.name} data as ${fileType.toUpperCase()}`,
       });
       toast({
         title: "Export Successful",
-        description: `${selectedAssetType.name} data has been exported`,
+        description: `${selectedAssetType.name} data has been exported as ${fileType.toUpperCase()}`,
       });
     } catch (error) {
       console.error("Error exporting data:", error);
@@ -233,6 +236,25 @@ export default function ExportImport() {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* File Type Selector for Export */}
+            {selectedAssetType && (
+              <div className="space-y-2">
+                <Label htmlFor="file-type-select">Export File Type</Label>
+                <Select
+                  value={fileType}
+                  onValueChange={(value) => setFileType(value as "kml" | "xlsx")}
+                >
+                  <SelectTrigger id="file-type-select" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="kml">KML File (.kml)</SelectItem>
+                    <SelectItem value="xlsx">Excel File (.xlsx)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* Selected Asset Type Info */}
             {selectedAssetType && (
