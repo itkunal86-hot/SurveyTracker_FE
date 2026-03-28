@@ -16,7 +16,8 @@ import {
 import { SortableTableHead } from "@/components/ui/sortable-table-head";
 import { Pagination } from "@/components/ui/pagination";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { MapPin, AlertTriangle, Loader2 } from "lucide-react";
+import { MapPin, AlertTriangle, Loader2, Power } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { useTable } from "@/hooks/use-table";
 import { useDeviceLogs } from "@/hooks/useApiQueries";
 import { useToast } from "@/hooks/use-toast";
@@ -329,6 +330,9 @@ export const ValvePointsEditor = () => {
                               {col}
                             </SortableTableHead>
                           ))}
+                          <SortableTableHead sortable={false}>
+                            Status
+                          </SortableTableHead>
                           <SortableTableHead sortable={false} className="text-right">
                             Action
                           </SortableTableHead>
@@ -349,9 +353,14 @@ export const ValvePointsEditor = () => {
                               </TableCell>
                             );
                           })}
+                          <TableCell>
+                            <Badge variant={deactivatedValveIds.has(seId) ? "outline" : "secondary"}>
+                              {deactivatedValveIds.has(seId) ? "Inactive" : "Active"}
+                            </Badge>
+                          </TableCell>
                           <TableCell className="text-right">
                             <Button
-                              variant={deactivatedValveIds.has(seId) ? "outline" : "default"}
+                              variant="ghost"
                               size="sm"
                               onClick={() => handleToggleValveDeactivate(seId)}
                               disabled={loadingValveIds.has(seId)}
@@ -360,7 +369,7 @@ export const ValvePointsEditor = () => {
                               {loadingValveIds.has(seId) && (
                                 <Loader2 className="h-3 w-3 animate-spin" />
                               )}
-                              {deactivatedValveIds.has(seId) ? "Activate" : "Deactivate"}
+                              <Power className="h-3 w-3" />
                             </Button>
                           </TableCell>
                         </TableRow>

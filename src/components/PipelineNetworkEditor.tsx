@@ -41,6 +41,7 @@ import {
   MapPin,
   AlertTriangle,
   Loader2,
+  Power,
 } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
@@ -575,6 +576,9 @@ export const PipelineNetworkEditor = () => {
                               {col}
                             </SortableTableHead>
                           ))}
+                          <SortableTableHead sortable={false}>
+                            Status
+                          </SortableTableHead>
                           <SortableTableHead sortable={false} className="text-right">
                             Action
                           </SortableTableHead>
@@ -595,9 +599,14 @@ export const PipelineNetworkEditor = () => {
                               </TableCell>
                             );
                           })}
+                          <TableCell>
+                            <Badge variant={deactivatedPipelineIds.has(seId) ? "outline" : "secondary"}>
+                              {deactivatedPipelineIds.has(seId) ? "Inactive" : "Active"}
+                            </Badge>
+                          </TableCell>
                           <TableCell className="text-right">
                             <Button
-                              variant={deactivatedPipelineIds.has(seId) ? "outline" : "default"}
+                              variant="ghost"
                               size="sm"
                               onClick={() => handleTogglePipelineDeactivate(seId)}
                               disabled={loadingPipelineIds.has(seId)}
@@ -606,7 +615,7 @@ export const PipelineNetworkEditor = () => {
                               {loadingPipelineIds.has(seId) && (
                                 <Loader2 className="h-3 w-3 animate-spin" />
                               )}
-                              {deactivatedPipelineIds.has(seId) ? "Activate" : "Deactivate"}
+                              <Power className="h-3 w-3" />
                             </Button>
                           </TableCell>
                         </TableRow>

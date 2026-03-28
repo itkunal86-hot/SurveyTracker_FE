@@ -13,7 +13,7 @@ import { SortableTableHead } from "@/components/ui/sortable-table-head";
 import { Pagination } from "@/components/ui/pagination";
 import { useTable } from "@/hooks/use-table";
 import { Badge } from "@/components/ui/badge";
-import { Edit, MapPin, Calendar, Loader2 } from "lucide-react";
+import { Edit, MapPin, Calendar, Loader2, Power } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { API_BASE_PATH } from "@/lib/api";
 import { Catastrophe } from "./CatastropheManagement";
@@ -177,6 +177,9 @@ export const CatastropheList = ({
                     >
                       Reported Date
                     </SortableTableHead>
+                    <SortableTableHead sortable={false}>
+                      Status
+                    </SortableTableHead>
                     <SortableTableHead sortable={false} className="text-right">
                       Action
                     </SortableTableHead>
@@ -235,9 +238,14 @@ export const CatastropheList = ({
                           {formatDate(catastrophe.reportedDate)}
                         </div>
                       </TableCell>
+                      <TableCell>
+                        <Badge variant={deactivatedItems.has(catastrophe.id) ? "outline" : "secondary"}>
+                          {deactivatedItems.has(catastrophe.id) ? "Inactive" : "Active"}
+                        </Badge>
+                      </TableCell>
                       <TableCell className="text-right">
                         <Button
-                          variant={deactivatedItems.has(catastrophe.id) ? "outline" : "default"}
+                          variant="ghost"
                           size="sm"
                           onClick={() => handleToggleDeactivate(catastrophe.id)}
                           disabled={loadingIds.has(catastrophe.id)}
@@ -246,7 +254,7 @@ export const CatastropheList = ({
                           {loadingIds.has(catastrophe.id) && (
                             <Loader2 className="h-3 w-3 animate-spin" />
                           )}
-                          {deactivatedItems.has(catastrophe.id) ? "Activate" : "Deactivate"}
+                          <Power className="h-3 w-3" />
                         </Button>
                       </TableCell>
                       <TableCell className="text-right">
