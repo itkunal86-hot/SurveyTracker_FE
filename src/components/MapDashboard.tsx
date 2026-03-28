@@ -267,7 +267,7 @@ export const MapDashboard = () => {
                 htmlFor="consumer-points"
                 className="flex items-center space-x-2"
               >
-                <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                 <span>Consumer Points</span>
               </Label>
               <Switch
@@ -427,24 +427,7 @@ export const MapDashboard = () => {
           />
         )}
 
-        {/* Enhanced Map Overlay Info */}
-        <div className="absolute top-4 right-4 bg-card border border-border rounded-lg p-4 shadow-lg">
-          <div className="space-y-2 text-sm">
-            <div className="font-medium text-base mb-2">Infrastructure Status</div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-              <span>Pipelines: {displayPipelines.length}</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-              <span>Valves: {displayValves.length}</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-              <span>Consumer Points: {displayConsumerPoints.length}</span>
-            </div>
-          </div>
-        </div>
+        {/* Enhanced Map Overlay Info - Hidden */}
 
         {/* Asset Legend */}
         <div className="absolute bottom-4 left-4 bg-card border border-border rounded-lg p-4 shadow-lg">
@@ -460,7 +443,7 @@ export const MapDashboard = () => {
                 <span>Valve/Isolation Point</span>
               </div>
               <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                 <span>Consumer Point</span>
               </div>
             </div>
