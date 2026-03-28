@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { LeafletMap } from "@/components/LeafletMap";
 import { RGISMap } from "@/components/RGISMap";
 import { Label } from "@/components/ui/label";
@@ -15,9 +16,11 @@ import {
 import { SortableTableHead } from "@/components/ui/sortable-table-head";
 import { Pagination } from "@/components/ui/pagination";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { MapPin, AlertTriangle } from "lucide-react";
+import { MapPin, AlertTriangle, Loader2, Power } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { useTable } from "@/hooks/use-table";
 import { useDeviceLogs } from "@/hooks/useApiQueries";
+import { useToast } from "@/hooks/use-toast";
 import { API_BASE_PATH } from "@/lib/api";
 
 // Dynamic row type for arbitrary property names
@@ -46,11 +49,14 @@ interface MapPipelineSegment {
 }
 
 export const ValvePointsEditor = () => {
+  const { toast } = useToast();
   const [showRGIS, setShowRGIS] = useState(true);
   const [rows, setRows] = useState<DynamicRow[]>([]);
   const [columns, setColumns] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [deactivatedValveIds, setDeactivatedValveIds] = useState<Set<string>>(new Set());
+  const [loadingValveIds, setLoadingValveIds] = useState<Set<string>>(new Set());
 
   const [pipelineRows, setPipelineRows] = useState<DynamicRow[]>([]);
   const [pipelineError, setPipelineError] = useState<string | null>(null);
@@ -201,6 +207,44 @@ export const ValvePointsEditor = () => {
   const showPipelines = mapPipelines.length > 0;
   const showValves = mapValves.length > 0;
 
+  const handleToggleValveDeactivate = async (seId: string) => {
+    setLoadingValveIds((prev) => new Set(prev).add(seId));
+    try {
+      const url = `${API_BASE_PATH}/SurveyEntries/deactivate-survey-entry?seId=${encodeURIComponent(seId)}`;
+      const response = await fetch(url, { method: "POST" });
+      if (!response.ok) {
+        throw new Error(`Failed to deactivate entry: ${response.status}`);
+      }
+      setDeactivatedValveIds((prev) => {
+        const newSet = new Set(prev);
+        if (newSet.has(seId)) {
+          newSet.delete(seId);
+        } else {
+          newSet.add(seId);
+        }
+        return newSet;
+      });
+      const isDeactivating = !deactivatedValveIds.has(seId);
+      toast({
+        title: isDeactivating ? "Deactivated" : "Activated",
+        description: `Valve entry ${isDeactivating ? "deactivated" : "activated"} successfully`,
+      });
+    } catch (error) {
+      console.error("Error toggling deactivation:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update entry status",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingValveIds((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(seId);
+        return newSet;
+      });
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -274,33 +318,63 @@ export const ValvePointsEditor = () => {
                       {columns.length === 0 ? (
                         <TableHead>No data</TableHead>
                       ) : (
-                        columns.map((col) => (
-                          <SortableTableHead
-                            key={col}
-                            sortKey={col}
-                            currentSortKey={tableConfig.sortConfig.key as unknown as string}
-                            sortDirection={tableConfig.sortConfig.direction}
-                            onSort={(k) => tableConfig.handleSort(k as keyof DynamicRow)}
-                          >
-                            {col}
+                        <>
+                          {columns.map((col) => (
+                            <SortableTableHead
+                              key={col}
+                              sortKey={col}
+                              currentSortKey={tableConfig.sortConfig.key as unknown as string}
+                              sortDirection={tableConfig.sortConfig.direction}
+                              onSort={(k) => tableConfig.handleSort(k as keyof DynamicRow)}
+                            >
+                              {col}
+                            </SortableTableHead>
+                          ))}
+                          <SortableTableHead sortable={false}>
+                            Status
                           </SortableTableHead>
-                        ))
+                          <SortableTableHead sortable={false} className="text-right">
+                            Action
+                          </SortableTableHead>
+                        </>
                       )}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {sortedAndPaginatedData.map((row, idx) => (
-                      <TableRow key={String(row.id ?? idx)}>
-                        {columns.map((col) => {
-                          const value = row[col];
-                          return (
-                            <TableCell key={col}>
-                              {value === null || value === undefined || value === "" ? "-" : String(value)}
-                            </TableCell>
-                          );
-                        })}
-                      </TableRow>
-                    ))}
+                    {sortedAndPaginatedData.map((row, idx) => {
+                      const seId = String(row.SE_ID ?? row.id ?? idx);
+                      return (
+                        <TableRow key={seId}>
+                          {columns.map((col) => {
+                            const value = row[col];
+                            return (
+                              <TableCell key={col}>
+                                {value === null || value === undefined || value === "" ? "-" : String(value)}
+                              </TableCell>
+                            );
+                          })}
+                          <TableCell>
+                            <Badge variant={deactivatedValveIds.has(seId) ? "outline" : "secondary"}>
+                              {deactivatedValveIds.has(seId) ? "Inactive" : "Active"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleToggleValveDeactivate(seId)}
+                              disabled={loadingValveIds.has(seId)}
+                              className="gap-1"
+                            >
+                              {loadingValveIds.has(seId) && (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              )}
+                              <Power className="h-3 w-3" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               )}

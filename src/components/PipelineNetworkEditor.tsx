@@ -41,6 +41,7 @@ import {
   MapPin,
   AlertTriangle,
   Loader2,
+  Power,
 } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
@@ -75,6 +76,8 @@ export const PipelineNetworkEditor = () => {
   const [propColumns, setPropColumns] = useState<string[]>([]);
   const [propLoading, setPropLoading] = useState<boolean>(false);
   const [propError, setPropError] = useState<string | null>(null);
+  const [deactivatedPipelineIds, setDeactivatedPipelineIds] = useState<Set<string>>(new Set());
+  const [loadingPipelineIds, setLoadingPipelineIds] = useState<Set<string>>(new Set());
 
   const [valveRows, setValveRows] = useState<DynamicRow[]>([]);
   const [valveError, setValveError] = useState<string | null>(null);
@@ -406,6 +409,44 @@ export const PipelineNetworkEditor = () => {
     toast({ title: "Geo-data upload feature coming soon" });
   };
 
+  const handleTogglePipelineDeactivate = async (seId: string) => {
+    setLoadingPipelineIds((prev) => new Set(prev).add(seId));
+    try {
+      const url = `${API_BASE_PATH}/SurveyEntries/deactivate-survey-entry?seId=${encodeURIComponent(seId)}`;
+      const response = await fetch(url, { method: "POST" });
+      if (!response.ok) {
+        throw new Error(`Failed to deactivate entry: ${response.status}`);
+      }
+      setDeactivatedPipelineIds((prev) => {
+        const newSet = new Set(prev);
+        if (newSet.has(seId)) {
+          newSet.delete(seId);
+        } else {
+          newSet.add(seId);
+        }
+        return newSet;
+      });
+      const isDeactivating = !deactivatedPipelineIds.has(seId);
+      toast({
+        title: isDeactivating ? "Deactivated" : "Activated",
+        description: `Pipeline entry ${isDeactivating ? "deactivated" : "activated"} successfully`,
+      });
+    } catch (error) {
+      console.error("Error toggling deactivation:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update entry status",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingPipelineIds((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(seId);
+        return newSet;
+      });
+    }
+  };
+
   // Use the table hook for sorting and pagination
   const defaultSortKey = (propColumns.includes("id") ? "id" : propColumns[0]) as keyof DynamicRow | undefined;
   const { tableConfig, sortedAndPaginatedData } = useTable<DynamicRow>(propRows, 5, defaultSortKey as any);
@@ -523,33 +564,63 @@ export const PipelineNetworkEditor = () => {
                       {propColumns.length === 0 ? (
                         <TableHead>No data</TableHead>
                       ) : (
-                        propColumns.map((col) => (
-                          <SortableTableHead
-                            key={col}
-                            sortKey={col}
-                            currentSortKey={tableConfig.sortConfig.key as unknown as string}
-                            sortDirection={tableConfig.sortConfig.direction}
-                            onSort={(k) => tableConfig.handleSort(k as keyof DynamicRow)}
-                          >
-                            {col}
+                        <>
+                          {propColumns.map((col) => (
+                            <SortableTableHead
+                              key={col}
+                              sortKey={col}
+                              currentSortKey={tableConfig.sortConfig.key as unknown as string}
+                              sortDirection={tableConfig.sortConfig.direction}
+                              onSort={(k) => tableConfig.handleSort(k as keyof DynamicRow)}
+                            >
+                              {col}
+                            </SortableTableHead>
+                          ))}
+                          <SortableTableHead sortable={false}>
+                            Status
                           </SortableTableHead>
-                        ))
+                          <SortableTableHead sortable={false} className="text-right">
+                            Action
+                          </SortableTableHead>
+                        </>
                       )}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {sortedAndPaginatedData.map((row, idx) => (
-                      <TableRow key={String((row as any).id ?? idx)}>
-                        {propColumns.map((col) => {
-                          const value = (row as any)[col];
-                          return (
-                            <TableCell key={col}>
-                              {value === null || value === undefined || value === "" ? "-" : String(value)}
-                            </TableCell>
-                          );
-                        })}
-                      </TableRow>
-                    ))}
+                    {sortedAndPaginatedData.map((row, idx) => {
+                      const seId = String((row as any).SE_ID ?? (row as any).id ?? idx);
+                      return (
+                        <TableRow key={seId}>
+                          {propColumns.map((col) => {
+                            const value = (row as any)[col];
+                            return (
+                              <TableCell key={col}>
+                                {value === null || value === undefined || value === "" ? "-" : String(value)}
+                              </TableCell>
+                            );
+                          })}
+                          <TableCell>
+                            <Badge variant={deactivatedPipelineIds.has(seId) ? "outline" : "secondary"}>
+                              {deactivatedPipelineIds.has(seId) ? "Inactive" : "Active"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleTogglePipelineDeactivate(seId)}
+                              disabled={loadingPipelineIds.has(seId)}
+                              className="gap-1"
+                            >
+                              {loadingPipelineIds.has(seId) && (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              )}
+                              <Power className="h-3 w-3" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               )}
