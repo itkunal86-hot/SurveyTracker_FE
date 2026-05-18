@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import L, { type LatLngBounds, type LatLngExpression } from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { colorNameToHex, resolveColor } from "@/lib/colorUtils";
 
 // Fix for default markers in Leaflet with Vite
 delete (L.Icon.Default.prototype as unknown as { _getIconUrl: unknown })._getIconUrl;
@@ -114,6 +115,10 @@ interface PipelineSegment {
   status: "normal" | "warning" | "critical" | "maintenance";
   material?: string;
   coordinates?: Array<{ lat: number; lng: number; elevation?: number }>;
+  isActive?: boolean;
+  plotType?: "line" | "round" | "square";
+  plotColor?: string;
+  plotColorInactive?: string;
 }
 
 interface ValvePoint {
@@ -124,6 +129,10 @@ interface ValvePoint {
   segmentId: string;
   coordinates?: { lat: number; lng: number; elevation?: number };
   criticality?: string;
+  isActive?: boolean;
+  plotType?: "line" | "round" | "square";
+  plotColor?: string;
+  plotColorInactive?: string;
 }
 
 interface CatastrophePoint {
@@ -133,6 +142,10 @@ interface CatastrophePoint {
   status?: string;
   coordinates?: { lat: number; lng: number };
   description?: string;
+  isActive?: boolean;
+  plotType?: "line" | "round" | "square";
+  plotColor?: string;
+  plotColorInactive?: string;
 }
 type Consumer = {
   name: string
@@ -148,6 +161,10 @@ interface ConsumerPoint {
   status?: string;
   coordinates: { lat: number; lng: number };
   consumers: Consumer[];
+  isActive?: boolean;
+  plotColor?: string;
+  plotColorInactive?: string;
+  plotType?: "line" | "round" | "square";
 }
 
 interface LeafletMapProps {
@@ -166,18 +183,20 @@ interface LeafletMapProps {
   showCatastrophes?: boolean;
 }
 
-const getPipelineColor = (status: PipelineSegment["status"]) => {
-  switch (status) {
-    case "normal":
-      return "#3b82f6";
-    case "warning":
-      return "#f59e0b";
-    case "maintenance":
-      return "#6366f1";
-    case "critical":
-    default:
-      return "#ef4444";
-  }
+const getPipelineColor = (status: PipelineSegment["status"], isActive?: boolean, plotColor?: string, plotColorInactive?: string): string => {
+  return resolveColor({
+    isActive,
+    plotColor,
+    plotColorInactive,
+    severity: status === "normal" ? "low" : status === "warning" ? "medium" : status === "maintenance" ? "high" : "critical",
+    default: status === "normal"
+      ? "#3b82f6"
+      : status === "warning"
+      ? "#f59e0b"
+      : status === "maintenance"
+      ? "#6366f1"
+      : "#ef4444",
+  });
 };
 
 export const LeafletMap = ({
@@ -253,13 +272,13 @@ export const LeafletMap = ({
       .filter((coord): coord is [number, number] => coord !== null);
   }, [catastrophes]);
 
-  const getCatastropheColor = (severity?: string) => {
-    const s = String(severity || "").toLowerCase();
-    if (s.includes("critical")) return "#991b1b";
-    if (s.includes("high") || s.includes("major")) return "#ef4444";
-    if (s.includes("medium") || s.includes("moderate")) return "#f59e0b";
-    if (s.includes("low") || s.includes("minor")) return "#22c55e";
-    return "#a855f7";
+  const getCatastropheColor = (severity?: string, isActive?: boolean, plotColor?: string, plotColorInactive?: string): string => {
+    return resolveColor({
+      isActive,
+      plotColor,
+      plotColorInactive,
+      severity,
+    });
   };
 
   useEffect(() => {
@@ -362,23 +381,36 @@ export const LeafletMap = ({
       (catastrophes || []).forEach((c) => {
         const coord = sanitizeCoordinate(c.coordinates);
         if (!coord) return;
-        const color = getCatastropheColor(c.severity);
-        const marker = L.circleMarker(coord, {
-          radius: 6,
-          fillColor: color,
-          color: "white",
-          weight: 1.5,
-          opacity: 1,
-          fillOpacity: 0.9,
-        });
-        marker.bindPopup(`
+        const color = getCatastropheColor(c.severity, c.isActive, c.plotColor, c.plotColorInactive);
+
+        // Determine shape based on PLOT_TYPE: "line" | "round" | "square"
+        const markerShape = c.plotType === "square"
+                          ? L.rectangle([
+                              [coord[0] - 0.0001, coord[1] - 0.0001],
+                              [coord[0] + 0.0001, coord[1] + 0.0001],
+                            ], {
+                              color: "white",
+                              weight: 1.5,
+                              fillColor: color,
+                              fillOpacity: 0.9,
+                            })
+                          : L.circleMarker(coord, {
+                              radius: 6,
+                              fillColor: color,
+                              color: "white",
+                              weight: 1.5,
+                              opacity: 1,
+                              fillOpacity: 0.9,
+                            });
+
+        markerShape.bindPopup(`
           <div style="font-family: system-ui; padding: 4px; min-width: 180px;">
             <strong>${c.name ?? `Catastrophe ${c.id}`}</strong><br/>
             <span style="color: ${color};">Severity: ${c.severity ?? "Unknown"}</span><br/>
             <span style="color: #666;">Status: ${c.status ?? "REPORTED"}</span>
           </div>
         `);
-        catastrophesLayer.addLayer(marker);
+        catastrophesLayer.addLayer(markerShape);
       });
     }
   }, [catastrophes, showCatastrophes, catastrophesLayer]);
@@ -393,7 +425,7 @@ export const LeafletMap = ({
         const route = pipelineRoutes[index];
         if (!route || route.length < 2) return;
 
-        const color = getPipelineColor(pipeline.status);
+        const color = getPipelineColor(pipeline.status, pipeline.isActive, pipeline.plotColor, pipeline.plotColorInactive);
 
         const polyline = L.polyline(route, {
           color,
@@ -428,14 +460,25 @@ export const LeafletMap = ({
         const position = valvePositions[index];
         if (!position) return;
 
-        const color =
-          valve.status === "open"
+        // Use plotColor/plotColorInactive if provided
+        const color = resolveColor({
+          isActive: valve.isActive,
+          plotColor: valve.plotColor,
+          plotColorInactive: valve.plotColorInactive,
+          severity: valve.status === "open" ? "low" : valve.status === "closed" ? "critical" : "medium",
+          default: valve.status === "open"
             ? "#22c55e"
             : valve.status === "closed"
-              ? "#ef4444"
-              : valve.status === "maintenance"
-                ? "#f59e0b"
-                : "#a855f7";
+            ? "#ef4444"
+            : valve.status === "maintenance"
+            ? "#f59e0b"
+            : "#a855f7",
+        });
+
+        // Determine shape based on PLOT_TYPE: "line" | "round" | "square"
+        const borderRadius = valve.plotType === "round" ? "50%"
+                           : valve.plotType === "line" ? "0%"
+                           : "2px"; // default to square
 
         const marker = L.marker(position, {
           icon: L.divIcon({
@@ -445,7 +488,7 @@ export const LeafletMap = ({
                 height: 16px;
                 background-color: ${color};
                 border: 2px solid white;
-                border-radius: 2px;
+                border-radius: ${borderRadius};
                 box-shadow: 0 1px 3px rgba(0,0,0,0.3);
               "></div>`,
             iconSize: [16, 16],
@@ -496,9 +539,16 @@ export const LeafletMap = ({
       consumers.forEach((consumer) => {
         if (!isFiniteCoordinate(consumer.coordinates.lat, consumer.coordinates.lng)) return;
 
+        const fillColor = resolveColor({
+          isActive: consumer.isActive,
+          plotColor: consumer.plotColor,
+          plotColorInactive: consumer.plotColorInactive,
+          default: "#fb923c", // orange-400
+        });
+
         const marker = L.circleMarker([consumer.coordinates.lat, consumer.coordinates.lng], {
           radius: 7,
-          fillColor: "#fb923c", // orange-400
+          fillColor: fillColor,
           color: "white",
           weight: 2,
           opacity: 1,

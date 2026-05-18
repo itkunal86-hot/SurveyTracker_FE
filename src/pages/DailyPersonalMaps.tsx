@@ -718,6 +718,10 @@ const handleExportXML = async () => {
           depth: depthValue,
           status: pipelineStatus,
           coordinates: pipelineCoordinates,
+          isActive: true,
+          plotColor: "#3b82f6",
+          plotColorInactive: "#9ca3af",
+          plotType: "line" as const,
         },
       ]
       : [];
@@ -816,6 +820,10 @@ const handleExportXML = async () => {
             ...(valveCoord.elevation != null ? { elevation: valveCoord.elevation } : {}),
           }
           : undefined,
+        isActive: true,
+        plotColor: "#ef4444",
+        plotColorInactive: "#9ca3af",
+        plotType: "round" as const,
       });
     }
 
@@ -1267,6 +1275,13 @@ const handleExportXML = async () => {
                             </span>
                           );
                         }
+                        // Handle latitude/longitude fields as numbers, not dates
+                        if (/lat|lng|lon|long|elevation|elev|altitude|alt|height|x|y|z/i.test(key)) {
+                          const numVal = typeof val === "number" ? val : typeof val === "string" ? parseFloat(val) : NaN;
+                          if (!Number.isNaN(numVal)) {
+                            return <span className="font-mono text-sm">{Number.isInteger(numVal) ? numVal : numVal.toFixed(6)}</span>;
+                          }
+                        }
                         if (typeof val === "number") {
                           return <span className="font-mono text-sm">{Number.isInteger(val) ? val : Number(val.toFixed(2))}</span>;
                         }
@@ -1275,7 +1290,7 @@ const handleExportXML = async () => {
                         }
                         if (typeof val === "string") {
                           const dt = new Date(val);
-                          if (!Number.isNaN(dt.getTime()) && /time|date/i.test(key)) {
+                          if (!Number.isNaN(dt.getTime()) && /time|date|created|modified|updated|report/i.test(key)) {
                             return <span className="font-mono text-sm">{format(dt, "Pp")}</span>;
                           }
                           return <span className="text-sm">{val}</span>;

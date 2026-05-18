@@ -6,6 +6,7 @@ import { LeafletMap } from "@/components/LeafletMap";
 import { RGISMap } from "@/components/RGISMap";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/hooks/use-toast";
 import {
   Table,
   TableBody,
@@ -43,11 +44,12 @@ import {
   Loader2,
 } from "lucide-react";
 
-import { useToast } from "@/hooks/use-toast";
 import { API_BASE_PATH, apiClient, PipelineSegment } from "@/lib/api";
 import { useDeviceLogs } from "@/hooks/useApiQueries";
+import { formatColumnHeader, formatDateCell, isDateColumn } from "@/lib/utils";
 
 export const PipelineNetworkEditor = () => {
+  const { toast } = useToast();
   const [showRGIS, setShowRGIS] = useState(true);
   const [segments, setSegments] = useState<PipelineSegment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,6 +58,7 @@ export const PipelineNetworkEditor = () => {
   const [editingSegment, setEditingSegment] = useState<PipelineSegment | null>(
     null,
   );
+  const [togglingIds, setTogglingIds] = useState<Set<number>>(new Set());
   const [formData, setFormData] = useState({
     name: "",
     diameter: "",
@@ -68,7 +71,6 @@ export const PipelineNetworkEditor = () => {
       | "INACTIVE",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const { toast } = useToast();
 
   type DynamicRow = Record<string, any>;
   const [propRows, setPropRows] = useState<DynamicRow[]>([]);
@@ -118,6 +120,9 @@ export const PipelineNetworkEditor = () => {
             }));
           }
 
+          // Extract Plot sub-object properties (new structure)
+          const plotData = props.Plot || {};
+
           return {
             SE_ID: props.SE_ID || idx,
             SE_VALUE: props.SE_VALUE || "",
@@ -127,12 +132,20 @@ export const PipelineNetworkEditor = () => {
             pipe_diameter: props["pipe diameter"] || "",
             SHAPE_LENGTH: props.SHAPE_LENGTH || "",
             SE_SURVEY_SESSION_ID: props.SE_SURVEY_SESSION_ID || "",
+            IsActive: props.IsActive !== undefined ? props.IsActive : true,
+            PLOT_COLOR: plotData.PLOT_COLOR || "",
+            PLOT_COLOR_INACTIVE: plotData.PLOT_COLOR_INACTIVE || "",
+            PLOT_TYPE: plotData.PLOT_TYPE || "",
             coordinates: coordinateObjects,
           };
         });
 
         setPropRows(normalized);
-        const cols = normalized.length > 0 ? Object.keys(normalized[0]).filter(c => c !== 'coordinates') : [];
+        const cols = normalized.length > 0
+          ? Object.keys(normalized[0]).filter(c =>
+              !['Plot', 'coordinates', 'PLOT_COLOR', 'PLOT_COLOR_INACTIVE', 'PLOT_TYPE', 'LAT', 'LNG', 'lat', 'lng', 'id', 'ID'].includes(c)
+            )
+          : [];
         setPropColumns(cols);
       } catch (e: any) {
         setPropError(e?.message || "Failed to load data");
@@ -224,6 +237,10 @@ export const PipelineNetworkEditor = () => {
       const diameterVal = Number(r["pipe_diameter"] ?? r["diameter"] ?? r["Diameter"] ?? r["pipeDiameter"] ?? r["PipeDiameter"] ?? 200);
       const depthVal = Number(r["depth_meter"] ?? r["depth"] ?? r["Depth"] ?? r["installationDepth"] ?? r["InstallationDepth"] ?? 1.5);
       const coordinates = Array.isArray(r.coordinates) && r.coordinates.length >= 2 ? r.coordinates : undefined;
+      const isActive = r["IsActive"] !== undefined ? r["IsActive"] : true;
+      const plotColor = r["PLOT_COLOR"] || "#3b82f6"; // Use API color, default to blue
+      const plotColorInactive = r["PLOT_COLOR_INACTIVE"] || "#9ca3af"; // Use API color, default to grey
+      const plotType = r["PLOT_TYPE"] as "line" | "round" | "square" | undefined;
       return {
         id,
         name: `Pipeline ${id}`,
@@ -231,6 +248,10 @@ export const PipelineNetworkEditor = () => {
         depth: Number.isFinite(depthVal) ? depthVal : 1.5,
         status: "normal" as const,
         coordinates,
+        isActive,
+        plotColor,
+        plotColorInactive,
+        plotType,
       };
     });
   }, [propRows]);
@@ -249,7 +270,11 @@ export const PipelineNetworkEditor = () => {
       const status: "open" | "closed" | "maintenance" | "fault" = mappedType === "emergency" ? "closed" : rawType === "safety" ? "maintenance" : "open";
       const segmentId = String(r["Linked Segment"] ?? r["segmentId"] ?? r["Segment"] ?? "Unknown");
       const id = String(r["id"] ?? r["ID"] ?? "");
-      return { id, type: mappedType, status, segmentId } as any;
+      const isActive = r["IsActive"] !== undefined ? r["IsActive"] : true;
+      const plotColor = r["PLOT_COLOR"] || "#ef4444"; // Use API color, default to red
+      const plotColorInactive = r["PLOT_COLOR_INACTIVE"] || "#9ca3af"; // Use API color, default to grey
+      const plotType = r["PLOT_TYPE"] as "line" | "round" | "square" | undefined;
+      return { id, type: mappedType, status, segmentId, isActive, plotColor, plotColorInactive, plotType } as any;
     });
   }, [valveRows]);
 
@@ -424,6 +449,44 @@ export const PipelineNetworkEditor = () => {
     return <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>;
   };
 
+  const handleToggleIsActive = async (seId: number, currentIsActive: boolean) => {
+    setTogglingIds(prev => new Set(prev).add(seId));
+    try {
+      const result = await apiClient.updateSurveyEntryIsActive(seId, !currentIsActive);
+      if (result.success) {
+        toast({
+          title: "Success",
+          description: `Pipeline marked as ${!currentIsActive ? "Active" : "Inactive"}`,
+        });
+        // Update local state
+        setPropRows(prevRows =>
+          prevRows.map(row =>
+            (row.SE_ID === seId || row.id === seId) ? { ...row, IsActive: !currentIsActive } : row
+          )
+        );
+      } else {
+        toast({
+          title: "Error",
+          description: result.message || "Failed to update status",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error updating active status:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update status. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setTogglingIds(prev => {
+        const next = new Set(prev);
+        next.delete(seId);
+        return next;
+      });
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -531,25 +594,59 @@ export const PipelineNetworkEditor = () => {
                             sortDirection={tableConfig.sortConfig.direction}
                             onSort={(k) => tableConfig.handleSort(k as keyof DynamicRow)}
                           >
-                            {col}
+                            {formatColumnHeader(col)}
                           </SortableTableHead>
                         ))
                       )}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {sortedAndPaginatedData.map((row, idx) => (
-                      <TableRow key={String((row as any).id ?? idx)}>
-                        {propColumns.map((col) => {
-                          const value = (row as any)[col];
-                          return (
-                            <TableCell key={col}>
-                              {value === null || value === undefined || value === "" ? "-" : String(value)}
-                            </TableCell>
-                          );
-                        })}
-                      </TableRow>
-                    ))}
+                    {sortedAndPaginatedData.map((row, idx) => {
+                      const seId = Number((row as any).SE_ID ?? (row as any).id);
+                      const isActive = (row as any).IsActive ?? true;
+                      const isTogglingThisRow = togglingIds.has(seId);
+                      return (
+                        <TableRow key={String((row as any).id ?? idx)}>
+                          {propColumns.map((col) => {
+                            const value = (row as any)[col];
+                            // Special rendering for isActive column
+                            if (col.toLowerCase() === 'isactive') {
+                              return (
+                                <TableCell key={col}>
+                                  <Badge variant={value ? "default" : "outline"}>
+                                    {value ? "Active" : "Inactive"}
+                                  </Badge>
+                                </TableCell>
+                              );
+                            }
+                            // Format date columns
+                            if (isDateColumn(col)) {
+                              return (
+                                <TableCell key={col}>
+                                  {formatDateCell(value)}
+                                </TableCell>
+                              );
+                            }
+                            return (
+                              <TableCell key={col}>
+                                {value === null || value === undefined || value === "" ? "-" : String(value)}
+                              </TableCell>
+                            );
+                          })}
+                          <TableCell>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleToggleIsActive(seId, isActive)}
+                              disabled={isTogglingThisRow || propLoading}
+                              className="w-full"
+                            >
+                              {isTogglingThisRow ? "Updating..." : isActive ? "Deactivate" : "Activate"}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               )}

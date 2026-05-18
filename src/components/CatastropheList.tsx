@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -14,6 +15,10 @@ import { useTable } from "@/hooks/use-table";
 import { Badge } from "@/components/ui/badge";
 import { Edit, MapPin, Calendar } from "lucide-react";
 import { Catastrophe } from "./CatastropheManagement";
+import { formatDateCell, formatColumnHeader } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { apiClient } from "@/lib/api";
+import { Loader2 } from "lucide-react";
 
 interface CatastropheListProps {
   catastrophes: Catastrophe[];
@@ -52,6 +57,9 @@ export const CatastropheList = ({
   catastrophes,
   onEdit,
 }: CatastropheListProps) => {
+  const { toast } = useToast();
+  const [togglingIds, setTogglingIds] = useState<Set<number>>(new Set());
+
   const formatDate = (date: Date | null | undefined) => {
     if (!date) return "-";
     return new Intl.DateTimeFormat("en-US", {
@@ -67,6 +75,40 @@ export const CatastropheList = ({
     10,
     "id",
   );
+
+  const handleToggleIsActive = async (seId: number, currentIsActive: boolean, index: number) => {
+    setTogglingIds(prev => new Set(prev).add(seId));
+    try {
+      const result = await apiClient.updateSurveyEntryIsActive(seId, !currentIsActive);
+      if (result.success) {
+        toast({
+          title: "Success",
+          description: `Catastrophe marked as ${!currentIsActive ? "Active" : "Inactive"}`,
+        });
+        // Note: In a real app, you would update the local state or refetch
+        // For now, the parent component should handle the refresh
+      } else {
+        toast({
+          title: "Error",
+          description: result.message || "Failed to update status",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error updating active status:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update status. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setTogglingIds(prev => {
+        const next = new Set(prev);
+        next.delete(seId);
+        return next;
+      });
+    }
+  };
 
   return (
     <Card>
@@ -132,6 +174,14 @@ export const CatastropheList = ({
                     >
                       Reported Date
                     </SortableTableHead>
+                    <SortableTableHead
+                      sortKey="isActive"
+                      currentSortKey={tableConfig.sortConfig.key as string}
+                      sortDirection={tableConfig.sortConfig.direction}
+                      onSort={tableConfig.handleSort}
+                    >
+                      Status
+                    </SortableTableHead>
                     <SortableTableHead sortable={false} className="text-right">
                       Actions
                     </SortableTableHead>
@@ -171,8 +221,15 @@ export const CatastropheList = ({
                         <div className="flex items-center gap-1 text-sm text-muted-foreground">
                           <MapPin className="h-3 w-3" />
                           <span className="font-mono">
-                            {catastrophe.location.lat.toFixed(4)},{" "}
-                            {catastrophe.location.lng.toFixed(4)}
+                            {(() => {
+                              const lat = typeof catastrophe.location.lat === "number" ? catastrophe.location.lat : parseFloat(String(catastrophe.location.lat) || "0");
+                              const lng = typeof catastrophe.location.lng === "number" ? catastrophe.location.lng : parseFloat(String(catastrophe.location.lng) || "0");
+                              const validLat = !isNaN(lat) && Number.isFinite(lat);
+                              const validLng = !isNaN(lng) && Number.isFinite(lng);
+                              return validLat && validLng
+                                ? `${lat.toFixed(4)}, ${lng.toFixed(4)}`
+                                : "Invalid coordinates";
+                            })()}
                           </span>
                         </div>
                         {catastrophe.location.address && (
@@ -184,19 +241,41 @@ export const CatastropheList = ({
                       <TableCell>
                         <div className="flex items-center gap-1 text-sm">
                           <Calendar className="h-3 w-3 text-muted-foreground" />
-                          {formatDate(catastrophe.reportedDate)}
+                          {formatDateCell(catastrophe.reportedDate)}
                         </div>
                       </TableCell>
+                      <TableCell>
+                        <Badge variant={catastrophe.isActive ? "default" : "outline"}>
+                          {catastrophe.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                      </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onEdit(catastrophe)}
-                          className="gap-1"
-                        >
-                          <Edit className="h-3 w-3" />
-                          Edit
-                        </Button>
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleToggleIsActive(Number(catastrophe.id), catastrophe.isActive ?? true, catastrophes.indexOf(catastrophe))}
+                            disabled={togglingIds.has(Number(catastrophe.id))}
+                          >
+                            {togglingIds.has(Number(catastrophe.id)) ? (
+                              <>
+                                <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                                Updating...
+                              </>
+                            ) : (
+                              catastrophe.isActive ? "Deactivate" : "Activate"
+                            )}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onEdit(catastrophe)}
+                            className="gap-1"
+                          >
+                            <Edit className="h-3 w-3" />
+                            Edit
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

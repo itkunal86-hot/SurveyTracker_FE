@@ -3746,6 +3746,34 @@ class ApiClient {
       throw new Error(error?.message ?? "Failed to fetch valves");
     }
   }
+
+  async updateSurveyEntryIsActive(seId: number, isActive: boolean): Promise<ApiResponse<any>> {
+    try {
+      const body = {
+        SEID: seId,
+        IsActive: isActive,
+      };
+
+      const response = await this.request<any>("/SurveyEntries/updatesurveyentryisactive", {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+
+      return {
+        success: (response?.status_code ?? 200) >= 200 && (response?.status_code ?? 200) < 300,
+        message: response?.message ?? "Survey entry updated successfully",
+        data: response?.data ?? null,
+        timestamp: response?.timestamp ?? new Date().toISOString(),
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error?.message ?? "Failed to update survey entry",
+        data: null,
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
 }
 
 // Compatibility helpers for backward compatibility with existing components

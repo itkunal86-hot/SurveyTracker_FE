@@ -44,6 +44,10 @@ export interface Catastrophe {
     address?: string;
   };
   reportedDate: Date | null;
+  isActive?: boolean;
+  plotColor?: string;
+  plotColorInactive?: string;
+  plotType?: "line" | "round" | "square";
 }
 
 const CatastropheManagement = () => {
@@ -251,6 +255,7 @@ const CatastropheManagement = () => {
 
   // Transform pipeline GeoJSON data
   const mapPipelines = useMemo(() => {
+    debugger;
     if (!pipelinesGeoJSON?.data) return [];
 
     const geoJsonString = pipelinesGeoJSON.data;
@@ -320,6 +325,10 @@ const CatastropheManagement = () => {
           address: `${cat.location}`,
         },
         reportedDate: cat.reportedDate ? new Date(cat.reportedDate) : null,
+        isActive: cat.isActive !== undefined ? cat.isActive : true,
+        plotColor: cat.plotColor,
+        plotColorInactive: cat.plotColorInactive,
+        plotType: cat.plotType,
       }));
       setCatastrophes(geoJsonCatastrophes);
     }
@@ -495,14 +504,18 @@ const CatastropheManagement = () => {
                 {showRGIS ? (
                   <RGISMap
                     devices={mapConsumers as any[]}
-                    pipelines={mapPipelines}
-                    valves={mapValves}
+                    pipelines={mapPipelines as any}
+                    valves={mapValves as any}
                     catastrophes={mapCatastrophes.map((c) => ({
                       id: c.id,
                       name: c.type,
                       severity: c.severity,
                       coordinates: { lat: c.lat, lng: c.lng },
                       description: c.description,
+                      isActive: c.isActive,
+                      plotColor: c.plotColor,
+                      plotColorInactive: c.plotColorInactive,
+                      plotType: c.plotType,
                     }))}
                     showDevices={false}
                     showPipelines={mapPipelines.some(p => (p.coordinates?.length ?? 0) >= 2)}
@@ -516,8 +529,8 @@ const CatastropheManagement = () => {
                 ) : (
                   <LeafletMap
                     devices={[]}
-                    pipelines={mapPipelines}
-                    valves={mapValves}
+                    pipelines={mapPipelines as any}
+                    valves={mapValves as any}
                     showDevices={false}
                     showPipelines={mapPipelines.some(p => (p.coordinates?.length ?? 0) >= 2)}
                     showValves={mapValves.some(v => !!v.coordinates)}
@@ -527,6 +540,10 @@ const CatastropheManagement = () => {
                       severity: c.severity,
                       coordinates: { lat: c.lat, lng: c.lng },
                       description: c.description,
+                      isActive: c.isActive,
+                      plotColor: c.plotColor,
+                      plotColorInactive: c.plotColorInactive,
+                      plotType: c.plotType,
                     }))}
                     showCatastrophes={mapCatastrophes.length > 0}
                     onMapClick={handleMapClick}

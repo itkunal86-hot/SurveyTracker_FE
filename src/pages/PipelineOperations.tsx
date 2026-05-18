@@ -310,6 +310,10 @@ export const PipelineOperations = ({ titleOverride, defaultTab = "pipelines" }: 
       depth: pipeline.installation?.depth?.value || 1.5,
       status: pipeline.status === "OPERATIONAL" ? "normal" :
               pipeline.status === "MAINTENANCE" ? "warning" : "critical",
+      isActive: pipeline.isActive !== undefined ? pipeline.isActive : true,
+      plotColor: pipeline.plotColor || "#3b82f6",
+      plotColorInactive: pipeline.plotColorInactive || "#9ca3af",
+      plotType: pipeline.plotType as "line" | "round" | "square" | undefined,
     }));
   }, [pipelinesResponse]);
 
@@ -320,6 +324,10 @@ export const PipelineOperations = ({ titleOverride, defaultTab = "pipelines" }: 
       type: valve.type === "GATE" ? "control" : valve.type === "RELIEF" ? "emergency" : "isolation",
       status: valve.status === "OPEN" ? "open" : valve.status === "CLOSED" ? "closed" : "maintenance",
       segmentId: valve.pipelineId || "Unknown",
+      isActive: valve.isActive !== undefined ? valve.isActive : true,
+      plotColor: valve.plotColor || "#ef4444",
+      plotColorInactive: valve.plotColorInactive || "#9ca3af",
+      plotType: valve.plotType as "line" | "round" | "square" | undefined,
     }));
   }, [valvesResponse]);
 
@@ -335,6 +343,10 @@ export const PipelineOperations = ({ titleOverride, defaultTab = "pipelines" }: 
         lng: cat.coordinates.lng,
       },
       reportedDate: new Date(cat.reportedAt),
+      isActive: cat.isActive !== undefined ? cat.isActive : true,
+      plotColor: cat.plotColor || "#f97316",
+      plotColorInactive: cat.plotColorInactive || "#9ca3af",
+      plotType: cat.plotType as "line" | "round" | "square" | undefined,
     }));
   }, [catastrophesResponse]);
 

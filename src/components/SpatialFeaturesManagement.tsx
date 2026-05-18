@@ -286,16 +286,24 @@ export function SpatialFeaturesManagement() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {selectedPipelineData.coordinates.map((coord, index) => (
-                          <TableRow key={index}>
-                            <TableCell>
-                              <Badge variant="outline">{coord.pointType}</Badge>
-                            </TableCell>
-                            <TableCell>{coord.lat.toFixed(6)}</TableCell>
-                            <TableCell>{coord.lng.toFixed(6)}</TableCell>
-                            <TableCell>{coord.elevation || "N/A"} m</TableCell>
-                          </TableRow>
-                        ))}
+                        {selectedPipelineData.coordinates.map((coord, index) => {
+                          // Ensure coordinates are valid numbers
+                          const lat = typeof coord.lat === "number" ? coord.lat : parseFloat(String(coord.lat) || "0");
+                          const lng = typeof coord.lng === "number" ? coord.lng : parseFloat(String(coord.lng) || "0");
+                          const isValidLat = !isNaN(lat) && Number.isFinite(lat);
+                          const isValidLng = !isNaN(lng) && Number.isFinite(lng);
+
+                          return (
+                            <TableRow key={index}>
+                              <TableCell>
+                                <Badge variant="outline">{coord.pointType}</Badge>
+                              </TableCell>
+                              <TableCell>{isValidLat ? lat.toFixed(6) : "Invalid"}</TableCell>
+                              <TableCell>{isValidLng ? lng.toFixed(6) : "Invalid"}</TableCell>
+                              <TableCell>{coord.elevation || "N/A"} m</TableCell>
+                            </TableRow>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </div>

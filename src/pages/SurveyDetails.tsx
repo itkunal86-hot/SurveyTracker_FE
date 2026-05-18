@@ -303,6 +303,10 @@ export const SurveyDetails = () => {
           depth: 0,
           status: "normal" as const,
           coordinates: pipelineCoordinates,
+          isActive: true,
+          plotColor: "#3b82f6",
+          plotColorInactive: "#9ca3af",
+          plotType: "line" as const,
         },
       ]
       : [];

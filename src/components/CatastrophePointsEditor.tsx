@@ -27,6 +27,7 @@ import {
   transformValveFeatures,
   transformConsumerFeatures,
 } from "@/lib/geoJsonParser";
+import { formatColumnHeader, formatDateCell, isDateColumn } from "@/lib/utils";
 
 // Dynamic row type for arbitrary property names
 type DynamicRow = Record<string, any>;
@@ -228,11 +229,19 @@ export const CatastrophePointsEditor = () => {
       const diameterVal = Number(r["diameter"] ?? r["Diameter"] ?? r["pipeDiameter"] ?? r["PipeDiameter"] ?? 200);
       const depthVal = Number(r["depth"] ?? r["Depth"] ?? r["installationDepth"] ?? r["InstallationDepth"] ?? 1.5);
       const status: MapPipelineSegment["status"] = "normal";
+      const isActive = r["IsActive"] !== undefined ? r["IsActive"] : true;
+      const plotColor = r["PLOT_COLOR"] || "#3b82f6";
+      const plotColorInactive = r["PLOT_COLOR_INACTIVE"] || "#9ca3af";
+      const plotType = r["PLOT_TYPE"] as "line" | "round" | "square" | undefined;
       return {
         id,
         diameter: Number.isFinite(diameterVal) ? diameterVal : 200,
         depth: Number.isFinite(depthVal) ? depthVal : 1.5,
         status,
+        isActive,
+        plotColor,
+        plotColorInactive,
+        plotType,
       };
     });
   }, [pipelineRows]);
@@ -259,7 +268,11 @@ export const CatastrophePointsEditor = () => {
 
         const normalized = arr.map((item) => ({ ...item }));
         setRows(normalized);
-        const cols = normalized.length > 0 ? Object.keys(normalized[0]) : [];
+        const cols = normalized.length > 0
+          ? Object.keys(normalized[0]).filter(col =>
+              !['Plot', 'coordinates', 'PLOT_COLOR', 'PLOT_COLOR_INACTIVE', 'PLOT_TYPE', 'LAT', 'LNG', 'lat', 'lng', 'id', 'ID'].includes(col)
+            )
+          : [];
         setColumns(cols);
       } catch (e: any) {
         setError(e?.message || "Failed to load data");
@@ -318,12 +331,19 @@ export const CatastrophePointsEditor = () => {
   // Derive simple valves for map layer from dynamic rows (best-effort mapping)
   const mapValves: MapValve[] = useMemo(() => {
     return rows.map((r, idx) => {
+      // Extract Plot sub-object properties (new structure)
+      const plotData = r["Plot"] || {};
+
       const rawType = String(r["Type"] ?? r["type"] ?? r["Category"] ?? "").toLowerCase();
       const mappedType: MapValve["type"] = rawType.includes("emergency") ? "emergency" : rawType.includes("isolation") ? "isolation" : "control";
       const status: MapValve["status"] = rawType.includes("critical") ? "closed" : rawType.includes("maintenance") ? "maintenance" : "open";
       const segment = String(r["Linked Segment"] ?? r["segmentId"] ?? r["Segment"] ?? "Unknown");
       const id = String(r["id"] ?? r["ID"] ?? `ROW_${idx}`);
-      return { id, type: mappedType, status, segmentId: segment };
+      const isActive = r["IsActive"] !== undefined ? r["IsActive"] : true;
+      const plotColor = plotData.PLOT_COLOR || r["PLOT_COLOR"] || "#ef4444";
+      const plotColorInactive = plotData.PLOT_COLOR_INACTIVE || r["PLOT_COLOR_INACTIVE"] || "#9ca3af";
+      const plotType = (plotData.PLOT_TYPE || r["PLOT_TYPE"]) as "line" | "round" | "square" | undefined;
+      return { id, type: mappedType, status, segmentId: segment, isActive, plotColor, plotColorInactive, plotType };
     });
   }, [rows]);
 
@@ -334,10 +354,17 @@ export const CatastrophePointsEditor = () => {
       return Number.isFinite(n) ? n : NaN;
     };
     return rows.map((r, idx) => {
+      // Extract Plot sub-object properties (new structure)
+      const plotData = r["Plot"] || {};
+
       const id = String(r["id"] ?? r["ID"] ?? `CATA_${idx + 1}`);
       const name = String(r["name"] ?? r["title"] ?? r["Type"] ?? r["type"] ?? id);
       const severity = String(r["severity"] ?? r["Severity"] ?? r["level"] ?? r["Level"] ?? "");
       const status = String(r["status"] ?? r["Status"] ?? "REPORTED");
+      const isActive = r["IsActive"] !== undefined ? r["IsActive"] : true;
+      const plotColor = plotData.PLOT_COLOR || r["PLOT_COLOR"] || "#f97316";
+      const plotColorInactive = plotData.PLOT_COLOR_INACTIVE || r["PLOT_COLOR_INACTIVE"] || "#9ca3af";
+      const plotType = (plotData.PLOT_TYPE || r["PLOT_TYPE"]) as "line" | "round" | "square" | undefined;
       let coordinates: { lat: number; lng: number } | undefined;
 
       const candidates: any[] = [
@@ -357,7 +384,7 @@ export const CatastrophePointsEditor = () => {
         }
       }
 
-      return { id, name, severity, status, coordinates };
+      return { id, name, severity, status, coordinates, isActive, plotColor, plotColorInactive, plotType };
     });
   }, [rows]);
 
@@ -617,7 +644,7 @@ export const CatastrophePointsEditor = () => {
                               sortDirection={tableConfig.sortConfig.direction}
                               onSort={(k) => tableConfig.handleSort(k as keyof DynamicRow)}
                             >
-                              {col}
+                              {formatColumnHeader(col)}
                             </SortableTableHead>
                           ))
                         )}
@@ -628,6 +655,24 @@ export const CatastrophePointsEditor = () => {
                         <TableRow key={String(row.id ?? idx)}>
                           {columns.map((col) => {
                             const value = row[col];
+                            // Special rendering for isActive column
+                            if (col.toLowerCase() === 'isactive') {
+                              return (
+                                <TableCell key={col}>
+                                  <Badge variant={value ? "default" : "outline"}>
+                                    {value ? "Active" : "Inactive"}
+                                  </Badge>
+                                </TableCell>
+                              );
+                            }
+                            // Format date columns
+                            if (isDateColumn(col)) {
+                              return (
+                                <TableCell key={col}>
+                                  {formatDateCell(value)}
+                                </TableCell>
+                              );
+                            }
                             return (
                               <TableCell key={col}>
                                 {value === null || value === undefined || value === "" ? "-" : String(value)}

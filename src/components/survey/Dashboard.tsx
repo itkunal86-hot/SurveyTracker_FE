@@ -278,72 +278,7 @@ export const SurveyDashboard = () => {
         </Card>
       </div>
 
-      {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      
-        <Card>
-          <CardHeader>
-            <CardTitle>Usage Statistics</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={usageData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="day" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="surveys"
-                  stroke="#8884d8"
-                  strokeWidth={2}
-                  name="Surveys Completed"
-                />
-                <Line
-                  type="monotone"
-                  dataKey="instruments"
-                  stroke="#82ca9d"
-                  strokeWidth={2}
-                  name="Instruments Used"
-                />
-                <Line
-                  type="monotone"
-                  dataKey="efficiency"
-                  stroke="#ffc658"
-                  strokeWidth={2}
-                  name="Efficiency %"
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-      
-        <Card>
-          <CardHeader>
-            <CardTitle>Sync Status</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span>Global Sync</span>
-                <div className="flex items-center space-x-2">
-                  <Wifi className="w-4 h-4 text-green-500" />
-                  <span className="text-sm text-green-600">Connected</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Last Successful Sync</span>
-                <span className="text-sm">2 minutes ago</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Instruments Synced</span>
-                <span className="text-sm">142/156</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div> */}
+ 
     </div>
   );
 };

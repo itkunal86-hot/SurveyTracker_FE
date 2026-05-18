@@ -4,6 +4,7 @@ import { LeafletMap } from "@/components/LeafletMap";
 import { RGISMap } from "@/components/RGISMap";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -26,6 +27,9 @@ import { MapPin, AlertTriangle, Loader2, X, ChevronDown, ChevronRight } from "lu
 import { useTable } from "@/hooks/use-table";
 import { useDeviceLogs } from "@/hooks/useApiQueries";
 import { apiClient } from "@/lib/api";
+import { formatColumnHeader, formatDateCell, isDateColumn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 
 // Dynamic row type for arbitrary property names
 type DynamicRow = Record<string, any>;
@@ -44,9 +48,14 @@ interface ConsumerPoint {
   status?: string;
   coordinates: { lat: number; lng: number };
   consumers: Consumer[];
+  isActive?: boolean;
+  plotColor?: string;
+  plotColorInactive?: string;
+  plotType?: "line" | "round" | "square";
 }
 
 export const ConsumerPointsEditor = () => {
+  const { toast } = useToast();
   const [showRGIS, setShowRGIS] = useState(true);
   const [rows, setRows] = useState<DynamicRow[]>([]);
   const [columns, setColumns] = useState<string[]>([]);
@@ -57,6 +66,7 @@ export const ConsumerPointsEditor = () => {
   const [loadingConsumers, setLoadingConsumers] = useState(false);
   const [consumerModalOpen, setConsumerModalOpen] = useState(false);
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
+  const [togglingIds, setTogglingIds] = useState<Set<number>>(new Set());
 
   // Handle map point click to show consumers at that point
   // const handleMapPointClick = (lat: number, lng: number) => {
@@ -114,9 +124,14 @@ export const ConsumerPointsEditor = () => {
 
         setRows(normalized);
         if (normalized.length > 0) {
-          // Filter out complex objects and arrays from columns (like consumers array)
+          // Filter out complex objects and arrays from columns (like consumers array and Plot object)
           const allKeys = Object.keys(normalized[0]);
           const primitiveColumns = allKeys.filter((key) => {
+            // Explicitly exclude Plot object, coordinates, and plot-related properties
+            // Exclude id/ID since SE_ID is the actual API field (avoid duplication)
+            // Exclude LAT/LNG (API fields) and keep only lat/lng (from geometry - source of truth)
+            if (['Plot', 'coordinates', 'PLOT_COLOR', 'PLOT_COLOR_INACTIVE', 'PLOT_TYPE', 'id', 'ID', 'LAT', 'LNG'].includes(key)) return false;
+
             const value = normalized[0][key];
             return (
               value === null ||
@@ -144,18 +159,27 @@ export const ConsumerPointsEditor = () => {
 
   // Derive map points
   const mapConsumers: ConsumerPoint[] = useMemo(() => {
-    return rows.map((r) => ({
-      id: String(r.id || r.SE_ID || ""),
-      name: String(r.Consumer_Name || "Consumer"),
-      code: String(r.Consumer_Code || ""),
-      mobile: String(r.Mobile || ""),
-      status: String(r.SE_VALUE || ""),
-      coordinates: {
-        lat: Number(r.lat || r.CONSUMER_LAT || 0),
-        lng: Number(r.lng || r.CONSUMER_LNG || 0),
-      },
-      consumers: r.consumers || []
-    }));
+    return rows.map((r) => {
+      // Extract Plot sub-object properties (new structure)
+      const plotData = r["Plot"] || {};
+
+      return {
+        id: String(r.id || r.SE_ID || ""),
+        name: String(r.Consumer_Name || "Consumer"),
+        code: String(r.Consumer_Code || ""),
+        mobile: String(r.Mobile || ""),
+        status: String(r.SE_VALUE || ""),
+        coordinates: {
+          lat: Number(r.lat || r.CONSUMER_LAT || 0),
+          lng: Number(r.lng || r.CONSUMER_LNG || 0),
+        },
+        consumers: r.consumers || [],
+        isActive: r["IsActive"] !== undefined ? r["IsActive"] : true,
+        plotColor: plotData.PLOT_COLOR || r["PLOT_COLOR"] || "#10b981",
+        plotColorInactive: plotData.PLOT_COLOR_INACTIVE || r["PLOT_COLOR_INACTIVE"] || "#9ca3af",
+        plotType: (plotData.PLOT_TYPE || r["PLOT_TYPE"]) as "line" | "round" | "square" | undefined,
+      };
+    });
   }, [rows]);
 
   // Devices from DeviceLog for context
@@ -178,6 +202,44 @@ export const ConsumerPointsEditor = () => {
       lastPing: device.lastSeen || "Unknown",
     }));
   }, [deviceLogsResponse]);
+
+  const handleToggleIsActive = async (seId: number, currentIsActive: boolean) => {
+    setTogglingIds(prev => new Set(prev).add(seId));
+    try {
+      const result = await apiClient.updateSurveyEntryIsActive(seId, !currentIsActive);
+      if (result.success) {
+        toast({
+          title: "Success",
+          description: `Consumer marked as ${!currentIsActive ? "Active" : "Inactive"}`,
+        });
+        // Update local state
+        setRows(prevRows =>
+          prevRows.map(row =>
+            (row.SE_ID === seId || row.id === seId) ? { ...row, IsActive: !currentIsActive } : row
+          )
+        );
+      } else {
+        toast({
+          title: "Error",
+          description: result.message || "Failed to update status",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error updating active status:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update status. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setTogglingIds(prev => {
+        const next = new Set(prev);
+        next.delete(seId);
+        return next;
+      });
+    }
+  };
 
   return (
     <div className="p-0 space-y-6">
@@ -271,7 +333,7 @@ export const ConsumerPointsEditor = () => {
                             sortDirection={tableConfig.sortConfig.direction}
                             onSort={(k) => tableConfig.handleSort(k as keyof DynamicRow)}
                           >
-                            {col}
+                            {formatColumnHeader(col)}
                           </SortableTableHead>
                         ))
                       )}
@@ -299,12 +361,47 @@ export const ConsumerPointsEditor = () => {
 
                       columns.forEach((col) => {
                         const value = row[col];
-                        mainRowCells.push(
-                          <TableCell key={col} className="whitespace-nowrap">
-                            {value === null || value === undefined || value === "" ? "-" : String(value)}
-                          </TableCell>
-                        );
+                        // Special rendering for isActive column
+                        if (col.toLowerCase() === 'isactive') {
+                          mainRowCells.push(
+                            <TableCell key={col} className="whitespace-nowrap">
+                              <Badge variant={value ? "default" : "outline"}>
+                                {value ? "Active" : "Inactive"}
+                              </Badge>
+                            </TableCell>
+                          );
+                        } else if (isDateColumn(col)) {
+                          // Format date columns
+                          mainRowCells.push(
+                            <TableCell key={col} className="whitespace-nowrap">
+                              {formatDateCell(value)}
+                            </TableCell>
+                          );
+                        } else {
+                          mainRowCells.push(
+                            <TableCell key={col} className="whitespace-nowrap">
+                              {value === null || value === undefined || value === "" ? "-" : String(value)}
+                            </TableCell>
+                          );
+                        }
                       });
+
+                      // Add toggle button as last cell
+                      const seId = Number(row.SE_ID ?? row.id);
+                      const isActive = row.IsActive ?? true;
+                      const isTogglingThisRow = togglingIds.has(seId);
+                      mainRowCells.push(
+                        <TableCell key="toggle" className="whitespace-nowrap">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleToggleIsActive(seId, isActive)}
+                            disabled={isTogglingThisRow || loading}
+                          >
+                            {isTogglingThisRow ? "Updating..." : isActive ? "Deactivate" : "Activate"}
+                          </Button>
+                        </TableCell>
+                      );
 
                       const result: JSX.Element[] = [
                         <TableRow key={rowId}>

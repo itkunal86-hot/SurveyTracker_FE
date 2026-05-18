@@ -6,18 +6,10 @@ import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
 import Point from "@arcgis/core/geometry/Point";
 import Polyline from "@arcgis/core/geometry/Polyline";
 import "@arcgis/core/assets/esri/themes/light/main.css";
+import { colorNameToRgb, getSeverityColorRgb, resolveColorRgb } from "@/lib/colorUtils";
 
 const DEFAULT_CENTER: [number, number] = [91.7362, 26.1445]; // longitude, latitude
 const DEFAULT_ZOOM = 13;
-
-const getCatastropheColor = (severity?: string): [number, number, number] => {
-  const s = String(severity || "").toLowerCase();
-  if (s.includes("critical")) return [153, 27, 27]; // #991b1b - red-900
-  if (s.includes("high") || s.includes("major")) return [239, 68, 68]; // #ef4444 - red-500
-  if (s.includes("medium") || s.includes("moderate")) return [245, 158, 11]; // #f59e0b - amber-500
-  if (s.includes("low") || s.includes("minor")) return [34, 197, 94]; // #22c55e - green-500
-  return [168, 85, 247]; // #a855f7 - purple-500
-};
 
 const DEFAULT_PIPELINE_ROUTES: [number, number][][] = [
   [
@@ -101,6 +93,10 @@ interface PipelineSegment {
   depth: number;
   status: "normal" | "warning" | "critical" | "maintenance";
   coordinates?: Array<{ lat: number; lng: number }>;
+  isActive?: boolean;
+  plotType?: "line" | "round" | "square";
+  plotColor?: string;
+  plotColorInactive?: string;
 }
 
 interface ValvePoint {
@@ -110,6 +106,10 @@ interface ValvePoint {
   status: "open" | "closed" | "maintenance" | "fault";
   segmentId: string;
   coordinates?: { lat: number; lng: number };
+  isActive?: boolean;
+  plotType?: "line" | "round" | "square";
+  plotColor?: string;
+  plotColorInactive?: string;
 }
 type Consumer = {
   name: string
@@ -123,7 +123,11 @@ interface ConsumerPoint {
   mobile?: string;
   status?: string;
   coordinates: { lat: number; lng: number };
-   consumers: Consumer[];
+  consumers: Consumer[];
+  isActive?: boolean;
+  plotColor?: string;
+  plotColorInactive?: string;
+  plotType?: "line" | "round" | "square";
 }
 
 interface CatastrophePoint {
@@ -133,6 +137,10 @@ interface CatastrophePoint {
   status?: string;
   coordinates?: { lat: number; lng: number };
   description?: string;
+  isActive?: boolean;
+  plotType?: "line" | "round" | "square";
+  plotColor?: string;
+  plotColorInactive?: string;
 }
 
 interface RGISMapProps {
@@ -272,12 +280,18 @@ export const RGISMap = ({
           paths: [coords] as any,
         });
 
-        const color =
-          pipeline.status === "normal"
-            ? [59, 130, 246]
+        // Use plotColor/plotColorInactive if provided, otherwise fallback to status-based colors
+        const color = resolveColorRgb({
+          isActive: pipeline.isActive,
+          plotColor: pipeline.plotColor,
+          plotColorInactive: pipeline.plotColorInactive,
+          severity: pipeline.status,
+          default: pipeline.status === "normal"
+            ? "#3b82f6" // blue
             : pipeline.status === "warning"
-            ? [245, 158, 11]
-            : [239, 68, 68];
+            ? "#f59e0b" // amber
+            : "#ef4444", // red
+        });
 
         const lineSymbol = {
           type: "simple-line",
@@ -291,7 +305,7 @@ export const RGISMap = ({
           attributes: pipeline,
           popupTemplate: {
             title: pipeline.name ?? `Pipeline ${pipeline.id}`,
-            content: "ID: {id}<br>Diameter: {diameter}mm<br>Depth: {depth}m",
+            content: "ID: {id}<br>Diameter: {diameter}mm<br>Depth: {depth}m<br>Status: {isActive ? 'Active' : 'Inactive'}",
           },
         });
 
@@ -319,16 +333,27 @@ export const RGISMap = ({
         });
         allPoints.push(pt);
 
-        const color =
-          valve.status === "open"
-            ? [34, 197, 94]
+        // Use plotColor/plotColorInactive if provided, otherwise fallback to status-based colors
+        const color = resolveColorRgb({
+          isActive: valve.isActive,
+          plotColor: valve.plotColor,
+          plotColorInactive: valve.plotColorInactive,
+          severity: valve.status === "open" ? "low" : valve.status === "closed" ? "high" : "medium",
+          default: valve.status === "open"
+            ? "#22c55e" // green for open
             : valve.status === "closed"
-            ? [239, 68, 68]
-            : [245, 158, 11];
+            ? "#ef4444" // red for closed
+            : "#f59e0b", // amber for maintenance
+        });
+
+        // Map PLOT_TYPE to RGIS marker style: "line" | "round" | "square"
+        const markerStyle = valve.plotType === "round" ? "circle"
+                          : valve.plotType === "line" ? "cross"
+                          : "square"; // default to square
 
         const markerSymbol = {
           type: "simple-marker",
-          style: "square",
+          style: markerStyle,
           color: color,
           size: "12px",
           outline: {
@@ -343,7 +368,7 @@ export const RGISMap = ({
           attributes: valve,
           popupTemplate: {
             title: valve.name ?? `Valve ${valve.id}`,
-            content: "Type: {type}<br>Status: {status}<br>Segment: {segmentId}",
+            content: "Type: {type}<br>Status: {status}<br>Segment: {segmentId}<br>Active: {isActive ? 'Yes' : 'No'}",
           },
         });
 
@@ -398,9 +423,16 @@ export const RGISMap = ({
 
     allPoints.push(pt);
 
+    const color = resolveColorRgb({
+      isActive: consumerPoint.isActive,
+      plotColor: consumerPoint.plotColor,
+      plotColorInactive: consumerPoint.plotColorInactive,
+      default: "#22c55e", // green for customer
+    });
+
     const markerSymbol = {
       type: "simple-marker",
-      color: [251, 146, 60],
+      color: color,
       outline: {
         color: [255, 255, 255],
         width: 2,
@@ -425,6 +457,8 @@ export const RGISMap = ({
         </div>
         <br/>
         <span style="color:#666;">Status: ${consumerPoint.status || "N/A"}</span>
+        <br/>
+        <span style="color:#666;">Active: ${consumerPoint.isActive ? 'Yes' : 'No'}</span>
       </div>
     `;
 
@@ -452,9 +486,22 @@ export const RGISMap = ({
         });
         allPoints.push(pt);
 
-        const color = getCatastropheColor(catastrophe.severity);
+        // Use plotColor/plotColorInactive if provided, otherwise fallback to severity-based colors
+        const color = resolveColorRgb({
+          isActive: catastrophe.isActive,
+          plotColor: catastrophe.plotColor,
+          plotColorInactive: catastrophe.plotColorInactive,
+          severity: catastrophe.severity,
+        });
+
+        // Map PLOT_TYPE to RGIS marker style: "line" | "round" | "square"
+        const markerStyle = catastrophe.plotType === "round" ? "circle"
+                          : catastrophe.plotType === "line" ? "cross"
+                          : "circle"; // default to circle for catastrophes
+
         const markerSymbol = {
           type: "simple-marker",
+          style: markerStyle,
           color: color,
           size: "10px",
           outline: {
@@ -469,7 +516,7 @@ export const RGISMap = ({
           attributes: catastrophe,
           popupTemplate: {
             title: catastrophe.name ?? `Catastrophe ${catastrophe.id}`,
-            content: `Severity: {severity}<br>Status: {status}<br>Description: {description}`,
+            content: `Severity: {severity}<br>Status: {status}<br>Description: {description}<br>Active: {isActive ? 'Yes' : 'No'}`,
           },
         });
 

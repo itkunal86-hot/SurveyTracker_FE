@@ -4,6 +4,7 @@ import { LeafletMap } from "@/components/LeafletMap";
 import { RGISMap } from "@/components/RGISMap";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -18,7 +19,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { MapPin, AlertTriangle } from "lucide-react";
 import { useTable } from "@/hooks/use-table";
 import { useDeviceLogs } from "@/hooks/useApiQueries";
-import { API_BASE_PATH } from "@/lib/api";
+import { API_BASE_PATH, apiClient } from "@/lib/api";
+import { formatColumnHeader, formatDateCell, isDateColumn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 
 // Dynamic row type for arbitrary property names
 type DynamicRow = Record<string, any>;
@@ -31,6 +35,10 @@ interface MapValve {
   segmentId: string;
   coordinates?: { lat: number; lng: number };
   name?: string;
+  isActive?: boolean;
+  plotColor?: string;
+  plotColorInactive?: string;
+  plotType?: "line" | "round" | "square";
 }
 
 // Map pipeline segment shape expected by LeafletMap
@@ -43,14 +51,20 @@ interface MapPipelineSegment {
   status: "normal" | "warning" | "critical" | "maintenance";
   material?: string;
   coordinates?: Array<{ lat: number; lng: number; elevation?: number }>;
+  isActive?: boolean;
+  plotColor?: string;
+  plotColorInactive?: string;
+  plotType?: "line" | "round" | "square";
 }
 
 export const ValvePointsEditor = () => {
+  const { toast } = useToast();
   const [showRGIS, setShowRGIS] = useState(true);
   const [rows, setRows] = useState<DynamicRow[]>([]);
   const [columns, setColumns] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [togglingIds, setTogglingIds] = useState<Set<number>>(new Set());
 
   const [pipelineRows, setPipelineRows] = useState<DynamicRow[]>([]);
   const [pipelineError, setPipelineError] = useState<string | null>(null);
@@ -85,6 +99,10 @@ export const ValvePointsEditor = () => {
         const normalized = features.map((feature: any, idx: number) => {
           const props = feature.properties || {};
           const coords = feature.geometry?.coordinates || [0, 0];
+
+          // Extract Plot sub-object properties (new structure)
+          const plotData = props.Plot || {};
+
           return {
             SE_ID: props.SE_ID || idx,
             SE_VALUE: props.SE_VALUE || "",
@@ -95,13 +113,21 @@ export const ValvePointsEditor = () => {
             control_station: props["control station"] || "",
             SE_SURVEY_SESSION_ID: props.SE_SURVEY_SESSION_ID || "",
             SHAPE_LENGTH: props.SHAPE_LENGTH || "",
+            IsActive: props.IsActive !== undefined ? props.IsActive : true,
+            PLOT_COLOR: plotData.PLOT_COLOR || "",
+            PLOT_COLOR_INACTIVE: plotData.PLOT_COLOR_INACTIVE || "",
+            PLOT_TYPE: plotData.PLOT_TYPE || "",
             longitude: coords[0] || 0,
             latitude: coords[1] || 0,
           };
         });
 
         setRows(normalized);
-        const cols = normalized.length > 0 ? Object.keys(normalized[0]) : [];
+        const cols = normalized.length > 0
+          ? Object.keys(normalized[0]).filter(col =>
+              !['Plot', 'coordinates', 'PLOT_COLOR', 'PLOT_COLOR_INACTIVE', 'PLOT_TYPE', 'LAT', 'LNG', 'lat', 'lng', 'id', 'ID'].includes(col)
+            )
+          : [];
         setColumns(cols);
       } catch (e: any) {
         setError(e?.message || "Failed to load data");
@@ -156,7 +182,11 @@ export const ValvePointsEditor = () => {
       const longitude = Number(r.longitude) || 0;
       const coordinates = latitude && longitude ? { lat: latitude, lng: longitude } : undefined;
       const name = r["bulb_station"] || `Valve ${id}`;
-      return { id, type: mappedType, status, segmentId: segment, coordinates, name };
+      const isActive = r["IsActive"] !== undefined ? r["IsActive"] : true;
+      const plotColor = r["PLOT_COLOR"] || "#ef4444"; // Use API color, default to red
+      const plotColorInactive = r["PLOT_COLOR_INACTIVE"] || "#9ca3af"; // Use API color, default to grey
+      const plotType = r["PLOT_TYPE"] as "line" | "round" | "square" | undefined;
+      return { id, type: mappedType, status, segmentId: segment, coordinates, name, isActive, plotColor, plotColorInactive, plotType };
     });
   }, [rows]);
 
@@ -188,11 +218,19 @@ export const ValvePointsEditor = () => {
       const diameterVal = Number(r["diameter"] ?? r["Diameter"] ?? r["pipeDiameter"] ?? r["PipeDiameter"] ?? 200);
       const depthVal = Number(r["depth"] ?? r["Depth"] ?? r["installationDepth"] ?? r["InstallationDepth"] ?? 1.5);
       const status: MapPipelineSegment["status"] = "normal";
+      const isActive = r["IsActive"] !== undefined ? r["IsActive"] : true;
+      const plotColor = r["PLOT_COLOR"] || "#3b82f6"; // Use API color, default to blue
+      const plotColorInactive = r["PLOT_COLOR_INACTIVE"] || "#9ca3af"; // Use API color, default to grey
+      const plotType = r["PLOT_TYPE"] as "line" | "round" | "square" | undefined;
       return {
         id,
         diameter: Number.isFinite(diameterVal) ? diameterVal : 200,
         depth: Number.isFinite(depthVal) ? depthVal : 1.5,
         status,
+        isActive,
+        plotColor,
+        plotColorInactive,
+        plotType,
       };
     });
   }, [pipelineRows]);
@@ -200,6 +238,44 @@ export const ValvePointsEditor = () => {
   const showDevices = mapDevices.length > 0;
   const showPipelines = mapPipelines.length > 0;
   const showValves = mapValves.length > 0;
+
+  const handleToggleIsActive = async (seId: number, currentIsActive: boolean) => {
+    setTogglingIds(prev => new Set(prev).add(seId));
+    try {
+      const result = await apiClient.updateSurveyEntryIsActive(seId, !currentIsActive);
+      if (result.success) {
+        toast({
+          title: "Success",
+          description: `Valve marked as ${!currentIsActive ? "Active" : "Inactive"}`,
+        });
+        // Update local state
+        setRows(prevRows =>
+          prevRows.map(row =>
+            (row.SE_ID === seId || row.id === seId) ? { ...row, IsActive: !currentIsActive } : row
+          )
+        );
+      } else {
+        toast({
+          title: "Error",
+          description: result.message || "Failed to update status",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error updating active status:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update status. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setTogglingIds(prev => {
+        const next = new Set(prev);
+        next.delete(seId);
+        return next;
+      });
+    }
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -282,25 +358,59 @@ export const ValvePointsEditor = () => {
                             sortDirection={tableConfig.sortConfig.direction}
                             onSort={(k) => tableConfig.handleSort(k as keyof DynamicRow)}
                           >
-                            {col}
+                            {formatColumnHeader(col)}
                           </SortableTableHead>
                         ))
                       )}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {sortedAndPaginatedData.map((row, idx) => (
-                      <TableRow key={String(row.id ?? idx)}>
-                        {columns.map((col) => {
-                          const value = row[col];
-                          return (
-                            <TableCell key={col}>
-                              {value === null || value === undefined || value === "" ? "-" : String(value)}
-                            </TableCell>
-                          );
-                        })}
-                      </TableRow>
-                    ))}
+                    {sortedAndPaginatedData.map((row, idx) => {
+                      const seId = Number(row.SE_ID ?? row.id);
+                      const isActive = row.IsActive ?? true;
+                      const isTogglingThisRow = togglingIds.has(seId);
+                      return (
+                        <TableRow key={String(row.id ?? idx)}>
+                          {columns.map((col) => {
+                            const value = row[col];
+                            // Special rendering for isActive column
+                            if (col.toLowerCase() === 'isactive') {
+                              return (
+                                <TableCell key={col}>
+                                  <Badge variant={value ? "default" : "outline"}>
+                                    {value ? "Active" : "Inactive"}
+                                  </Badge>
+                                </TableCell>
+                              );
+                            }
+                            // Format date columns
+                            if (isDateColumn(col)) {
+                              return (
+                                <TableCell key={col}>
+                                  {formatDateCell(value)}
+                                </TableCell>
+                              );
+                            }
+                            return (
+                              <TableCell key={col}>
+                                {value === null || value === undefined || value === "" ? "-" : String(value)}
+                              </TableCell>
+                            );
+                          })}
+                          <TableCell>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleToggleIsActive(seId, isActive)}
+                              disabled={isTogglingThisRow || loading}
+                              className="w-full"
+                            >
+                              {isTogglingThisRow ? "Updating..." : isActive ? "Deactivate" : "Activate"}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               )}

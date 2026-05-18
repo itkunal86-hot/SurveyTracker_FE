@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SurveyHistoryLog as SurveyHistoryLogType } from "@/types/admin";
+import { formatDateCell } from "@/lib/utils";
 
 const mockHistoryLogs: SurveyHistoryLogType[] = [
   {
@@ -391,10 +392,10 @@ export default function SurveyHistoryLog() {
                       <div className="space-y-1">
                         <div className="flex items-center gap-1 text-sm">
                           <Calendar className="h-3 w-3" />
-                          {new Date(log.fromDate).toLocaleDateString()}
+                          {formatDateCell(log.fromDate)}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          to {new Date(log.toDate).toLocaleDateString()}
+                          to {formatDateCell(log.toDate)}
                         </div>
                       </div>
                     </TableCell>
@@ -407,7 +408,7 @@ export default function SurveyHistoryLog() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {new Date(log.createdAt).toLocaleDateString()}
+                      {formatDateCell(log.createdAt)}
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className="text-xs">

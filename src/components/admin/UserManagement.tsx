@@ -11,6 +11,7 @@ import { Plus, Edit, Trash2, UserCheck, Users, Shield, Loader2 } from "lucide-re
 import { useToast } from "@/hooks/use-toast";
 import { apiClient, type UserData } from "@/lib/api";
 import type { User } from "@/types/admin";
+import { formatDateCell } from "@/lib/utils";
 
 interface UserFormData {
   firstName: string;
@@ -442,12 +443,12 @@ export default function UserManagement() {
                     </TableCell>
                     <TableCell>
                       {user.lastLogin
-                        ? new Date(user.lastLogin).toLocaleDateString()
+                        ? formatDateCell(user.lastLogin)
                         : "Never"
                       }
                     </TableCell>
                     <TableCell>
-                      {new Date(user.createdAt).toLocaleDateString()}
+                      {formatDateCell(user.createdAt)}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">

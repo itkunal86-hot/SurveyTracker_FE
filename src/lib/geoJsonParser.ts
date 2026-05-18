@@ -92,6 +92,10 @@ export function transformPipelineFeatures(
   status: "normal" | "warning" | "critical" | "maintenance";
   material?: string;
   coordinates: Array<{ lat: number; lng: number; elevation?: number }>;
+  isActive?: boolean;
+  plotType?: "line" | "round" | "square";
+  plotColor?: string;
+  plotColorInactive?: string;
 }> {
   return features
     .filter((feature) =>
@@ -100,6 +104,9 @@ export function transformPipelineFeatures(
     .map((feature, index) => {
       const props = feature.properties;
       const coordinates = getLineCoordinates(feature);
+
+      // Extract Plot sub-object properties (new structure)
+      const plotData = props.Plot || {};
 
       return {
         id: props.SE_ID?.toString() || `pipeline-${index}`,
@@ -110,6 +117,10 @@ export function transformPipelineFeatures(
         status: "normal" as const,
         material: props.material || "UNKNOWN",
         coordinates: coordinates.length > 0 ? coordinates : [],
+        isActive: props.IsActive !== undefined ? props.IsActive : true,
+        plotType: plotData.PLOT_TYPE as "line" | "round" | "square" | undefined,
+        plotColor: plotData.PLOT_COLOR || "#3b82f6",
+        plotColorInactive: plotData.PLOT_COLOR_INACTIVE || "#9ca3af",
       };
     });
 }
@@ -127,12 +138,19 @@ export function transformValveFeatures(
   segmentId: string;
   coordinates?: { lat: number; lng: number; elevation?: number };
   criticality: string;
+  isActive?: boolean;
+  plotType?: "line" | "round" | "square";
+  plotColor?: string;
+  plotColorInactive?: string;
 }> {
   return features
     .filter((feature) => feature.geometry.type === "Point")
     .map((feature, index) => {
       const props = feature.properties;
       const coords = getPointCoordinates(feature);
+
+      // Extract Plot sub-object properties (new structure)
+      const plotData = props.Plot || {};
 
       // Determine valve type based on properties
       let valveType: "isolation" | "station" | "control" | "emergency" = "station";
@@ -150,6 +168,10 @@ export function transformValveFeatures(
         segmentId: "Unknown",
         coordinates: coords || undefined,
         criticality: "MEDIUM",
+        isActive: props.IsActive !== undefined ? props.IsActive : true,
+        plotType: plotData.PLOT_TYPE as "line" | "round" | "square" | undefined,
+        plotColor: plotData.PLOT_COLOR || "#ef4444",
+        plotColorInactive: plotData.PLOT_COLOR_INACTIVE || "#9ca3af",
       };
     });
 }
@@ -171,12 +193,19 @@ export function transformConsumerFeatures(
   mobile?: string;
   estimatedConsumption?: number;
   consumptionUnit?: string;
+  isActive?: boolean;
+  plotType?: "line" | "round" | "square";
+  plotColor?: string;
+  plotColorInactive?: string;
 }> {
   return features
     .filter((feature) => feature.geometry.type === "Point")
     .map((feature, index) => {
       const props = feature.properties;
       const coords = getPointCoordinates(feature);
+
+      // Extract Plot sub-object properties (new structure)
+      const plotData = props.Plot || {};
 
       if (!coords) {
         return null;
@@ -194,6 +223,10 @@ export function transformConsumerFeatures(
         mobile: props.Mobile,
         estimatedConsumption: 0,
         consumptionUnit: "m³/day",
+        isActive: props.IsActive !== undefined ? props.IsActive : true,
+        plotType: plotData.PLOT_TYPE as "line" | "round" | "square" | undefined,
+        plotColor: plotData.PLOT_COLOR || "#10b981",
+        plotColorInactive: plotData.PLOT_COLOR_INACTIVE || "#9ca3af",
       };
     })
     .filter((item): item is Exclude<typeof item, null> => item !== null);
@@ -213,13 +246,20 @@ export function transformCatastropheFeatures(
   severity: "low" | "medium" | "high" | "critical";
   reportedDate: string;
   point: number;
-  location?:string
+  location?: string;
+  isActive?: boolean;
+  plotType?: "line" | "round" | "square";
+  plotColor?: string;
+  plotColorInactive?: string;
 }> {
   return features
     .filter((feature) => feature.geometry.type === "Point")
     .map((feature, index) => {
       const props = feature.properties;
       const coords = getPointCoordinates(feature);
+
+      // Extract Plot sub-object properties (new structure)
+      const plotData = props.Plot || {};
 
       if (!coords) {
         return null;
@@ -236,6 +276,41 @@ export function transformCatastropheFeatures(
         severity = "medium";
       }
 
+      // Extract isActive with multiple fallback property names
+      // Default to true if not specified in the data
+      let isActive = true;
+      if (props.IsActive !== undefined && props.IsActive !== null) {
+        isActive = Boolean(props.IsActive);
+      } else if (props.isActive !== undefined && props.isActive !== null) {
+        isActive = Boolean(props.isActive);
+      } else if (props.active !== undefined && props.active !== null) {
+        isActive = Boolean(props.active);
+      } else if (props.Active !== undefined && props.Active !== null) {
+        isActive = Boolean(props.Active);
+      }
+
+      // Determine plot color based on severity
+      // Use color mapping similar to RGISMap's getCatastropheColor
+      let plotColor = "#f97316"; // default orange
+      switch (severity) {
+        case "critical":
+          plotColor = "#991b1b"; // red-900
+          break;
+        case "high":
+          plotColor = "#ef4444"; // red-500
+          break;
+        case "medium":
+          plotColor = "#f59e0b"; // amber-500
+          break;
+        case "low":
+          plotColor = "#22c55e"; // green-500
+          break;
+      }
+
+      // Override with API-provided color from Plot sub-object if available
+      const finalPlotColor = plotData.PLOT_COLOR || plotColor;
+      const finalPlotColorInactive = plotData.PLOT_COLOR_INACTIVE || "#9ca3af";
+
       return {
         id: props.SE_ID?.toString() || `catastrophe-${index}`,
         type: catastropheType,
@@ -245,7 +320,11 @@ export function transformCatastropheFeatures(
         severity,
         reportedDate: props.SE_ENTRY_DATE || new Date().toISOString(),
         point: props.POINT || index,
-        location:props.Location || ""
+        location: props.Location || "",
+        isActive,
+        plotType: plotData.PLOT_TYPE as "line" | "round" | "square" | undefined,
+        plotColor: finalPlotColor,
+        plotColorInactive: finalPlotColorInactive,
       };
     })
     .filter((item): item is Exclude<typeof item, null> => item !== null);

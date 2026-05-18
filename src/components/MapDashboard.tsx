@@ -46,6 +46,10 @@ interface PipelineSegment {
   status: "normal" | "warning" | "critical" | "maintenance";
   material?: string;
   coordinates?: Array<{ lat: number; lng: number; elevation?: number }>;
+  isActive?: boolean;
+  plotColor?: string;
+  plotColorInactive?: string;
+  plotType?: "line" | "round" | "square";
 }
 
 interface ValvePoint {
@@ -56,6 +60,10 @@ interface ValvePoint {
   segmentId: string;
   coordinates?: { lat: number; lng: number; elevation?: number };
   criticality?: string;
+  isActive?: boolean;
+  plotColor?: string;
+  plotColorInactive?: string;
+  plotType?: "line" | "round" | "square";
 }
 
 interface ConsumerPoint {
@@ -70,6 +78,11 @@ interface ConsumerPoint {
   consumptionUnit?: string;
   consumerCode?: string;
   mobile?: string;
+  coordinates?: { lat: number; lng: number };
+  isActive?: boolean;
+  plotColor?: string;
+  plotColorInactive?: string;
+  plotType?: "line" | "round" | "square";
 }
 
 export const MapDashboard = () => {
@@ -408,22 +421,49 @@ export const MapDashboard = () => {
       <div className="flex-1 relative">
         {showRGIS ? (
           <RGISMap
-            devices={displayConsumerPoints as unknown as DeviceLocation[]}
-            pipelines={displayPipelines}
-            valves={displayValves}
-            showDevices={showConsumerPoints}
+            devices={[]}
+            pipelines={displayPipelines as any}
+            valves={displayValves as any}
+            consumers={displayConsumerPoints.map((cp: any) => ({
+              id: cp.id,
+              name: cp.name,
+              code: cp.consumerCode,
+              mobile: cp.mobile,
+              status: cp.status,
+              coordinates: { lat: cp.lat, lng: cp.lng },
+              consumers: [],
+              isActive: cp.isActive,
+              plotColor: cp.plotColor,
+              plotColorInactive: cp.plotColorInactive,
+              plotType: cp.plotType,
+            })) as any}
+            showDevices={false}
             showPipelines={showPipelines}
             showValves={showValves}
             showConsumers={showConsumerPoints}
           />
         ) : (
           <LeafletMap
-            devices={displayConsumerPoints as unknown as DeviceLocation[]}
-            pipelines={displayPipelines}
-            valves={displayValves}
-            showDevices={showConsumerPoints}
+            devices={[]}
+            pipelines={displayPipelines as any}
+            valves={displayValves as any}
+            consumers={displayConsumerPoints.map((cp: any) => ({
+              id: cp.id,
+              name: cp.name,
+              code: cp.consumerCode,
+              mobile: cp.mobile,
+              status: cp.status,
+              coordinates: { lat: cp.lat, lng: cp.lng },
+              consumers: [],
+              isActive: cp.isActive,
+              plotColor: cp.plotColor,
+              plotColorInactive: cp.plotColorInactive,
+              plotType: cp.plotType,
+            })) as any}
+            showDevices={false}
             showPipelines={showPipelines}
             showValves={showValves}
+            showConsumers={showConsumerPoints}
           />
         )}
 
@@ -433,36 +473,15 @@ export const MapDashboard = () => {
             <div className="font-medium text-base mb-2">Infrastructure Status</div>
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-              <span>Pipelines: {displayPipelines.length}</span>
+              <span>Pipeline: {displayPipelines.length}</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-              <span>Valves: {displayValves.length}</span>
+              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+              <span>Valve Point: {displayValves.length}</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-              <span>Consumer Points: {displayConsumerPoints.length}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Asset Legend */}
-        <div className="absolute bottom-4 left-4 bg-card border border-border rounded-lg p-4 shadow-lg">
-          <div className="text-sm">
-            <div className="font-medium mb-2">Asset Symbology</div>
-            <div className="space-y-1">
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-1 bg-blue-500"></div>
-                <span>Pipeline</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-orange-500 rounded-sm"></div>
-                <span>Valve/Isolation Point</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                <span>Consumer Point</span>
-              </div>
+              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+              <span>Customer: {displayConsumerPoints.length}</span>
             </div>
           </div>
         </div>
