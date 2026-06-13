@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { LeafletMap } from "@/components/LeafletMap";
 import { RGISMap } from "@/components/RGISMap";
 import { Label } from "@/components/ui/label";
@@ -16,13 +17,13 @@ import {
 import { SortableTableHead } from "@/components/ui/sortable-table-head";
 import { Pagination } from "@/components/ui/pagination";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { MapPin, AlertTriangle } from "lucide-react";
+import { MapPin, AlertTriangle, Loader2, Power } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { useTable } from "@/hooks/use-table";
 import { useDeviceLogs } from "@/hooks/useApiQueries";
 import { API_BASE_PATH, apiClient } from "@/lib/api";
 import { formatColumnHeader, formatDateCell, isDateColumn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
 
 // Dynamic row type for arbitrary property names
 type DynamicRow = Record<string, any>;
@@ -350,17 +351,25 @@ export const ValvePointsEditor = () => {
                       {columns.length === 0 ? (
                         <TableHead>No data</TableHead>
                       ) : (
-                        columns.map((col) => (
-                          <SortableTableHead
-                            key={col}
-                            sortKey={col}
-                            currentSortKey={tableConfig.sortConfig.key as unknown as string}
-                            sortDirection={tableConfig.sortConfig.direction}
-                            onSort={(k) => tableConfig.handleSort(k as keyof DynamicRow)}
-                          >
-                            {formatColumnHeader(col)}
+                        <>
+                          {columns.map((col) => (
+                            <SortableTableHead
+                              key={col}
+                              sortKey={col}
+                              currentSortKey={tableConfig.sortConfig.key as unknown as string}
+                              sortDirection={tableConfig.sortConfig.direction}
+                              onSort={(k) => tableConfig.handleSort(k as keyof DynamicRow)}
+                            >
+                              {formatColumnHeader(col)}
+                            </SortableTableHead>
+                          ))}
+                          <SortableTableHead sortable={false}>
+                            Status
                           </SortableTableHead>
-                        ))
+                          <SortableTableHead sortable={false} className="text-right">
+                            Action
+                          </SortableTableHead>
+                        </>
                       )}
                     </TableRow>
                   </TableHeader>
@@ -398,14 +407,26 @@ export const ValvePointsEditor = () => {
                             );
                           })}
                           <TableCell>
+                            <Badge variant={isActive ? "default" : "outline"}>
+                              {isActive ? "Active" : "Inactive"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => handleToggleIsActive(seId, isActive)}
                               disabled={isTogglingThisRow || loading}
-                              className="w-full"
+                              className="gap-1"
                             >
-                              {isTogglingThisRow ? "Updating..." : isActive ? "Deactivate" : "Activate"}
+                              {isTogglingThisRow ? (
+                                <>
+                                  <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                                  Updating...
+                                </>
+                              ) : (
+                                isActive ? "Deactivate" : "Activate"
+                              )}
                             </Button>
                           </TableCell>
                         </TableRow>

@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -13,12 +13,12 @@ import { SortableTableHead } from "@/components/ui/sortable-table-head";
 import { Pagination } from "@/components/ui/pagination";
 import { useTable } from "@/hooks/use-table";
 import { Badge } from "@/components/ui/badge";
-import { Edit, MapPin, Calendar } from "lucide-react";
+import { Edit, MapPin, Calendar, Loader2, Power } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { API_BASE_PATH } from "@/lib/api";
 import { Catastrophe } from "./CatastropheManagement";
 import { formatDateCell, formatColumnHeader } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api";
-import { Loader2 } from "lucide-react";
 
 interface CatastropheListProps {
   catastrophes: Catastrophe[];
@@ -58,7 +58,11 @@ export const CatastropheList = ({
   onEdit,
 }: CatastropheListProps) => {
   const { toast } = useToast();
+
   const [togglingIds, setTogglingIds] = useState<Set<number>>(new Set());
+  const [deactivatedItems, setDeactivatedItems] = useState<Set<string>>(new Set());
+  const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set());
+
 
   const formatDate = (date: Date | null | undefined) => {
     if (!date) return "-";
@@ -67,6 +71,44 @@ export const CatastropheList = ({
       month: "short",
       day: "numeric",
     }).format(date);
+  };
+
+  const handleToggleDeactivate = async (id: string) => {
+    setLoadingIds((prev) => new Set(prev).add(id));
+    try {
+      const url = `${API_BASE_PATH}/SurveyEntries/deactivate-survey-entry?seId=${encodeURIComponent(id)}`;
+      const response = await fetch(url, { method: "POST" });
+      if (!response.ok) {
+        throw new Error(`Failed to deactivate entry: ${response.status}`);
+      }
+      setDeactivatedItems((prev) => {
+        const newSet = new Set(prev);
+        if (newSet.has(id)) {
+          newSet.delete(id);
+        } else {
+          newSet.add(id);
+        }
+        return newSet;
+      });
+      const isDeactivating = !deactivatedItems.has(id);
+      toast({
+        title: isDeactivating ? "Deactivated" : "Activated",
+        description: `Catastrophe entry ${isDeactivating ? "deactivated" : "activated"} successfully`,
+      });
+    } catch (error) {
+      console.error("Error toggling deactivation:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update entry status",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingIds((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(id);
+        return newSet;
+      });
+    }
   };
 
   // Use the table hook for sorting and pagination
@@ -174,16 +216,23 @@ export const CatastropheList = ({
                     >
                       Reported Date
                     </SortableTableHead>
+
                     <SortableTableHead
                       sortKey="isActive"
                       currentSortKey={tableConfig.sortConfig.key as string}
                       sortDirection={tableConfig.sortConfig.direction}
                       onSort={tableConfig.handleSort}
                     >
+
+                    <SortableTableHead sortable={false}>
+
                       Status
                     </SortableTableHead>
                     <SortableTableHead sortable={false} className="text-right">
-                      Actions
+                      Action
+                    </SortableTableHead>
+                    <SortableTableHead sortable={false} className="text-right">
+                      Edit
                     </SortableTableHead>
                   </TableRow>
                 </TableHeader>
@@ -245,9 +294,25 @@ export const CatastropheList = ({
                         </div>
                       </TableCell>
                       <TableCell>
+
                         <Badge variant={catastrophe.isActive ? "default" : "outline"}>
                           {catastrophe.isActive ? "Active" : "Inactive"}
                         </Badge>
+                      </TableCell>
+
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleToggleDeactivate(catastrophe.id)}
+                          disabled={loadingIds.has(catastrophe.id)}
+                          className="gap-1"
+                        >
+                          {loadingIds.has(catastrophe.id) && (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          )}
+                          <Power className="h-3 w-3" />
+                        </Button>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">

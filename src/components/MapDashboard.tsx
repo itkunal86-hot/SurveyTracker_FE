@@ -280,7 +280,7 @@ export const MapDashboard = () => {
                 htmlFor="consumer-points"
                 className="flex items-center space-x-2"
               >
-                <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                 <span>Consumer Points</span>
               </Label>
               <Switch
@@ -466,6 +466,7 @@ export const MapDashboard = () => {
             showConsumers={showConsumerPoints}
           />
         )}
+
 
         {/* Enhanced Map Overlay Info */}
         <div className="absolute top-4 right-4 bg-card border border-border rounded-lg p-4 shadow-lg">

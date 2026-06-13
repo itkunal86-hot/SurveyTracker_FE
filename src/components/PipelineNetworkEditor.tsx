@@ -42,6 +42,7 @@ import {
   MapPin,
   AlertTriangle,
   Loader2,
+  Power,
 } from "lucide-react";
 
 import { API_BASE_PATH, apiClient, PipelineSegment } from "@/lib/api";
@@ -77,6 +78,8 @@ export const PipelineNetworkEditor = () => {
   const [propColumns, setPropColumns] = useState<string[]>([]);
   const [propLoading, setPropLoading] = useState<boolean>(false);
   const [propError, setPropError] = useState<string | null>(null);
+  const [deactivatedPipelineIds, setDeactivatedPipelineIds] = useState<Set<string>>(new Set());
+  const [loadingPipelineIds, setLoadingPipelineIds] = useState<Set<string>>(new Set());
 
   const [valveRows, setValveRows] = useState<DynamicRow[]>([]);
   const [valveError, setValveError] = useState<string | null>(null);
@@ -431,6 +434,44 @@ export const PipelineNetworkEditor = () => {
     toast({ title: "Geo-data upload feature coming soon" });
   };
 
+  const handleTogglePipelineDeactivate = async (seId: string) => {
+    setLoadingPipelineIds((prev) => new Set(prev).add(seId));
+    try {
+      const url = `${API_BASE_PATH}/SurveyEntries/deactivate-survey-entry?seId=${encodeURIComponent(seId)}`;
+      const response = await fetch(url, { method: "POST" });
+      if (!response.ok) {
+        throw new Error(`Failed to deactivate entry: ${response.status}`);
+      }
+      setDeactivatedPipelineIds((prev) => {
+        const newSet = new Set(prev);
+        if (newSet.has(seId)) {
+          newSet.delete(seId);
+        } else {
+          newSet.add(seId);
+        }
+        return newSet;
+      });
+      const isDeactivating = !deactivatedPipelineIds.has(seId);
+      toast({
+        title: isDeactivating ? "Deactivated" : "Activated",
+        description: `Pipeline entry ${isDeactivating ? "deactivated" : "activated"} successfully`,
+      });
+    } catch (error) {
+      console.error("Error toggling deactivation:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update entry status",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingPipelineIds((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(seId);
+        return newSet;
+      });
+    }
+  };
+
   // Use the table hook for sorting and pagination
   const defaultSortKey = (propColumns.includes("id") ? "id" : propColumns[0]) as keyof DynamicRow | undefined;
   const { tableConfig, sortedAndPaginatedData } = useTable<DynamicRow>(propRows, 5, defaultSortKey as any);
@@ -586,22 +627,28 @@ export const PipelineNetworkEditor = () => {
                       {propColumns.length === 0 ? (
                         <TableHead>No data</TableHead>
                       ) : (
-                        propColumns.map((col) => (
-                          <SortableTableHead
-                            key={col}
-                            sortKey={col}
-                            currentSortKey={tableConfig.sortConfig.key as unknown as string}
-                            sortDirection={tableConfig.sortConfig.direction}
-                            onSort={(k) => tableConfig.handleSort(k as keyof DynamicRow)}
-                          >
-                            {formatColumnHeader(col)}
+                        <>
+                          {propColumns.map((col) => (
+                            <SortableTableHead
+                              key={col}
+                              sortKey={col}
+                              currentSortKey={tableConfig.sortConfig.key as unknown as string}
+                              sortDirection={tableConfig.sortConfig.direction}
+                              onSort={(k) => tableConfig.handleSort(k as keyof DynamicRow)}
+                            >
+                              {formatColumnHeader(col)}
+                            </SortableTableHead>
+                          ))}
+                          <SortableTableHead sortable={false} className="text-right">
+                            Action
                           </SortableTableHead>
-                        ))
+                        </>
                       )}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {sortedAndPaginatedData.map((row, idx) => {
+
                       const seId = Number((row as any).SE_ID ?? (row as any).id);
                       const isActive = (row as any).IsActive ?? true;
                       const isTogglingThisRow = togglingIds.has(seId);
@@ -627,6 +674,7 @@ export const PipelineNetworkEditor = () => {
                                 </TableCell>
                               );
                             }
+
                             return (
                               <TableCell key={col}>
                                 {value === null || value === undefined || value === "" ? "-" : String(value)}
@@ -634,6 +682,7 @@ export const PipelineNetworkEditor = () => {
                             );
                           })}
                           <TableCell>
+
                             <Button
                               variant="outline"
                               size="sm"
@@ -642,6 +691,7 @@ export const PipelineNetworkEditor = () => {
                               className="w-full"
                             >
                               {isTogglingThisRow ? "Updating..." : isActive ? "Deactivate" : "Activate"}
+
                             </Button>
                           </TableCell>
                         </TableRow>

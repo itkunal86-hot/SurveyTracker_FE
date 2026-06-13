@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Download, Upload } from "lucide-react";
+import { Download, Upload, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,6 +8,12 @@ import { apiClient, type AssetType } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, CheckCircle } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function ExportImport() {
   const [assetTypes, setAssetTypes] = useState<AssetType[]>([]);
@@ -43,15 +49,36 @@ export default function ExportImport() {
     setMessage(null);
   };
 
-  const handleExport = async () => {
+  const getDownloadFilename = (): string => {
+    if (!selectedAssetType) return "";
+
+    const assetName = selectedAssetType.name.toLowerCase();
+    let baseFileName = "";
+
+    if (assetName === "customer data points") {
+      baseFileName = "customerdatapoints";
+    } else if (assetName === "pipeline") {
+      baseFileName = "pipeline";
+    } else if (assetName === "valve") {
+      baseFileName = "valve";
+    } else {
+      baseFileName = assetName.replace(/\s+/g, "");
+    }
+
+    return baseFileName;
+  };
+
+  const handleExport = async (format: "kml" | "xlsx") => {
     if (!selectedAssetType) return;
+
+    const filename = `${getDownloadFilename().split(".")[0]}.${format}`;
+    if (!filename) return;
 
     setIsExporting(true);
     setMessage(null);
     try {
-      // API endpoint call for export with selected asset type ID
       const response = await fetch(
-        `https://localhost:7215/api/AssetTypes/export?assetTypeId=${selectedAssetType.id}`,
+        `https://localhost:7215/api/SurveyEntries/download?filename=${encodeURIComponent(filename)}`,
         {
           method: "GET",
           headers: {
@@ -64,42 +91,23 @@ export default function ExportImport() {
         throw new Error(`Export failed with status ${response.status}`);
       }
 
-      // Handle the response (could be JSON or file download)
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
-        const data = await response.json();
-        // Trigger download if data contains file information
-        const blob = new Blob([JSON.stringify(data, null, 2)], {
-          type: "application/json",
-        });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `export-${selectedAssetType.name}-${Date.now()}.json`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      } else {
-        // Handle file download directly
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `export-${selectedAssetType.name}-${Date.now()}`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
 
       setMessage({
         type: "success",
-        text: `Successfully exported ${selectedAssetType.name} data`,
+        text: `Successfully exported ${selectedAssetType.name} data as ${format.toUpperCase()}`,
       });
       toast({
         title: "Export Successful",
-        description: `${selectedAssetType.name} data has been exported`,
+        description: `${selectedAssetType.name} data has been exported as ${format.toUpperCase()}`,
       });
     } catch (error) {
       console.error("Error exporting data:", error);
@@ -234,6 +242,7 @@ export default function ExportImport() {
               </Select>
             </div>
 
+
             {/* Selected Asset Type Info */}
             {selectedAssetType && (
               <div className="rounded-lg bg-muted p-4 space-y-2">
@@ -268,15 +277,27 @@ export default function ExportImport() {
 
             {/* Export and Import Buttons */}
             <div className="flex gap-4 pt-4">
-              <Button
-                onClick={handleExport}
-                disabled={!selectedAssetType || isExporting}
-                className="flex-1"
-                variant="default"
-              >
-                <Download className="mr-2 h-4 w-4" />
-                {isExporting ? "Exporting..." : "Export Data"}
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    disabled={!selectedAssetType || isExporting}
+                    className="flex-1"
+                    variant="default"
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    {isExporting ? "Exporting..." : "Export"}
+                    <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48">
+                  <DropdownMenuItem onClick={() => handleExport("kml")}>
+                    Export KML
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExport("xlsx")}>
+                    Export XLSX
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Button
                 onClick={handleImport}
                 disabled={!selectedAssetType || isImporting}
