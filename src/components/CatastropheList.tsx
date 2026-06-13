@@ -223,9 +223,6 @@ export const CatastropheList = ({
                       sortDirection={tableConfig.sortConfig.direction}
                       onSort={tableConfig.handleSort}
                     >
-
-                    <SortableTableHead sortable={false}>
-
                       Status
                     </SortableTableHead>
                     <SortableTableHead sortable={false} className="text-right">

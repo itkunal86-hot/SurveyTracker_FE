@@ -181,6 +181,9 @@ interface LeafletMapProps {
   disableAutoFit?: boolean;
   catastrophes?: CatastrophePoint[];
   showCatastrophes?: boolean;
+  showSatellite?: boolean;
+  highlightedElementId?: string;
+  highlightedElementType?: "pipeline" | "valve" | "consumer";
 }
 
 const getPipelineColor = (status: PipelineSegment["status"], isActive?: boolean, plotColor?: string, plotColorInactive?: string): string => {
@@ -213,6 +216,9 @@ export const LeafletMap = ({
   disableAutoFit,
   catastrophes = [],
   showCatastrophes = false,
+  showSatellite = false,
+  highlightedElementId,
+  highlightedElementType,
 }: LeafletMapProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -222,6 +228,11 @@ export const LeafletMap = ({
   const [consumersLayer, setConsumersLayer] = useState<L.LayerGroup | null>(null);
   const [catastrophesLayer, setCatastrophesLayer] = useState<L.LayerGroup | null>(null);
   const [selectionLayer, setSelectionLayer] = useState<L.LayerGroup | null>(null);
+  const [highlightLayer, setHighlightLayer] = useState<L.LayerGroup | null>(null);
+  const tileLayersRef = useRef<{ street: L.TileLayer | null; satellite: L.TileLayer | null }>({
+    street: null,
+    satellite: null,
+  });
   const lastBoundsRef = useRef<LatLngBounds | null>(null);
   const lastCenterRef = useRef<{ lat: number; lng: number; zoom: number } | null>(
     null,
@@ -259,13 +270,13 @@ export const LeafletMap = ({
     });
   }, [valves]);
   const consumerPositions = useMemo<([number, number] | null)[]>(() => {
-    return consumers.map((valve, index) => {
-      const derived = sanitizeCoordinate(valve.coordinates);
+    return consumers.map((consumer, index) => {
+      const derived = sanitizeCoordinate(consumer.coordinates);
       if (derived) return derived;
       const fallback = DEFAULT_VALVE_POSITIONS[index];
       return fallback ? [...fallback] : null;
     });
-  }, [valves]);
+  }, [consumers]);
   const catastrophePositions = useMemo<[number, number][]>(() => {
     return (catastrophes || [])
       .map((c) => sanitizeCoordinate(c.coordinates))
@@ -285,15 +296,49 @@ export const LeafletMap = ({
     onMapClickRef.current = onMapClick;
   }, [onMapClick]);
 
+  // Handle satellite view toggle
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    const { street, satellite } = tileLayersRef.current;
+    if (!street || !satellite) return;
+
+    if (showSatellite) {
+      map.removeLayer(street);
+      map.addLayer(satellite);
+    } else {
+      map.removeLayer(satellite);
+      map.addLayer(street);
+    }
+  }, [showSatellite]);
+
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
 
     const map = L.map(mapRef.current).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    // Create street layer
+    const streetLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: "© OpenStreetMap contributors",
-    }).addTo(map);
+    });
 
+    // Create satellite layer (using USGS imagery)
+    const satelliteLayer = L.tileLayer(
+      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      {
+        attribution: "© Esri, DigitalGlobe, Earthstar Geographics, CNES/Airbus DS",
+      }
+    );
+
+    // Add the appropriate layer based on showSatellite
+    if (showSatellite) {
+      satelliteLayer.addTo(map);
+    } else {
+      streetLayer.addTo(map);
+    }
+
+    tileLayersRef.current = { street: streetLayer, satellite: satelliteLayer };
     mapInstanceRef.current = map;
 
     const deviceLayer = L.layerGroup().addTo(map);
@@ -302,6 +347,7 @@ export const LeafletMap = ({
     const consumerLayer = L.layerGroup().addTo(map);
     const catastropheLayer = L.layerGroup().addTo(map);
     const selectionLayerGroup = L.layerGroup().addTo(map);
+    const highlightLayerGroup = L.layerGroup().addTo(map);
 
     setMarkersLayer(deviceLayer);
     setPipelinesLayer(pipelineLayer);
@@ -309,6 +355,7 @@ export const LeafletMap = ({
     setConsumersLayer(consumerLayer);
     setCatastrophesLayer(catastropheLayer);
     setSelectionLayer(selectionLayerGroup);
+    setHighlightLayer(highlightLayerGroup);
 
     map.on("click", (e: L.LeafletMouseEvent) => {
       userInteractedRef.current = true;
@@ -329,7 +376,7 @@ export const LeafletMap = ({
       map.remove();
       mapInstanceRef.current = null;
     };
-  }, []);
+  }, [showSatellite]);
 
   useEffect(() => {
     if (!markersLayer) return;
@@ -435,12 +482,18 @@ export const LeafletMap = ({
 
         polyline.bindPopup(
           `
-          <div style="font-family: system-ui; padding: 4px; min-width: 200px;">
-            <strong>${pipeline.name ?? `Pipeline ${pipeline.id}`}</strong><br/>
-            <span style="color: #666;">ID: ${pipeline.id}</span><br/>
-            <span style="color: #666;">Diameter: ${pipeline.diameter}mm</span><br/>
-            <span style="color: #666;">Depth: ${pipeline.depth}m</span><br/>
-            <span style="color: ${color};">Status: ${pipeline.status}</span>
+          <div style="font-family: system-ui; padding: 8px; min-width: 280px;">
+            <strong style="font-size: 14px;">${pipeline.name ?? `Pipeline ${pipeline.id}`}</strong><br/>
+            <hr style="margin: 6px 0; border: none; border-top: 1px solid #eee;"/>
+            <div style="font-size: 12px; line-height: 1.8;">
+              <div><strong>ID:</strong> ${pipeline.id}</div>
+              <div><strong>Diameter:</strong> ${pipeline.diameter}mm</div>
+              <div><strong>Depth:</strong> ${pipeline.depth}m</div>
+              <div><strong>Status:</strong> <span style="color: ${color}; font-weight: bold;">${pipeline.status.toUpperCase()}</span></div>
+              <div><strong>Material:</strong> ${pipeline.material ?? "N/A"}</div>
+              <div><strong>Type:</strong> ${pipeline.type ?? "N/A"}</div>
+              <div><strong>Active:</strong> <span style="color: ${pipeline.isActive ? "#22c55e" : "#ef4444"}; font-weight: bold;">${pipeline.isActive ? "YES" : "NO"}</span></div>
+            </div>
           </div>
         `,
         );
@@ -497,11 +550,17 @@ export const LeafletMap = ({
 
         marker.bindPopup(
           `
-          <div style="font-family: system-ui; padding: 4px; min-width: 180px;">
-            <strong>${valve.name ?? `Valve ${valve.id}`}</strong><br/>
-            <span style="color: #666;">Type: ${valve.type}</span><br/>
-            <span style="color: ${color};">Status: ${valve.status}</span><br/>
-            <span style="color: #666;">Pipeline: ${valve.segmentId}</span>
+          <div style="font-family: system-ui; padding: 8px; min-width: 280px;">
+            <strong style="font-size: 14px;">${valve.name ?? `Valve ${valve.id}`}</strong><br/>
+            <hr style="margin: 6px 0; border: none; border-top: 1px solid #eee;"/>
+            <div style="font-size: 12px; line-height: 1.8;">
+              <div><strong>ID:</strong> ${valve.id}</div>
+              <div><strong>Type:</strong> ${valve.type}</div>
+              <div><strong>Status:</strong> <span style="color: ${color}; font-weight: bold;">${valve.status.toUpperCase()}</span></div>
+              <div><strong>Criticality:</strong> ${valve.criticality ?? "N/A"}</div>
+              <div><strong>Segment ID:</strong> ${valve.segmentId}</div>
+              <div><strong>Active:</strong> <span style="color: ${valve.isActive ? "#22c55e" : "#ef4444"}; font-weight: bold;">${valve.isActive ? "YES" : "NO"}</span></div>
+            </div>
           </div>
         `,
         );
@@ -530,6 +589,65 @@ export const LeafletMap = ({
       selectionLayer.addLayer(marker);
     }
   }, [selectedLocation, selectionLayer]);
+
+  useEffect(() => {
+    if (!highlightLayer) return;
+    highlightLayer.clearLayers();
+
+    if (!highlightedElementId || !highlightedElementType) return;
+
+    if (highlightedElementType === "pipeline") {
+      const pipeline = pipelines.find((p) => p.id === highlightedElementId);
+      if (!pipeline) return;
+
+      const index = pipelines.indexOf(pipeline);
+      const route = pipelineRoutes[index];
+      if (!route || route.length < 2) return;
+
+      const highlightPolyline = L.polyline(route, {
+        color: "#fbbf24",
+        weight: 8,
+        opacity: 0.9,
+        dashArray: "5, 5",
+      });
+      highlightLayer.addLayer(highlightPolyline);
+    } else if (highlightedElementType === "valve") {
+      const valve = valves.find((v) => v.id === highlightedElementId);
+      if (!valve) return;
+
+      const index = valves.indexOf(valve);
+      const position = valvePositions[index];
+      if (!position) return;
+
+      const highlightMarker = L.circleMarker(position, {
+        radius: 12,
+        fillColor: "#fbbf24",
+        color: "#fff",
+        weight: 3,
+        opacity: 1,
+        fillOpacity: 0.6,
+      });
+      highlightLayer.addLayer(highlightMarker);
+    } else if (highlightedElementType === "consumer") {
+      const consumer = consumers.find((c) => c.id === highlightedElementId);
+      if (!consumer) return;
+
+      if (isFiniteCoordinate(consumer.coordinates.lat, consumer.coordinates.lng)) {
+        const highlightMarker = L.circleMarker(
+          [consumer.coordinates.lat, consumer.coordinates.lng],
+          {
+            radius: 12,
+            fillColor: "#fbbf24",
+            color: "#fff",
+            weight: 3,
+            opacity: 1,
+            fillOpacity: 0.6,
+          }
+        );
+        highlightLayer.addLayer(highlightMarker);
+      }
+    }
+  }, [highlightedElementId, highlightedElementType, pipelines, valves, consumers, pipelineRoutes, valvePositions, highlightLayer]);
 
   useEffect(() => {
     if (!consumersLayer) return;
@@ -565,9 +683,21 @@ export const LeafletMap = ({
           .join("<hr/>");
 
         marker.bindPopup(`
-          <div style="font-family: system-ui; padding:4px; min-width:200px;">
-            ${consumersHtml}
-            <span style="color:#666;">Status: ${consumer.status || "N/A"}</span>
+          <div style="font-family: system-ui; padding:8px; min-width:280px;">
+            <strong style="font-size: 14px;">${consumer.name || "Consumer"}</strong><br/>
+            <hr style="margin: 6px 0; border: none; border-top: 1px solid #eee;"/>
+            <div style="font-size: 12px; line-height: 1.6;">
+              <div><strong>ID:</strong> ${consumer.id}</div>
+              <div><strong>Code:</strong> ${consumer.code || "N/A"}</div>
+              <div><strong>Mobile:</strong> ${consumer.mobile || "N/A"}</div>
+              <div><strong>Status:</strong> ${consumer.status || "N/A"}</div>
+              <div><strong>Active:</strong> <span style="color: ${fillColor}; font-weight: bold;">${consumer.isActive ? "YES" : "NO"}</span></div>
+              ${consumer.consumers && consumer.consumers.length > 0 ? `
+                <hr style="margin: 6px 0; border: none; border-top: 1px solid #eee;"/>
+                <div><strong>Associated Consumers:</strong></div>
+                ${consumersHtml}
+              ` : ""}
+            </div>
           </div>
         `);
         // marker.bindPopup(`

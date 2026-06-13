@@ -46,12 +46,26 @@ import {
 } from "lucide-react";
 
 import { API_BASE_PATH, apiClient, PipelineSegment } from "@/lib/api";
-import { useDeviceLogs } from "@/hooks/useApiQueries";
+import {
+  useDeviceLogs,
+  usePipelineGeoJSON,
+  useValveGeoJSON,
+  useConsumerGeoJSON,
+  useCatastropheGeoJSON,
+} from "@/hooks/useApiQueries";
+import {
+  parseGeoJSON,
+  transformPipelineFeatures,
+  transformValveFeatures,
+  transformConsumerFeatures,
+  transformCatastropheFeatures,
+} from "@/lib/geoJsonParser";
 import { formatColumnHeader, formatDateCell, isDateColumn } from "@/lib/utils";
 
 export const PipelineNetworkEditor = () => {
   const { toast } = useToast();
   const [showRGIS, setShowRGIS] = useState(true);
+  const [showSatellite, setShowSatellite] = useState(false);
   const [segments, setSegments] = useState<PipelineSegment[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -81,8 +95,26 @@ export const PipelineNetworkEditor = () => {
   const [deactivatedPipelineIds, setDeactivatedPipelineIds] = useState<Set<string>>(new Set());
   const [loadingPipelineIds, setLoadingPipelineIds] = useState<Set<string>>(new Set());
 
-  const [valveRows, setValveRows] = useState<DynamicRow[]>([]);
-  const [valveError, setValveError] = useState<string | null>(null);
+  // API hooks - fetch GeoJSON for all infrastructure
+  const {
+    data: pipelinesGeoJSON,
+    isLoading: loadingPipelines,
+  } = usePipelineGeoJSON();
+
+  const {
+    data: valvesGeoJSON,
+    isLoading: loadingValves,
+  } = useValveGeoJSON();
+
+  const {
+    data: consumerGeoJSON,
+    isLoading: loadingConsumers,
+  } = useConsumerGeoJSON();
+
+  const {
+    data: catastropheGeoJSON,
+    isLoading: loadingCatastrophes,
+  } = useCatastropheGeoJSON();
 
   useEffect(() => {
     const controller = new AbortController();
@@ -264,27 +296,57 @@ export const PipelineNetworkEditor = () => {
   //   [mapPipelines],
   // );
 
-  // Valves for map from AssetProperties/ByType/valve (no coordinates provided -> LeafletMap will use defaults)
-  const mapValves = useMemo(() => {
-    return valveRows.map((r) => {
-      const rawType = String(r["Type"] ?? r["type"] ?? "").toLowerCase();
-      const mappedType: "control" | "emergency" | "isolation" | "station" =
-        rawType === "emergency" ? "emergency" : rawType === "isolation" ? "isolation" : "control";
-      const status: "open" | "closed" | "maintenance" | "fault" = mappedType === "emergency" ? "closed" : rawType === "safety" ? "maintenance" : "open";
-      const segmentId = String(r["Linked Segment"] ?? r["segmentId"] ?? r["Segment"] ?? "Unknown");
-      const id = String(r["id"] ?? r["ID"] ?? "");
-      const isActive = r["IsActive"] !== undefined ? r["IsActive"] : true;
-      const plotColor = r["PLOT_COLOR"] || "#ef4444"; // Use API color, default to red
-      const plotColorInactive = r["PLOT_COLOR_INACTIVE"] || "#9ca3af"; // Use API color, default to grey
-      const plotType = r["PLOT_TYPE"] as "line" | "round" | "square" | undefined;
-      return { id, type: mappedType, status, segmentId, isActive, plotColor, plotColorInactive, plotType } as any;
-    });
-  }, [valveRows]);
+  // Transform valve GeoJSON data
+  const transformedValves = useMemo(() => {
+    if (!valvesGeoJSON?.data) return [];
+    const geoJsonString = valvesGeoJSON.data;
+    const featureCollection = parseGeoJSON(geoJsonString);
+    if (!featureCollection || !featureCollection.features) return [];
+    return transformValveFeatures(featureCollection.features);
+  }, [valvesGeoJSON?.data]);
 
-  //const showDevicesOnMap = mapDevices.length > 0;
-  //const showPipelinesOnMap = hasPipelineGeometry || mapPipelines.length > 0;
+  // Transform consumer GeoJSON data
+  const transformedConsumers = useMemo(() => {
+    if (!consumerGeoJSON?.data) return [];
+    const geoJsonString = consumerGeoJSON.data;
+    const featureCollection = parseGeoJSON(geoJsonString);
+    if (!featureCollection || !featureCollection.features) return [];
+    const consumers = transformConsumerFeatures(featureCollection.features);
+    return consumers.map(c => ({
+      ...c,
+      coordinates: { lat: c.lat, lng: c.lng },
+      consumers: [],
+    }));
+  }, [consumerGeoJSON?.data]);
+
+  // Transform catastrophe GeoJSON data
+  const transformedCatastrophes = useMemo(() => {
+    if (!catastropheGeoJSON?.data) return [];
+    const geoJsonString = catastropheGeoJSON.data;
+    const featureCollection = parseGeoJSON(geoJsonString);
+    if (!featureCollection || !featureCollection.features) return [];
+    const catastrophes = transformCatastropheFeatures(featureCollection.features);
+    return catastrophes.map(c => ({
+      id: c.id,
+      name: c.type,
+      severity: c.severity,
+      status: c.isActive ? 'ACTIVE' : 'INACTIVE',
+      coordinates: { lat: c.lat, lng: c.lng },
+      isActive: c.isActive,
+      plotColor: c.plotColor,
+      plotColorInactive: c.plotColorInactive,
+      plotType: c.plotType,
+    }));
+  }, [catastropheGeoJSON?.data]);
+
+  const mapValves = transformedValves;
+  const mapConsumers = transformedConsumers;
+  const mapCatastrophes = transformedCatastrophes;
+
   const showPipelinesOnMap = mapPipelines.length > 0;
   const showValvesOnMap = mapValves.length > 0;
+  const showConsumersOnMap = mapConsumers.length > 0;
+  const showCatastrophesOnMap = mapCatastrophes.length > 0;
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -544,55 +606,53 @@ export const PipelineNetworkEditor = () => {
         {/* Map View */}
         <Card>
           <CardHeader>
-            <CardTitle>Pipeline Network Map</CardTitle>
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="show-rgis"
-                checked={showRGIS}
-                onCheckedChange={setShowRGIS}
-              />
-              <Label htmlFor="show-rgis">Show RGIS Map</Label>
+            <CardTitle>Infrastructure Map</CardTitle>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="show-rgis"
+                  checked={showRGIS}
+                  onCheckedChange={setShowRGIS}
+                />
+                <Label htmlFor="show-rgis">RGIS Map</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="show-satellite"
+                  checked={showSatellite}
+                  onCheckedChange={setShowSatellite}
+                />
+                <Label htmlFor="show-satellite">Satellite View</Label>
+              </div>
             </div>
-
           </CardHeader>
           <CardContent>
             <div className="h-96">
-              {/* <LeafletMap
-                devices={[]}
-                pipelines={mapPipelines}
-                valves={mapValves}
-                showDevices={false}
-                showPipelines={showPipelinesOnMap}
-                showValves={showValvesOnMap}
-              /> */}
-
-
-              <CardContent>
-                <div className="h-96">
-                  {showRGIS ? (
-                    <RGISMap
-                      devices={[]}
-                      pipelines={mapPipelines}
-                      valves={[]}
-                      consumers={[]}
-                      showDevices={false}
-                      showPipelines={showPipelinesOnMap}
-                      showValves={false}
-                      showConsumers={false}
-                    />
-                  ) : (
-                    <LeafletMap
-                      devices={[]}
-                      pipelines={mapPipelines}
-                      valves={[]}
-                      showDevices={false}
-                      showPipelines={showPipelinesOnMap}
-                      showValves={false}
-                    />
-                  )}
-                </div>
-              </CardContent>
-
+              {showRGIS ? (
+                <RGISMap
+                  devices={[]}
+                  pipelines={mapPipelines}
+                  valves={mapValves}
+                  consumers={mapConsumers as any}
+                  showDevices={false}
+                  showPipelines={showPipelinesOnMap}
+                  showValves={showValvesOnMap}
+                  showConsumers={showConsumersOnMap}
+                  showSatellite={showSatellite}
+                />
+              ) : (
+                <LeafletMap
+                  devices={[]}
+                  pipelines={mapPipelines}
+                  valves={mapValves}
+                  consumers={mapConsumers as any}
+                  showDevices={false}
+                  showPipelines={showPipelinesOnMap}
+                  showValves={showValvesOnMap}
+                  showConsumers={showConsumersOnMap}
+                  showSatellite={showSatellite}
+                />
+              )}
             </div>
           </CardContent>
         </Card>

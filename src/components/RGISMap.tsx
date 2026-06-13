@@ -157,6 +157,9 @@ interface RGISMapProps {
   onMapClick?: (lat: number, lng: number) => void;
   selectedLocation?: { lat: number; lng: number } | null;
   disableAutoFit?: boolean;
+  showSatellite?: boolean;
+  highlightedElementId?: string;
+  highlightedElementType?: "pipeline" | "valve" | "consumer";
 }
 
 export const RGISMap = ({
@@ -173,6 +176,9 @@ export const RGISMap = ({
   onMapClick,
   selectedLocation,
   disableAutoFit = false,
+  showSatellite = false,
+  highlightedElementId,
+  highlightedElementType,
 }: RGISMapProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<MapView | null>(null);
@@ -181,7 +187,7 @@ export const RGISMap = ({
     if (!mapRef.current) return;
 
     const map = new Map({
-      basemap: "streets-vector",
+      basemap: showSatellite ? "satellite" : "streets-vector",
     });
 
     const view = new MapView({
@@ -210,6 +216,12 @@ export const RGISMap = ({
       }
     };
   }, [onMapClick]);
+
+  // Handle satellite view toggle without remounting the map
+  useEffect(() => {
+    if (!viewRef.current) return;
+    viewRef.current.map.basemap = showSatellite ? "satellite" : "streets-vector";
+  }, [showSatellite]);
 
   useEffect(() => {
     if (!viewRef.current) return;
@@ -302,10 +314,24 @@ export const RGISMap = ({
         const graphic = new Graphic({
           geometry: polyline,
           symbol: lineSymbol as any,
-          attributes: pipeline,
+          attributes: {
+            ...pipeline,
+            displayStatus: pipeline.status.toUpperCase(),
+            displayActive: pipeline.isActive ? "YES" : "NO",
+          },
           popupTemplate: {
             title: pipeline.name ?? `Pipeline ${pipeline.id}`,
-            content: "ID: {id}<br>Diameter: {diameter}mm<br>Depth: {depth}m<br>Status: {isActive ? 'Active' : 'Inactive'}",
+            content: `
+              <div style="font-family: system-ui; font-size: 12px; line-height: 1.8;">
+                <div><strong>ID:</strong> {id}</div>
+                <div><strong>Diameter:</strong> {diameter}mm</div>
+                <div><strong>Depth:</strong> {depth}m</div>
+                <div><strong>Status:</strong> {displayStatus}</div>
+                <div><strong>Material:</strong> {material}</div>
+                <div><strong>Type:</strong> {type}</div>
+                <div><strong>Active:</strong> {displayActive}</div>
+              </div>
+            `,
           },
         });
 
@@ -365,10 +391,23 @@ export const RGISMap = ({
         const graphic = new Graphic({
           geometry: pt,
           symbol: markerSymbol as any,
-          attributes: valve,
+          attributes: {
+            ...valve,
+            displayStatus: valve.status.toUpperCase(),
+            displayActive: valve.isActive ? "YES" : "NO",
+          },
           popupTemplate: {
             title: valve.name ?? `Valve ${valve.id}`,
-            content: "Type: {type}<br>Status: {status}<br>Segment: {segmentId}<br>Active: {isActive ? 'Yes' : 'No'}",
+            content: `
+              <div style="font-family: system-ui; font-size: 12px; line-height: 1.8;">
+                <div><strong>ID:</strong> {id}</div>
+                <div><strong>Type:</strong> {type}</div>
+                <div><strong>Status:</strong> {displayStatus}</div>
+                <div><strong>Criticality:</strong> {criticality}</div>
+                <div><strong>Segment ID:</strong> {segmentId}</div>
+                <div><strong>Active:</strong> {displayActive}</div>
+              </div>
+            `,
           },
         });
 
@@ -465,10 +504,27 @@ export const RGISMap = ({
     const graphic = new Graphic({
       geometry: pt,
       symbol: markerSymbol as any,
-      attributes: consumerPoint,
+      attributes: {
+        ...consumerPoint,
+        displayActive: consumerPoint.isActive ? "YES" : "NO",
+        consumerCount: consumerPoint.consumers?.length || 0,
+      },
       popupTemplate: {
-        title: "Consumers",
-        content: popupHtml,
+        title: consumerPoint.name || "Consumer Point",
+        content: `
+          <div style="font-family: system-ui; font-size: 12px; line-height: 1.8;">
+            <div><strong>ID:</strong> {id}</div>
+            <div><strong>Code:</strong> {code}</div>
+            <div><strong>Mobile:</strong> {mobile}</div>
+            <div><strong>Status:</strong> {status}</div>
+            <div><strong>Active:</strong> {displayActive}</div>
+            ${consumerPoint.consumers && consumerPoint.consumers.length > 0 ? `
+              <hr style="margin: 6px 0; border: none; border-top: 1px solid #eee;"/>
+              <div><strong>Associated Consumers ({consumerCount}):</strong></div>
+              ${popupHtml}
+            ` : ""}
+          </div>
+        `,
       },
     });
 
@@ -563,6 +619,111 @@ export const RGISMap = ({
     }
 
   }, [devices, pipelines, valves, consumers, catastrophes, showDevices, showPipelines, showValves, showConsumers, showCatastrophes, selectedLocation, disableAutoFit]);
+
+  // Handle highlighting of selected elements
+  useEffect(() => {
+    if (!viewRef.current) return;
+    const view = viewRef.current;
+    const map = view.map;
+
+    // Remove existing highlight layer if present
+    const existingHighlight = map.layers.find((layer: any) => layer.title === "highlight-layer");
+    if (existingHighlight) {
+      map.remove(existingHighlight);
+    }
+
+    if (!highlightedElementId || !highlightedElementType) return;
+
+    const highlightLayer = new GraphicsLayer({ title: "highlight-layer" });
+    map.add(highlightLayer);
+
+    if (highlightedElementType === "pipeline") {
+      const pipeline = pipelines.find((p) => p.id === highlightedElementId);
+      if (!pipeline) return;
+
+      const index = pipelines.indexOf(pipeline);
+      let coords = pipeline.coordinates?.map((c) => [c.lng, c.lat]);
+      if (!coords || coords.length < 2) {
+        coords = DEFAULT_PIPELINE_ROUTES[index];
+      }
+      if (!coords || coords.length < 2) return;
+
+      const polyline = new Polyline({ paths: [coords] as any });
+      const lineSymbol = {
+        type: "simple-line",
+        color: [251, 191, 36], // amber-400 for highlight
+        width: 8,
+      };
+
+      const graphic = new Graphic({
+        geometry: polyline,
+        symbol: lineSymbol as any,
+      });
+
+      highlightLayer.add(graphic);
+    } else if (highlightedElementType === "valve") {
+      const valve = valves.find((v) => v.id === highlightedElementId);
+      if (!valve) return;
+
+      const index = valves.indexOf(valve);
+      let lon = valve.coordinates?.lng;
+      let lat = valve.coordinates?.lat;
+
+      if (lon === undefined || lat === undefined) {
+        const fallback = DEFAULT_VALVE_POSITIONS[index];
+        if (fallback) {
+          [lon, lat] = fallback;
+        }
+      }
+
+      if (lon === undefined || lat === undefined) return;
+
+      const pt = new Point({ longitude: lon, latitude: lat });
+      const markerSymbol = {
+        type: "simple-marker",
+        color: [251, 191, 36], // amber-400 for highlight
+        size: "24px",
+        outline: {
+          color: [255, 255, 255],
+          width: 3,
+        },
+      };
+
+      const graphic = new Graphic({
+        geometry: pt,
+        symbol: markerSymbol as any,
+      });
+
+      highlightLayer.add(graphic);
+    } else if (highlightedElementType === "consumer") {
+      const consumer = consumers.find((c) => c.id === highlightedElementId);
+      if (!consumer) return;
+
+      if (consumer.coordinates.lat === undefined || consumer.coordinates.lng === undefined) return;
+
+      const pt = new Point({
+        longitude: consumer.coordinates.lng,
+        latitude: consumer.coordinates.lat,
+      });
+
+      const markerSymbol = {
+        type: "simple-marker",
+        color: [251, 191, 36], // amber-400 for highlight
+        size: "24px",
+        outline: {
+          color: [255, 255, 255],
+          width: 3,
+        },
+      };
+
+      const graphic = new Graphic({
+        geometry: pt,
+        symbol: markerSymbol as any,
+      });
+
+      highlightLayer.add(graphic);
+    }
+  }, [highlightedElementId, highlightedElementType, pipelines, valves, consumers]);
 
   return (
     <div className="w-full h-full relative">

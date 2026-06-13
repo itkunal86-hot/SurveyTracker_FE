@@ -88,9 +88,13 @@ interface ConsumerPoint {
 export const MapDashboard = () => {
   // Simplified layer controls
   const [showRGIS, setShowRGIS] = useState(true);
+  const [showSatellite, setShowSatellite] = useState(false);
   const [showPipelines, setShowPipelines] = useState(true);
   const [showValves, setShowValves] = useState(true);
   const [showConsumerPoints, setShowConsumerPoints] = useState(true);
+
+  // Selection state for highlighting
+  const [selectedElement, setSelectedElement] = useState<{ type: "pipeline" | "valve" | "consumer"; id: string } | null>(null);
 
   // Get current survey context
   const { currentSurvey } = useSurveyContext();
@@ -248,6 +252,18 @@ export const MapDashboard = () => {
               {showRGIS ? "RGIS Map" : "Leaflet Map"}
             </div>
 
+            {/* Satellite View Control */}
+            <div className="flex items-center justify-between pb-3 mb-3">
+              <Label htmlFor="satellite-view" className="text-sm font-medium">
+                Satellite View
+              </Label>
+              <Switch
+                id="satellite-view"
+                checked={showSatellite}
+                onCheckedChange={setShowSatellite}
+              />
+            </div>
+
             {/* Pipeline Controls */}
             <div className="flex items-center justify-between">
               <Label htmlFor="pipelines" className="flex items-center space-x-2">
@@ -322,21 +338,21 @@ export const MapDashboard = () => {
               displayPipelines.map((pipeline) => (
                 <div
                   key={pipeline.id}
-                  className="flex items-center justify-between p-3 border border-border rounded-lg"
+                  onClick={() => setSelectedElement({ type: "pipeline", id: pipeline.id })}
+                  className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-all ${
+                    selectedElement?.type === "pipeline" && selectedElement?.id === pipeline.id
+                      ? "border-primary bg-primary/10 ring-2 ring-primary"
+                      : "border-border hover:bg-accent"
+                  }`}
                 >
                   <div>
                     <p className="font-medium text-sm">{pipeline.name}</p>
                     <p className="text-xs text-muted-foreground">
                       ⌀{pipeline.diameter}mm • {pipeline.depth}m deep
                     </p>
-                    {pipeline.material && (
-                      <p className="text-xs text-muted-foreground">
-                        {pipeline.material}
-                      </p>
-                    )}
                   </div>
-                  <Badge className={getStatusColor(pipeline.status)}>
-                    {pipeline.status.toUpperCase()}
+                  <Badge className={pipeline.isActive ? "bg-success text-success-foreground" : "bg-destructive text-destructive-foreground"}>
+                    {pipeline.isActive ? "ACTIVE" : "INACTIVE"}
                   </Badge>
                 </div>
               ))
@@ -358,16 +374,21 @@ export const MapDashboard = () => {
               displayValves.map((valve) => (
                 <div
                   key={valve.id}
-                  className="flex items-center justify-between p-3 border border-border rounded-lg"
+                  onClick={() => setSelectedElement({ type: "valve", id: valve.id })}
+                  className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-all ${
+                    selectedElement?.type === "valve" && selectedElement?.id === valve.id
+                      ? "border-primary bg-primary/10 ring-2 ring-primary"
+                      : "border-border hover:bg-accent"
+                  }`}
                 >
                   <div>
                     <p className="font-medium text-sm">{valve.name}</p>
                     <p className="text-xs text-muted-foreground capitalize">
-                      {valve.type} • {valve.criticality} criticality
+                      {valve.type}
                     </p>
                   </div>
-                  <Badge className={getStatusColor(valve.status)}>
-                    {valve.status.toUpperCase()}
+                  <Badge className={valve.isActive ? "bg-success text-success-foreground" : "bg-destructive text-destructive-foreground"}>
+                    {valve.isActive ? "ACTIVE" : "INACTIVE"}
                   </Badge>
                 </div>
               ))
@@ -389,7 +410,12 @@ export const MapDashboard = () => {
               displayConsumerPoints.map((consumer) => (
                 <div
                   key={consumer.id}
-                  className="flex items-center justify-between p-3 border border-border rounded-lg"
+                  onClick={() => setSelectedElement({ type: "consumer", id: consumer.id })}
+                  className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-all ${
+                    selectedElement?.type === "consumer" && selectedElement?.id === consumer.id
+                      ? "border-primary bg-primary/10 ring-2 ring-primary"
+                      : "border-border hover:bg-accent"
+                  }`}
                 >
                   <div>
                     <p className="font-medium text-sm">{consumer.name}</p>
@@ -441,6 +467,9 @@ export const MapDashboard = () => {
             showPipelines={showPipelines}
             showValves={showValves}
             showConsumers={showConsumerPoints}
+            showSatellite={showSatellite}
+            highlightedElementId={selectedElement?.id}
+            highlightedElementType={selectedElement?.type as any}
           />
         ) : (
           <LeafletMap
@@ -464,6 +493,9 @@ export const MapDashboard = () => {
             showPipelines={showPipelines}
             showValves={showValves}
             showConsumers={showConsumerPoints}
+            showSatellite={showSatellite}
+            highlightedElementId={selectedElement?.id}
+            highlightedElementType={selectedElement?.type as any}
           />
         )}
 

@@ -107,6 +107,7 @@ export const CatastrophePointsEditor = () => {
 
   // Map type and layer controls
   const [showRGIS, setShowRGIS] = useState(true);
+  const [showSatellite, setShowSatellite] = useState(false);
   const [showPipelines, setShowPipelines] = useState(true);
   const [showValves, setShowValves] = useState(true);
   const [showConsumerPoints, setShowConsumerPoints] = useState(true);
@@ -433,6 +434,18 @@ export const CatastrophePointsEditor = () => {
               {showRGIS ? "RGIS Map" : "Leaflet Map"}
             </div>
 
+            {/* Satellite View Control */}
+            <div className="flex items-center justify-between border-b pb-3 mb-3">
+              <Label htmlFor="show-satellite-catastrophe" className="text-base font-semibold">
+                Satellite View
+              </Label>
+              <Switch
+                id="show-satellite-catastrophe"
+                checked={showSatellite}
+                onCheckedChange={setShowSatellite}
+              />
+            </div>
+
             {/* Pipeline Controls */}
             <div className="flex items-center justify-between">
               <Label htmlFor="pipelines" className="flex items-center space-x-2">
@@ -716,6 +729,7 @@ export const CatastrophePointsEditor = () => {
                     showPipelines={showPipelines}
                     showValves={showValves}
                     showConsumers={showConsumerPoints}
+                    showSatellite={showSatellite}
                   />
                 ) : (
                   <LeafletMap
@@ -727,6 +741,7 @@ export const CatastrophePointsEditor = () => {
                     showValves={showValves}
                     catastrophes={mapCatastrophes}
                     showCatastrophes={mapCatastrophes.some((c) => c.coordinates && Number.isFinite(c.coordinates.lat) && Number.isFinite(c.coordinates.lng))}
+                    showSatellite={showSatellite}
                   />
                 )}
               </div>

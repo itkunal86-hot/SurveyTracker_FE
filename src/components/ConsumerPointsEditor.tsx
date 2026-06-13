@@ -25,8 +25,19 @@ import {
 } from "@/components/ui/dialog";
 import { MapPin, AlertTriangle, Loader2, X, ChevronDown, ChevronRight } from "lucide-react";
 import { useTable } from "@/hooks/use-table";
-import { useDeviceLogs } from "@/hooks/useApiQueries";
+import {
+  useDeviceLogs,
+  usePipelineGeoJSON,
+  useValveGeoJSON,
+  useCatastropheGeoJSON,
+} from "@/hooks/useApiQueries";
 import { apiClient } from "@/lib/api";
+import {
+  parseGeoJSON,
+  transformPipelineFeatures,
+  transformValveFeatures,
+  transformCatastropheFeatures,
+} from "@/lib/geoJsonParser";
 import { formatColumnHeader, formatDateCell, isDateColumn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -57,6 +68,7 @@ interface ConsumerPoint {
 export const ConsumerPointsEditor = () => {
   const { toast } = useToast();
   const [showRGIS, setShowRGIS] = useState(true);
+  const [showSatellite, setShowSatellite] = useState(false);
   const [rows, setRows] = useState<DynamicRow[]>([]);
   const [columns, setColumns] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -67,6 +79,19 @@ export const ConsumerPointsEditor = () => {
   const [consumerModalOpen, setConsumerModalOpen] = useState(false);
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
   const [togglingIds, setTogglingIds] = useState<Set<number>>(new Set());
+
+  // API hooks - fetch GeoJSON for all infrastructure
+  const {
+    data: pipelinesGeoJSON,
+  } = usePipelineGeoJSON();
+
+  const {
+    data: valvesGeoJSON,
+  } = useValveGeoJSON();
+
+  const {
+    data: catastropheGeoJSON,
+  } = useCatastropheGeoJSON();
 
   // Handle map point click to show consumers at that point
   // const handleMapPointClick = (lat: number, lng: number) => {
@@ -156,6 +181,44 @@ export const ConsumerPointsEditor = () => {
 
   const defaultSortKey = (columns.includes("id") ? "id" : columns[0]) as keyof DynamicRow | undefined;
   const { tableConfig, sortedAndPaginatedData } = useTable<DynamicRow>(rows, 10, defaultSortKey as any);
+
+  // Transform pipeline GeoJSON data
+  const transformedPipelines = useMemo(() => {
+    if (!pipelinesGeoJSON?.data) return [];
+    const geoJsonString = pipelinesGeoJSON.data;
+    const featureCollection = parseGeoJSON(geoJsonString);
+    if (!featureCollection || !featureCollection.features) return [];
+    return transformPipelineFeatures(featureCollection.features);
+  }, [pipelinesGeoJSON?.data]);
+
+  // Transform valve GeoJSON data
+  const transformedValves = useMemo(() => {
+    if (!valvesGeoJSON?.data) return [];
+    const geoJsonString = valvesGeoJSON.data;
+    const featureCollection = parseGeoJSON(geoJsonString);
+    if (!featureCollection || !featureCollection.features) return [];
+    return transformValveFeatures(featureCollection.features);
+  }, [valvesGeoJSON?.data]);
+
+  // Transform catastrophe GeoJSON data
+  const transformedCatastrophes = useMemo(() => {
+    if (!catastropheGeoJSON?.data) return [];
+    const geoJsonString = catastropheGeoJSON.data;
+    const featureCollection = parseGeoJSON(geoJsonString);
+    if (!featureCollection || !featureCollection.features) return [];
+    const catastrophes = transformCatastropheFeatures(featureCollection.features);
+    return catastrophes.map(c => ({
+      id: c.id,
+      name: c.type,
+      severity: c.severity,
+      status: c.isActive ? 'ACTIVE' : 'INACTIVE',
+      coordinates: { lat: c.lat, lng: c.lng },
+      isActive: c.isActive,
+      plotColor: c.plotColor,
+      plotColorInactive: c.plotColorInactive,
+      plotType: c.plotType,
+    }));
+  }, [catastropheGeoJSON?.data]);
 
   // Derive map points
   const mapConsumers: ConsumerPoint[] = useMemo(() => {
@@ -253,14 +316,24 @@ export const ConsumerPointsEditor = () => {
       <div className="grid grid-cols-1 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Consumer Points Map</CardTitle>
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="show-rgis-consumers"
-                checked={showRGIS}
-                onCheckedChange={setShowRGIS}
-              />
-              <Label htmlFor="show-rgis-consumers">Show RGIS Map</Label>
+            <CardTitle>Infrastructure Map</CardTitle>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="show-rgis-consumers"
+                  checked={showRGIS}
+                  onCheckedChange={setShowRGIS}
+                />
+                <Label htmlFor="show-rgis-consumers">RGIS Map</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="show-satellite-consumers"
+                  checked={showSatellite}
+                  onCheckedChange={setShowSatellite}
+                />
+                <Label htmlFor="show-satellite-consumers">Satellite View</Label>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -268,26 +341,26 @@ export const ConsumerPointsEditor = () => {
               {showRGIS ? (
                 <RGISMap
                   devices={[]}
-                  pipelines={[]}
-                  valves={[]}
+                  pipelines={transformedPipelines}
+                  valves={transformedValves}
                   consumers={mapConsumers}
                   showDevices={false}
-                  showPipelines={false}
-                  showValves={false}
+                  showPipelines={transformedPipelines.length > 0}
+                  showValves={transformedValves.length > 0}
                   showConsumers={mapConsumers.length > 0}
-                  //onMapClick={handleMapPointClick}
+                  showSatellite={showSatellite}
                 />
               ) : (
                 <LeafletMap
                   devices={[]}
-                  pipelines={[]}
-                  valves={[]}
+                  pipelines={transformedPipelines}
+                  valves={transformedValves}
                   consumers={mapConsumers}
                   showDevices={false}
-                  showPipelines={false}
-                  showValves={false}
+                  showPipelines={transformedPipelines.length > 0}
+                  showValves={transformedValves.length > 0}
                   showConsumers={mapConsumers.length > 0}
-                  //onMapClick={handleMapPointClick}
+                  showSatellite={showSatellite}
                 />
               )}
             </div>
