@@ -260,13 +260,15 @@ export const Sidebar = ({
         const pipe = findBy((a) => (a.name || "").toLowerCase() === "pipe" || (a.menuName || "").toLowerCase() === "pipeline");
         const valve = findBy((a) => (a.name || "").toLowerCase() === "valve" || (a.menuName || "").toLowerCase() === "valve");
         const consumer = findBy((a) => (a.name || "").toLowerCase() === "consumer" || (a.menuName || "").toLowerCase() === "consumer");
+        const cngStation = findBy((a) => (a.name || "").toLowerCase() === "cng station" || (a.menuName || "").toLowerCase() === "cng station");
         const catastrophe = findBy((a) => (a.name || "").toLowerCase() === "catastrophe" || (a.menuName || "").toLowerCase().includes("catastrophe"));
 
         const dyn: Array<{ id: string; label: string; icon: any; order: number; path: string }> = [];
         if (pipe) dyn.push({ id: "assets:pipeline", label: normalizeHeading(pipe.menuName || pipe.name), icon: Pipe, order: pipe.menuOrder ?? 1, path: "/assets/pipeline" });
         if (valve) dyn.push({ id: "assets:valve", label: normalizeHeading(valve.menuName || valve.name), icon: Gauge, order: valve.menuOrder ?? 2, path: "/assets/valve" });
         if (consumer) dyn.push({ id: "assets:consumer", label: normalizeHeading(consumer.menuName || consumer.name), icon: Users, order: consumer.menuOrder ?? 3, path: "/assets/consumer" });
-        if (catastrophe) dyn.push({ id: "assets:catastrophe", label: normalizeHeading(catastrophe.menuName || catastrophe.name), icon: AlertTriangle, order: catastrophe.menuOrder ?? 4, path: "/assets/catastrophe" });
+        if (cngStation) dyn.push({ id: "assets:cng", label: normalizeHeading(cngStation.menuName || cngStation.name), icon: Gauge, order: cngStation.menuOrder ?? 4, path: "/assets/cng" });
+        if (catastrophe) dyn.push({ id: "assets:catastrophe", label: normalizeHeading(catastrophe.menuName || catastrophe.name), icon: AlertTriangle, order: catastrophe.menuOrder ?? 5, path: "/assets/catastrophe" });
 
         if (mounted) {
           setAssetMenus(dyn.sort((a, b) => a.order - b.order));
@@ -280,7 +282,7 @@ export const Sidebar = ({
 
   const filteredAssetMenus = assetMenus.filter((m) => {
     if (userRole === "survey") {
-      return m.id !== "assets:pipeline" && m.id !== "assets:valve" && m.id !== "assets:consumer" && m.id !== "assets:catastrophe";
+      return m.id !== "assets:pipeline" && m.id !== "assets:valve" && m.id !== "assets:consumer" && m.id !== "assets:cng" && m.id !== "assets:catastrophe";
     }
     return true;
   });

@@ -199,7 +199,7 @@ export function transformConsumerFeatures(
   plotColorInactive?: string;
 }> {
   return features
-    .filter((feature) => feature.geometry.type === "Point")
+    .filter((feature) => feature.geometry && feature.geometry.type === "Point")
     .map((feature, index) => {
       const props = feature.properties;
       const coords = getPointCoordinates(feature);
@@ -253,7 +253,7 @@ export function transformCatastropheFeatures(
   plotColorInactive?: string;
 }> {
   return features
-    .filter((feature) => feature.geometry.type === "Point")
+    .filter((feature) => feature.geometry && feature.geometry.type === "Point")
     .map((feature, index) => {
       const props = feature.properties;
       const coords = getPointCoordinates(feature);
@@ -328,4 +328,59 @@ export function transformCatastropheFeatures(
       };
     })
     .filter((item): item is Exclude<typeof item, null> => item !== null);
+}
+
+// Transform CNG Station features - reads LAT/LNG from properties instead of geometry
+export function transformCngStationFeatures(
+  features: GeoJSONFeature[],
+): Array<{
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  type: string;
+  category: string;
+  status: "active" | "inactive";
+  consumerCode?: string;
+  mobile?: string;
+  estimatedConsumption?: number;
+  consumptionUnit?: string;
+  isActive?: boolean;
+  plotType?: "line" | "round" | "square";
+  plotColor?: string;
+  plotColorInactive?: string;
+}> {
+  return features.map((feature, index) => {
+    const props = feature.properties;
+
+    // Read LAT/LNG directly from properties for CNG stations (geometry is null)
+    const lat = Number(props.LAT);
+    const lng = Number(props.LNG);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      return null;
+    }
+
+    // Extract Plot sub-object properties
+    const plotData = props.Plot || {};
+
+    return {
+      id: props.SE_ID?.toString() || `cng-${index}`,
+      name: props["Station Name"] || `CNG Station ${props.POINT || index}`,
+      lat: lat,
+      lng: lng,
+      type: "CNG_STATION",
+      category: props.Category || "CNG",
+      status: "active" as const,
+      consumerCode: props.SE_ID?.toString(),
+      mobile: props.Mobile,
+      estimatedConsumption: 0,
+      consumptionUnit: "m³/day",
+      isActive: props.IsActive !== undefined ? props.IsActive : true,
+      plotType: plotData.PLOT_TYPE as "line" | "round" | "square" | undefined,
+      plotColor: plotData.PLOT_COLOR || "purple",
+      plotColorInactive: plotData.PLOT_COLOR_INACTIVE || "grey",
+    };
+  })
+  .filter((item): item is Exclude<typeof item, null> => item !== null);
 }

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { apiClient, type AssetType } from "@/lib/api";
+import { apiClient, type AssetType, API_BASE_PATH } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, CheckCircle } from "lucide-react";
@@ -78,7 +78,7 @@ export default function ExportImport() {
     setMessage(null);
     try {
       const response = await fetch(
-        `https://localhost:7215/api/SurveyEntries/download?filename=${encodeURIComponent(filename)}`,
+        `${API_BASE_PATH}/SurveyEntries/download?filename=${encodeURIComponent(filename)}`,
         {
           method: "GET",
           headers: {
@@ -148,9 +148,9 @@ export default function ExportImport() {
 
         let apiUrl = "";
         if (fileName.endsWith(".kml")) {
-          apiUrl = `https://localhost:7215/api/SurveyEntries/upload-kml`;
+          apiUrl = `${API_BASE_PATH}/SurveyEntries/upload-kml`;
         } else {
-          apiUrl = `https://localhost:7215/api/SurveyEntries/upload-assets`;
+          apiUrl = `${API_BASE_PATH}/SurveyEntries/upload-assets`;
         }
 
         const response = await fetch(apiUrl, {

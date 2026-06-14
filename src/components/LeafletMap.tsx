@@ -672,7 +672,7 @@ export const LeafletMap = ({
           opacity: 1,
           fillOpacity: 0.9,
         });
-        const consumersHtml = consumer.consumers
+        const consumersHtml = (consumer.consumers || [])
           .map(c => `
           <div style="margin-bottom:6px;">
             <strong>${c.name || "Consumer"}</strong><br/>

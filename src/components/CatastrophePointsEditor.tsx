@@ -19,13 +19,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { MapPin, AlertTriangle, Layers, RefreshCw, AlertCircle } from "lucide-react";
 import { useTable } from "@/hooks/use-table";
 import { useEffect, useMemo, useState } from "react";
-import { usePipelineGeoJSON, useValveGeoJSON, useConsumerGeoJSON } from "@/hooks/useApiQueries";
+import { usePipelineGeoJSON, useValveGeoJSON, useConsumerGeoJSON, useCngStationGeoJSON } from "@/hooks/useApiQueries";
 import { API_BASE_PATH } from "@/lib/api";
 import {
   parseGeoJSON,
   transformPipelineFeatures,
   transformValveFeatures,
   transformConsumerFeatures,
+  transformCngStationFeatures,
 } from "@/lib/geoJsonParser";
 import { formatColumnHeader, formatDateCell, isDateColumn } from "@/lib/utils";
 
@@ -84,8 +85,9 @@ interface ValvePoint {
 interface ConsumerPoint {
   id: string;
   name: string;
-  lat: number;
-  lng: number;
+  lat?: number;
+  lng?: number;
+  coordinates: { lat: number; lng: number };
   type: string;
   category?: string;
   status?: "active" | "inactive";
@@ -93,6 +95,11 @@ interface ConsumerPoint {
   consumptionUnit?: string;
   consumerCode?: string;
   mobile?: string;
+  isActive?: boolean;
+  plotColor?: string;
+  plotColorInactive?: string;
+  plotType?: "line" | "round" | "square";
+  consumers?: any[];
 }
 
 export const CatastrophePointsEditor = () => {
@@ -133,6 +140,13 @@ export const CatastrophePointsEditor = () => {
     error: consumerGeoJSONError,
     refetch: refetchConsumerPoints,
   } = useConsumerGeoJSON();
+
+  const {
+    data: cngStationGeoJSON,
+    isLoading: loadingCngStations,
+    error: cngStationsError,
+    refetch: refetchCngStations,
+  } = useCngStationGeoJSON();
 
   // Load pipelines for map layer from required endpoint
   useEffect(() => {
@@ -211,7 +225,7 @@ export const CatastrophePointsEditor = () => {
 
   // Transform consumer GeoJSON data
   const transformedConsumerPoints: ConsumerPoint[] = useMemo(() => {
-    if (!showConsumerPoints || !consumerGeoJSON?.data) return [];
+    if (!consumerGeoJSON?.data) return [];
 
     const geoJsonString = consumerGeoJSON.data;
     const featureCollection = parseGeoJSON(geoJsonString);
@@ -220,8 +234,32 @@ export const CatastrophePointsEditor = () => {
       return [];
     }
 
-    return transformConsumerFeatures(featureCollection.features);
-  }, [consumerGeoJSON?.data, showConsumerPoints]);
+    const consumers = transformConsumerFeatures(featureCollection.features);
+    return consumers.map(c => ({
+      ...c,
+      coordinates: { lat: c.lat, lng: c.lng },
+      consumers: [],
+    }));
+  }, [consumerGeoJSON?.data]);
+
+  // Transform CNG Station GeoJSON data
+  const transformedCngStations: ConsumerPoint[] = useMemo(() => {
+    if (!cngStationGeoJSON?.data) return [];
+
+    const geoJsonString = cngStationGeoJSON.data;
+    const featureCollection = parseGeoJSON(geoJsonString);
+
+    if (!featureCollection || !featureCollection.features) {
+      return [];
+    }
+
+    const consumers = transformConsumerFeatures(featureCollection.features);
+    return consumers.map(c => ({
+      ...c,
+      coordinates: { lat: c.lat, lng: c.lng },
+      consumers: [],
+    }));
+  }, [cngStationGeoJSON?.data]);
 
   // Pipelines mapped minimally for LeafletMap (geometry may fall back to defaults)
   const mapPipelines: MapPipelineSegment[] = useMemo(() => {
@@ -721,14 +759,14 @@ export const CatastrophePointsEditor = () => {
               <div className="h-96 w-full">
                 {showRGIS ? (
                   <RGISMap
-                    devices={transformedConsumerPoints as unknown as any[]}
+                    devices={[]}
                     pipelines={transformedPipelines}
                     valves={transformedValves}
-                    //consumers={transformedConsumerPoints}
-                    showDevices={showConsumerPoints}
+                    consumers={[...transformedConsumerPoints, ...transformedCngStations] as any}
+                    showDevices={false}
                     showPipelines={showPipelines}
                     showValves={showValves}
-                    showConsumers={showConsumerPoints}
+                    showConsumers={showConsumerPoints || transformedCngStations.length > 0}
                     showSatellite={showSatellite}
                   />
                 ) : (
@@ -736,9 +774,11 @@ export const CatastrophePointsEditor = () => {
                     devices={[]}
                     pipelines={mapPipelines}
                     valves={mapValves}
+                    consumers={[...transformedConsumerPoints, ...transformedCngStations] as any}
                     showDevices={false}
                     showPipelines={showPipelines}
                     showValves={showValves}
+                    showConsumers={showConsumerPoints || transformedCngStations.length > 0}
                     catastrophes={mapCatastrophes}
                     showCatastrophes={mapCatastrophes.some((c) => c.coordinates && Number.isFinite(c.coordinates.lat) && Number.isFinite(c.coordinates.lng))}
                     showSatellite={showSatellite}

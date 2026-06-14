@@ -15,12 +15,14 @@ import {
   usePipelineGeoJSON,
   useValveGeoJSON,
   useConsumerGeoJSON,
+  useCngStationGeoJSON,
 } from "@/hooks/useApiQueries";
 import {
   parseGeoJSON,
   transformPipelineFeatures,
   transformValveFeatures,
   transformConsumerFeatures,
+  transformCngStationFeatures,
 } from "@/lib/geoJsonParser";
 import { useSurveyContext } from "@/contexts/SurveyContext";
 
@@ -121,6 +123,13 @@ export const MapDashboard = () => {
     refetch: refetchConsumerPoints,
   } = useConsumerGeoJSON();
 
+  const {
+    data: cngStationGeoJSON,
+    isLoading: loadingCngStations,
+    error: cngStationsError,
+    refetch: refetchCngStations,
+  } = useCngStationGeoJSON();
+
   // Transform pipeline GeoJSON data
   const transformedPipelines: PipelineSegment[] = useMemo(() => {
     if (!showPipelines || !pipelinesGeoJSON?.data) return [];
@@ -163,20 +172,41 @@ export const MapDashboard = () => {
     return transformConsumerFeatures(featureCollection.features);
   }, [consumerGeoJSON?.data, showConsumerPoints]);
 
+  // Transform CNG Station GeoJSON data
+  const transformedCngStations: ConsumerPoint[] = useMemo(() => {
+    if (!cngStationGeoJSON?.data) return [];
+
+    const geoJsonString = cngStationGeoJSON.data;
+    const featureCollection = parseGeoJSON(geoJsonString);
+
+    if (!featureCollection || !featureCollection.features) {
+      return [];
+    }
+
+    const cngStations = transformCngStationFeatures(featureCollection.features);
+    return cngStations.map(c => ({
+      ...c,
+      coordinates: { lat: c.lat, lng: c.lng },
+      consumers: [],
+    }));
+  }, [cngStationGeoJSON?.data]);
+
   // Use transformed data as display data
   const displayPipelines = transformedPipelines;
   const displayValves = transformedValves;
   const displayConsumerPoints = transformedConsumerPoints;
+  const displayCngStations = transformedCngStations;
 
   const handleRefresh = () => {
     refetchPipelines();
     refetchValves();
     refetchConsumerPoints();
+    refetchCngStations();
   };
 
   const isLoading =
-    loadingPipelines || loadingValves || loadingConsumerPoints;
-  const hasError = pipelinesError || valvesError || consumerPointsError;
+    loadingPipelines || loadingValves || loadingConsumerPoints || loadingCngStations;
+  const hasError = pipelinesError || valvesError || consumerPointsError || cngStationsError;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -450,23 +480,38 @@ export const MapDashboard = () => {
             devices={[]}
             pipelines={displayPipelines as any}
             valves={displayValves as any}
-            consumers={displayConsumerPoints.map((cp: any) => ({
-              id: cp.id,
-              name: cp.name,
-              code: cp.consumerCode,
-              mobile: cp.mobile,
-              status: cp.status,
-              coordinates: { lat: cp.lat, lng: cp.lng },
-              consumers: [],
-              isActive: cp.isActive,
-              plotColor: cp.plotColor,
-              plotColorInactive: cp.plotColorInactive,
-              plotType: cp.plotType,
-            })) as any}
+            consumers={[
+              ...displayConsumerPoints.map((cp: any) => ({
+                id: cp.id,
+                name: cp.name,
+                code: cp.consumerCode,
+                mobile: cp.mobile,
+                status: cp.status,
+                coordinates: { lat: cp.lat, lng: cp.lng },
+                consumers: [],
+                isActive: cp.isActive,
+                plotColor: cp.plotColor,
+                plotColorInactive: cp.plotColorInactive,
+                plotType: cp.plotType,
+              })),
+              ...displayCngStations.map((cs: any) => ({
+                id: cs.id,
+                name: cs.name,
+                code: cs.consumerCode,
+                mobile: cs.mobile,
+                status: cs.status,
+                coordinates: { lat: cs.lat, lng: cs.lng },
+                consumers: [],
+                isActive: cs.isActive,
+                plotColor: cs.plotColor || "#a855f7",
+                plotColorInactive: cs.plotColorInactive || "#d1d5db",
+                plotType: cs.plotType,
+              })),
+            ] as any}
             showDevices={false}
             showPipelines={showPipelines}
             showValves={showValves}
-            showConsumers={showConsumerPoints}
+            showConsumers={showConsumerPoints || displayCngStations.length > 0}
             showSatellite={showSatellite}
             highlightedElementId={selectedElement?.id}
             highlightedElementType={selectedElement?.type as any}
@@ -476,23 +521,38 @@ export const MapDashboard = () => {
             devices={[]}
             pipelines={displayPipelines as any}
             valves={displayValves as any}
-            consumers={displayConsumerPoints.map((cp: any) => ({
-              id: cp.id,
-              name: cp.name,
-              code: cp.consumerCode,
-              mobile: cp.mobile,
-              status: cp.status,
-              coordinates: { lat: cp.lat, lng: cp.lng },
-              consumers: [],
-              isActive: cp.isActive,
-              plotColor: cp.plotColor,
-              plotColorInactive: cp.plotColorInactive,
-              plotType: cp.plotType,
-            })) as any}
+            consumers={[
+              ...displayConsumerPoints.map((cp: any) => ({
+                id: cp.id,
+                name: cp.name,
+                code: cp.consumerCode,
+                mobile: cp.mobile,
+                status: cp.status,
+                coordinates: { lat: cp.lat, lng: cp.lng },
+                consumers: [],
+                isActive: cp.isActive,
+                plotColor: cp.plotColor,
+                plotColorInactive: cp.plotColorInactive,
+                plotType: cp.plotType,
+              })),
+              ...displayCngStations.map((cs: any) => ({
+                id: cs.id,
+                name: cs.name,
+                code: cs.consumerCode,
+                mobile: cs.mobile,
+                status: cs.status,
+                coordinates: { lat: cs.lat, lng: cs.lng },
+                consumers: [],
+                isActive: cs.isActive,
+                plotColor: cs.plotColor || "#a855f7",
+                plotColorInactive: cs.plotColorInactive || "#d1d5db",
+                plotType: cs.plotType,
+              })),
+            ] as any}
             showDevices={false}
             showPipelines={showPipelines}
             showValves={showValves}
-            showConsumers={showConsumerPoints}
+            showConsumers={showConsumerPoints || displayCngStations.length > 0}
             showSatellite={showSatellite}
             highlightedElementId={selectedElement?.id}
             highlightedElementType={selectedElement?.type as any}

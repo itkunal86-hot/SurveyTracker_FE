@@ -25,6 +25,7 @@ import {
   useValveGeoJSON,
   useConsumerGeoJSON,
   useCatastropheGeoJSON,
+  useCngStationGeoJSON,
 } from "@/hooks/useApiQueries";
 import { API_BASE_PATH, apiClient } from "@/lib/api";
 import {
@@ -33,6 +34,7 @@ import {
   transformValveFeatures,
   transformConsumerFeatures,
   transformCatastropheFeatures,
+  transformCngStationFeatures,
 } from "@/lib/geoJsonParser";
 import { formatColumnHeader, formatDateCell, isDateColumn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -100,6 +102,11 @@ export const ValvePointsEditor = () => {
     data: catastropheGeoJSON,
     isLoading: loadingCatastrophes,
   } = useCatastropheGeoJSON();
+
+  const {
+    data: cngStationGeoJSON,
+    isLoading: loadingCngStations,
+  } = useCngStationGeoJSON();
 
   const [pipelineRows, setPipelineRows] = useState<DynamicRow[]>([]);
   const [pipelineError, setPipelineError] = useState<string | null>(null);
@@ -313,15 +320,31 @@ export const ValvePointsEditor = () => {
     }));
   }, [catastropheGeoJSON?.data]);
 
+  // Transform CNG Station GeoJSON data
+  const transformedCngStations = useMemo(() => {
+    if (!cngStationGeoJSON?.data) return [];
+    const geoJsonString = cngStationGeoJSON.data;
+    const featureCollection = parseGeoJSON(geoJsonString);
+    if (!featureCollection || !featureCollection.features) return [];
+    const consumers = transformConsumerFeatures(featureCollection.features);
+    return consumers.map(c => ({
+      ...c,
+      coordinates: { lat: c.lat, lng: c.lng },
+      consumers: [],
+    }));
+  }, [cngStationGeoJSON?.data]);
+
   const mapPipelineData = transformedPipelines;
   const mapConsumers = transformedConsumers;
   const mapCatastrophes = transformedCatastrophes;
+  const mapCngStations = transformedCngStations;
 
   const showDevices = mapDevices.length > 0;
   const showPipelinesOnMap = mapPipelineData.length > 0;
   const showValvesOnMap = mapValves.length > 0;
   const showConsumersOnMap = mapConsumers.length > 0;
   const showCatastrophesOnMap = mapCatastrophes.length > 0;
+  const showCngStationsOnMap = mapCngStations.length > 0;
 
   const handleToggleIsActive = async (seId: number, currentIsActive: boolean) => {
     setTogglingIds(prev => new Set(prev).add(seId));
@@ -400,11 +423,11 @@ export const ValvePointsEditor = () => {
                   devices={[]}
                   pipelines={mapPipelineData}
                   valves={mapValves}
-                  consumers={mapConsumers as any}
+                  consumers={[...mapConsumers, ...mapCngStations] as any}
                   showDevices={false}
                   showPipelines={showPipelinesOnMap}
                   showValves={showValvesOnMap}
-                  showConsumers={showConsumersOnMap}
+                  showConsumers={showConsumersOnMap || showCngStationsOnMap}
                   showSatellite={showSatellite}
                 />
               ) : (
@@ -412,11 +435,11 @@ export const ValvePointsEditor = () => {
                   devices={[]}
                   pipelines={mapPipelineData}
                   valves={mapValves}
-                  consumers={mapConsumers as any}
+                  consumers={[...mapConsumers, ...mapCngStations] as any}
                   showDevices={false}
                   showPipelines={showPipelinesOnMap}
                   showValves={showValvesOnMap}
-                  showConsumers={showConsumersOnMap}
+                  showConsumers={showConsumersOnMap || showCngStationsOnMap}
                   showSatellite={showSatellite}
                 />
               )}

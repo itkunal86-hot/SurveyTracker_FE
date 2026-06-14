@@ -642,3 +642,7 @@ export function useConsumerPoints() {
 export function useCatastropheGeoJSON() {
   return useSurveyGeoJSON("Catastrophe");
 }
+
+export function useCngStationGeoJSON() {
+  return useSurveyGeoJSON("CNG Station");
+}

@@ -20,6 +20,7 @@ import {
   useValveGeoJSON,
   useConsumerGeoJSON,
   useCatastropheGeoJSON,
+  useCngStationGeoJSON,
   useCreateCatastrophe,
   useUpdateCatastrophe,
 } from "@/hooks/useApiQueries";
@@ -29,6 +30,7 @@ import {
   transformValveFeatures,
   transformConsumerFeatures,
   transformCatastropheFeatures,
+  transformCngStationFeatures,
 } from "@/lib/geoJsonParser";
 import apiClient from "@/lib/api";
 import { toast } from "sonner";
@@ -85,6 +87,11 @@ const CatastropheManagement = () => {
     error: catastropheGeoJSONError,
     refetch: refetchCatastropheGeoJSON,
   } = useCatastropheGeoJSON();
+
+  const {
+    data: cngStationGeoJSON,
+    isLoading: loadingCngStations,
+  } = useCngStationGeoJSON();
 
   const createCatastropheMutation = useCreateCatastrophe();
   const updateCatastropheMutation = useUpdateCatastrophe();
@@ -293,7 +300,12 @@ const CatastropheManagement = () => {
       return [];
     }
 
-    return transformConsumerFeatures(featureCollection.features);
+    const consumers = transformConsumerFeatures(featureCollection.features);
+    return consumers.map(c => ({
+      ...c,
+      coordinates: { lat: c.lat, lng: c.lng },
+      consumers: [],
+    }));
   }, [consumerGeoJSON?.data]);
 
   // Transform catastrophe GeoJSON data for map display
@@ -309,6 +321,25 @@ const CatastropheManagement = () => {
 
     return transformCatastropheFeatures(featureCollection.features);
   }, [catastropheGeoJSON?.data]);
+
+  // Transform CNG Station GeoJSON data
+  const mapCngStations = useMemo(() => {
+    if (!cngStationGeoJSON?.data) return [];
+
+    const geoJsonString = cngStationGeoJSON.data;
+    const featureCollection = parseGeoJSON(geoJsonString);
+
+    if (!featureCollection || !featureCollection.features) {
+      return [];
+    }
+
+    const consumers = transformConsumerFeatures(featureCollection.features);
+    return consumers.map(c => ({
+      ...c,
+      coordinates: { lat: c.lat, lng: c.lng },
+      consumers: [],
+    }));
+  }, [cngStationGeoJSON?.data]);
 
   // Update catastrophes grid to use GeoJSON data
   useEffect(() => {
@@ -503,9 +534,10 @@ const CatastropheManagement = () => {
               <div className="h-96">
                 {showRGIS ? (
                   <RGISMap
-                    devices={mapConsumers as any[]}
+                    devices={[]}
                     pipelines={mapPipelines as any}
                     valves={mapValves as any}
+                    consumers={[...mapConsumers, ...mapCngStations] as any}
                     catastrophes={mapCatastrophes.map((c) => ({
                       id: c.id,
                       name: c.type,
@@ -520,7 +552,7 @@ const CatastropheManagement = () => {
                     showDevices={false}
                     showPipelines={mapPipelines.some(p => (p.coordinates?.length ?? 0) >= 2)}
                     showValves={mapValves.some(v => !!v.coordinates)}
-                    showConsumers={false}
+                    showConsumers={mapConsumers.length > 0 || mapCngStations.length > 0}
                     showCatastrophes={mapCatastrophes.length > 0}
                     onMapClick={handleMapClick}
                     selectedLocation={selectedLocation}
@@ -531,9 +563,11 @@ const CatastropheManagement = () => {
                     devices={[]}
                     pipelines={mapPipelines as any}
                     valves={mapValves as any}
+                    consumers={[...mapConsumers, ...mapCngStations] as any}
                     showDevices={false}
                     showPipelines={mapPipelines.some(p => (p.coordinates?.length ?? 0) >= 2)}
                     showValves={mapValves.some(v => !!v.coordinates)}
+                    showConsumers={mapConsumers.length > 0 || mapCngStations.length > 0}
                     catastrophes={mapCatastrophes.map((c) => ({
                       id: c.id,
                       name: c.type,
