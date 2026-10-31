@@ -197,12 +197,14 @@ export function transformConsumerFeatures(
   plotType?: "line" | "round" | "square";
   plotColor?: string;
   plotColorInactive?: string;
+  consumers?: Array<{ name?: string; code?: string; mobile?: string }>;
 }> {
   return features
     .filter((feature) => feature.geometry && feature.geometry.type === "Point")
     .map((feature, index) => {
       const props = feature.properties;
       const coords = getPointCoordinates(feature);
+      const linked = Array.isArray(props.consumers) ? props.consumers[0] : null;
 
       // Extract Plot sub-object properties (new structure)
       const plotData = props.Plot || {};
@@ -213,14 +215,15 @@ export function transformConsumerFeatures(
 
       return {
         id: props.SE_ID?.toString() || `consumer-${index}`,
-        name: props.Consumer_Name || `Consumer ${props.POINT || index}`,
+        name: props.Consumer_Name || linked?.name || props.SE_VALUE || `Consumer ${props.POINT || index}`,
         lat: coords.lat,
         lng: coords.lng,
         type: "CONSUMER",
         category: props.Category || "DOMESTIC",
         status: "active" as const,
-        consumerCode: props.Consumer_Code,
-        mobile: props.Mobile,
+        consumerCode: props.Consumer_Code || linked?.code,
+        mobile: props.Mobile || linked?.mobile,
+        consumers: Array.isArray(props.consumers) ? props.consumers : [],
         estimatedConsumption: 0,
         consumptionUnit: "m³/day",
         isActive: props.IsActive !== undefined ? props.IsActive : true,

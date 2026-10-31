@@ -5,9 +5,12 @@ import Graphic from "@arcgis/core/Graphic";
 import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
 import Point from "@arcgis/core/geometry/Point";
 import Polyline from "@arcgis/core/geometry/Polyline";
+import GeoJSONLayer from "@arcgis/core/layers/GeoJSONLayer";
 import "@arcgis/core/assets/esri/themes/light/main.css";
 import { colorNameToRgb, getSeverityColorRgb, resolveColorRgb } from "@/lib/colorUtils";
+import type { GeoJsonMapLayer } from "@/lib/surveyMapCache";
 
+const NO_GEOJSON_LAYERS: GeoJsonMapLayer[] = [];
 const DEFAULT_CENTER: [number, number] = [91.7362, 26.1445]; // longitude, latitude
 const DEFAULT_ZOOM = 13;
 
@@ -97,6 +100,8 @@ interface PipelineSegment {
   plotType?: "line" | "round" | "square";
   plotColor?: string;
   plotColorInactive?: string;
+  material?: string;
+  type?: string;
 }
 
 interface ValvePoint {
@@ -146,6 +151,9 @@ interface CatastrophePoint {
 interface RGISMapProps {
   devices: DeviceLocation[];
   pipelines: PipelineSegment[];
+  pipelineGeoJsonText?: string | null;
+  consumerGeoJsonText?: string | null;
+  geoJsonLayers?: GeoJsonMapLayer[];
   valves: ValvePoint[];
   consumers?: ConsumerPoint[];
   catastrophes?: CatastrophePoint[];
@@ -165,6 +173,9 @@ interface RGISMapProps {
 export const RGISMap = ({
   devices,
   pipelines,
+  pipelineGeoJsonText = null,
+  consumerGeoJsonText = null,
+  geoJsonLayers = NO_GEOJSON_LAYERS,
   valves,
   consumers = [],
   catastrophes = [],
@@ -182,6 +193,7 @@ export const RGISMap = ({
 }: RGISMapProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<MapView | null>(null);
+  const geoJsonBlobRef = useRef<string[]>([]);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -210,6 +222,8 @@ export const RGISMap = ({
     }
 
     return () => {
+      geoJsonBlobRef.current.forEach((url) => URL.revokeObjectURL(url));
+      geoJsonBlobRef.current = [];
       if (viewRef.current) {
         viewRef.current.destroy();
         viewRef.current = null;
@@ -276,17 +290,93 @@ export const RGISMap = ({
       });
     }
 
-    if (showPipelines) {
+    geoJsonBlobRef.current.forEach((url) => URL.revokeObjectURL(url));
+    geoJsonBlobRef.current = [];
+
+    let fittedGeoJson = false;
+    for (const layer of geoJsonLayers) {
+      if (!layer.text) continue;
+      const blobUrl = URL.createObjectURL(new Blob([layer.text], { type: "application/geo+json" }));
+      geoJsonBlobRef.current.push(blobUrl);
+      const geoLayer = new GeoJSONLayer({
+        url: blobUrl,
+        renderer: (layer.kind === "line"
+          ? {
+              type: "simple",
+              symbol: { type: "simple-line", color: [...layer.color, 0.9], width: 1.5 },
+            }
+          : {
+              type: "simple",
+              symbol: {
+                type: "simple-marker",
+                color: [...layer.color, 0.9],
+                size: 5,
+                outline: { color: [255, 255, 255, 0.9], width: 0.5 },
+              },
+            }) as any,
+        popupTemplate: {
+          title: layer.id,
+          content: (event: any) => {
+            const attrs = event?.graphic?.attributes || {};
+            const id = attrs.SE_ID ?? attrs.objectid ?? "";
+            const name = attrs.SE_VALUE ?? attrs["Station Name"] ?? attrs.name ?? "";
+            return `<div style="font-size:12px;"><strong>${layer.id}</strong><br/>${name || id}</div>`;
+          },
+        } as any,
+      });
+      map.add(geoLayer);
+      if (!fittedGeoJson && !disableAutoFit && !selectedLocation && layer.kind === "line") {
+        fittedGeoJson = true;
+        geoLayer.when(() => {
+          if (geoLayer.fullExtent) view.goTo(geoLayer.fullExtent);
+        }).catch(() => undefined);
+      }
+    }
+
+    if (showPipelines && pipelineGeoJsonText && geoJsonLayers.length === 0) {
+      const blobUrl = URL.createObjectURL(
+        new Blob([pipelineGeoJsonText], { type: "application/geo+json" }),
+      );
+      geoJsonBlobRef.current.push(blobUrl);
+      const pipelineLayer = new GeoJSONLayer({
+        url: blobUrl,
+        renderer: {
+          type: "simple",
+          symbol: {
+            type: "simple-line",
+            color: [59, 130, 246, 0.9],
+            width: 1.5,
+          },
+        } as any,
+        popupTemplate: {
+          title: "Pipeline",
+          content: (event: any) => {
+            const attrs = event?.graphic?.attributes || {};
+            const id = attrs.SE_ID ?? "";
+            const diameter = attrs["pipe diameter"] ?? "";
+            const depth = attrs.depth ?? attrs["depth meter"] ?? "";
+            return `<div style="font-size:12px;line-height:1.6;">
+              <div><strong>ID:</strong> ${id}</div>
+              <div><strong>Diameter:</strong> ${diameter}</div>
+              <div><strong>Depth:</strong> ${depth}</div>
+            </div>`;
+          },
+        } as any,
+      });
+      map.add(pipelineLayer);
+      if (!disableAutoFit && !selectedLocation) {
+        pipelineLayer.when(() => {
+          if (pipelineLayer.fullExtent) view.goTo(pipelineLayer.fullExtent);
+        }).catch(() => undefined);
+      }
+    } else if (showPipelines) {
+      const pipelineGraphics: Graphic[] = [];
       pipelines.forEach((pipeline, index) => {
         let coords = pipeline.coordinates?.map((c) => [c.lng, c.lat]);
         if (!coords || coords.length < 2) {
           coords = DEFAULT_PIPELINE_ROUTES[index];
         }
         if (!coords || coords.length < 2) return;
-
-        coords.forEach((c) => {
-            allPoints.push(new Point({ longitude: c[0], latitude: c[1] }));
-        });
 
         const polyline = new Polyline({
           paths: [coords] as any,
@@ -315,7 +405,12 @@ export const RGISMap = ({
           geometry: polyline,
           symbol: lineSymbol as any,
           attributes: {
-            ...pipeline,
+            id: pipeline.id,
+            name: pipeline.name,
+            diameter: pipeline.diameter,
+            depth: pipeline.depth,
+            material: pipeline.material,
+            type: pipeline.type,
             displayStatus: pipeline.status.toUpperCase(),
             displayActive: pipeline.isActive ? "YES" : "NO",
           },
@@ -335,8 +430,11 @@ export const RGISMap = ({
           },
         });
 
-        graphicsLayer.add(graphic);
+        pipelineGraphics.push(graphic);
       });
+      if (pipelineGraphics.length > 0) {
+        graphicsLayer.addMany(pipelineGraphics);
+      }
     }
 
     if (showValves) {
@@ -448,7 +546,41 @@ export const RGISMap = ({
     //   });
     // }
 
-    if (showConsumers) {
+    if (showConsumers && consumerGeoJsonText && geoJsonLayers.length === 0) {
+      const blobUrl = URL.createObjectURL(
+        new Blob([consumerGeoJsonText], { type: "application/geo+json" }),
+      );
+      geoJsonBlobRef.current.push(blobUrl);
+      const consumerLayer = new GeoJSONLayer({
+        url: blobUrl,
+        renderer: {
+          type: "simple",
+          symbol: {
+            type: "simple-marker",
+            color: [34, 197, 94, 0.85],
+            size: 4,
+            outline: { color: [255, 255, 255, 0.8], width: 0.5 },
+          },
+        } as any,
+        popupTemplate: {
+          title: "Consumer",
+          content: (event: any) => {
+            const attrs = event?.graphic?.attributes || {};
+            const linked = Array.isArray(attrs.consumers) ? attrs.consumers[0] : null;
+            const name = linked?.name || attrs.SE_VALUE || attrs.SE_ID || "";
+            return `<div style="font-size:12px;"><strong>${name}</strong></div>`;
+          },
+        } as any,
+      });
+      map.add(consumerLayer);
+      if (!pipelineGeoJsonText && !disableAutoFit && !selectedLocation) {
+        consumerLayer.when(() => {
+          if (consumerLayer.fullExtent) view.goTo(consumerLayer.fullExtent);
+        }).catch(() => undefined);
+      }
+    }
+
+    if (showConsumers && !consumerGeoJsonText) {
   consumers.forEach((consumerPoint) => {
     if (
       consumerPoint.coordinates.lat === undefined ||
@@ -618,7 +750,7 @@ export const RGISMap = ({
         });
     }
 
-  }, [devices, pipelines, valves, consumers, catastrophes, showDevices, showPipelines, showValves, showConsumers, showCatastrophes, selectedLocation, disableAutoFit]);
+  }, [devices, pipelines, pipelineGeoJsonText, consumerGeoJsonText, geoJsonLayers, valves, consumers, catastrophes, showDevices, showPipelines, showValves, showConsumers, showCatastrophes, selectedLocation, disableAutoFit]);
 
   // Handle highlighting of selected elements
   useEffect(() => {

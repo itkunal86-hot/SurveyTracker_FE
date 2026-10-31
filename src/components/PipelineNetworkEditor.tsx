@@ -1,9 +1,8 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LeafletMap } from "@/components/LeafletMap";
-import { RGISMap } from "@/components/RGISMap";
+import { SurveyAssetMap } from "@/components/SurveyAssetMap";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
@@ -46,20 +45,7 @@ import {
 } from "lucide-react";
 
 import { API_BASE_PATH, apiClient, PipelineSegment } from "@/lib/api";
-import {
-  useDeviceLogs,
-  usePipelineGeoJSON,
-  useValveGeoJSON,
-  useConsumerGeoJSON,
-  useCatastropheGeoJSON,
-} from "@/hooks/useApiQueries";
-import {
-  parseGeoJSON,
-  transformPipelineFeatures,
-  transformValveFeatures,
-  transformConsumerFeatures,
-  transformCatastropheFeatures,
-} from "@/lib/geoJsonParser";
+import { parseGeoJsonFeatures, readSurveyMapLayer } from "@/lib/surveyMapCache";
 import { formatColumnHeader, formatDateCell, isDateColumn } from "@/lib/utils";
 
 export const PipelineNetworkEditor = () => {
@@ -95,67 +81,16 @@ export const PipelineNetworkEditor = () => {
   const [deactivatedPipelineIds, setDeactivatedPipelineIds] = useState<Set<string>>(new Set());
   const [loadingPipelineIds, setLoadingPipelineIds] = useState<Set<string>>(new Set());
 
-  // API hooks - fetch GeoJSON for all infrastructure
-  const {
-    data: pipelinesGeoJSON,
-    isLoading: loadingPipelines,
-  } = usePipelineGeoJSON();
-
-  const {
-    data: valvesGeoJSON,
-    isLoading: loadingValves,
-  } = useValveGeoJSON();
-
-  const {
-    data: consumerGeoJSON,
-    isLoading: loadingConsumers,
-  } = useConsumerGeoJSON();
-
-  const {
-    data: catastropheGeoJSON,
-    isLoading: loadingCatastrophes,
-  } = useCatastropheGeoJSON();
-
   useEffect(() => {
-    const controller = new AbortController();
+    let cancelled = false;
     async function load() {
       setPropLoading(true);
       setPropError(null);
       try {
-        const url = `${API_BASE_PATH}/SurveyEntries/survey-geojson?atName=PipeLine`;
-        //const url = `https://localhost:7215/api/SurveyEntries/survey-geojson?atName=PipeLine`;
-        const res = await fetch(url, { signal: controller.signal });
-        if (!res.ok) throw new Error(`Request failed: ${res.status}`);
-        const json = await res.json();
-
-        // Parse the GeoJSON from the data field
-        let geojson: any = null;
-        if (json?.data) {
-          try {
-            geojson = typeof json.data === 'string' ? JSON.parse(json.data) : json.data;
-          } catch (parseError) {
-            throw new Error("Failed to parse GeoJSON data");
-          }
-        }
-
-        // Extract features from GeoJSON
-        const features = geojson?.features || [];
+        const features = parseGeoJsonFeatures(await readSurveyMapLayer("PipeLine"));
+        if (cancelled) return;
         const normalized = features.map((feature: any, idx: number) => {
           const props = feature.properties || {};
-          const coords = feature.geometry?.coordinates || [];
-
-          // Convert MultiLineString coordinates to array of coordinate objects
-          let coordinateObjects: Array<{ lat: number; lng: number }> = [];
-          if (coords.length > 0 && Array.isArray(coords[0])) {
-            // For MultiLineString, take the first line
-            const lineCoords = coords[0];
-            coordinateObjects = lineCoords.map((coord: any) => ({
-              lat: coord[1], // latitude is second
-              lng: coord[0], // longitude is first
-            }));
-          }
-
-          // Extract Plot sub-object properties (new structure)
           const plotData = props.Plot || {};
 
           return {
@@ -171,7 +106,6 @@ export const PipelineNetworkEditor = () => {
             PLOT_COLOR: plotData.PLOT_COLOR || "",
             PLOT_COLOR_INACTIVE: plotData.PLOT_COLOR_INACTIVE || "",
             PLOT_TYPE: plotData.PLOT_TYPE || "",
-            coordinates: coordinateObjects,
           };
         });
 
@@ -183,15 +117,18 @@ export const PipelineNetworkEditor = () => {
           : [];
         setPropColumns(cols);
       } catch (e: any) {
+        if (cancelled) return;
         setPropError(e?.message || "Failed to load data");
         setPropRows([]);
         setPropColumns([]);
       } finally {
-        setPropLoading(false);
+        if (!cancelled) setPropLoading(false);
       }
     }
     load();
-    return () => controller.abort();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Load valves from external endpoint for map layer
@@ -264,89 +201,6 @@ export const PipelineNetworkEditor = () => {
   //     lastPing: device.lastSeen || "Unknown",
   //   }));
   // }, [deviceLogsResponse]);
-
-  // Pipelines for map from survey-geojson endpoint
-  const mapPipelines = useMemo(() => {
-    return propRows.map((r: any, idx) => {
-      const id = String(r["SE_ID"] ?? r["id"] ?? r["ID"] ?? `PS-${idx + 1}`);
-      const diameterVal = Number(r["pipe_diameter"] ?? r["diameter"] ?? r["Diameter"] ?? r["pipeDiameter"] ?? r["PipeDiameter"] ?? 200);
-      const depthVal = Number(r["depth_meter"] ?? r["depth"] ?? r["Depth"] ?? r["installationDepth"] ?? r["InstallationDepth"] ?? 1.5);
-      const coordinates = Array.isArray(r.coordinates) && r.coordinates.length >= 2 ? r.coordinates : undefined;
-      const isActive = r["IsActive"] !== undefined ? r["IsActive"] : true;
-      const plotColor = r["PLOT_COLOR"] || "#3b82f6"; // Use API color, default to blue
-      const plotColorInactive = r["PLOT_COLOR_INACTIVE"] || "#9ca3af"; // Use API color, default to grey
-      const plotType = r["PLOT_TYPE"] as "line" | "round" | "square" | undefined;
-      return {
-        id,
-        name: `Pipeline ${id}`,
-        diameter: Number.isFinite(diameterVal) ? diameterVal : 200,
-        depth: Number.isFinite(depthVal) ? depthVal : 1.5,
-        status: "normal" as const,
-        coordinates,
-        isActive,
-        plotColor,
-        plotColorInactive,
-        plotType,
-      };
-    });
-  }, [propRows]);
-
-  // const hasPipelineGeometry = useMemo(
-  //   () => mapPipelines.some((pipeline) => (pipeline.coordinates?.length ?? 0) >= 2),
-  //   [mapPipelines],
-  // );
-
-  // Transform valve GeoJSON data
-  const transformedValves = useMemo(() => {
-    if (!valvesGeoJSON?.data) return [];
-    const geoJsonString = valvesGeoJSON.data;
-    const featureCollection = parseGeoJSON(geoJsonString);
-    if (!featureCollection || !featureCollection.features) return [];
-    return transformValveFeatures(featureCollection.features);
-  }, [valvesGeoJSON?.data]);
-
-  // Transform consumer GeoJSON data
-  const transformedConsumers = useMemo(() => {
-    if (!consumerGeoJSON?.data) return [];
-    const geoJsonString = consumerGeoJSON.data;
-    const featureCollection = parseGeoJSON(geoJsonString);
-    if (!featureCollection || !featureCollection.features) return [];
-    const consumers = transformConsumerFeatures(featureCollection.features);
-    return consumers.map(c => ({
-      ...c,
-      coordinates: { lat: c.lat, lng: c.lng },
-      consumers: [],
-    }));
-  }, [consumerGeoJSON?.data]);
-
-  // Transform catastrophe GeoJSON data
-  const transformedCatastrophes = useMemo(() => {
-    if (!catastropheGeoJSON?.data) return [];
-    const geoJsonString = catastropheGeoJSON.data;
-    const featureCollection = parseGeoJSON(geoJsonString);
-    if (!featureCollection || !featureCollection.features) return [];
-    const catastrophes = transformCatastropheFeatures(featureCollection.features);
-    return catastrophes.map(c => ({
-      id: c.id,
-      name: c.type,
-      severity: c.severity,
-      status: c.isActive ? 'ACTIVE' : 'INACTIVE',
-      coordinates: { lat: c.lat, lng: c.lng },
-      isActive: c.isActive,
-      plotColor: c.plotColor,
-      plotColorInactive: c.plotColorInactive,
-      plotType: c.plotType,
-    }));
-  }, [catastropheGeoJSON?.data]);
-
-  const mapValves = transformedValves;
-  const mapConsumers = transformedConsumers;
-  const mapCatastrophes = transformedCatastrophes;
-
-  const showPipelinesOnMap = mapPipelines.length > 0;
-  const showValvesOnMap = mapValves.length > 0;
-  const showConsumersOnMap = mapConsumers.length > 0;
-  const showCatastrophesOnMap = mapCatastrophes.length > 0;
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -628,31 +482,7 @@ export const PipelineNetworkEditor = () => {
           </CardHeader>
           <CardContent>
             <div className="h-96">
-              {showRGIS ? (
-                <RGISMap
-                  devices={[]}
-                  pipelines={mapPipelines}
-                  valves={mapValves}
-                  consumers={mapConsumers as any}
-                  showDevices={false}
-                  showPipelines={showPipelinesOnMap}
-                  showValves={showValvesOnMap}
-                  showConsumers={showConsumersOnMap}
-                  showSatellite={showSatellite}
-                />
-              ) : (
-                <LeafletMap
-                  devices={[]}
-                  pipelines={mapPipelines}
-                  valves={mapValves}
-                  consumers={mapConsumers as any}
-                  showDevices={false}
-                  showPipelines={showPipelinesOnMap}
-                  showValves={showValvesOnMap}
-                  showConsumers={showConsumersOnMap}
-                  showSatellite={showSatellite}
-                />
-              )}
+              <SurveyAssetMap showRGIS={showRGIS} showSatellite={showSatellite} />
             </div>
           </CardContent>
         </Card>

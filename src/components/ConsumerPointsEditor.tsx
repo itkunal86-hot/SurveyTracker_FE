@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LeafletMap } from "@/components/LeafletMap";
-import { RGISMap } from "@/components/RGISMap";
+import { SurveyAssetMap } from "@/components/SurveyAssetMap";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -25,22 +24,8 @@ import {
 } from "@/components/ui/dialog";
 import { MapPin, AlertTriangle, Loader2, X, ChevronDown, ChevronRight } from "lucide-react";
 import { useTable } from "@/hooks/use-table";
-import {
-  useDeviceLogs,
-  usePipelineGeoJSON,
-  useValveGeoJSON,
-  useCatastropheGeoJSON,
-  useCngStationGeoJSON,
-} from "@/hooks/useApiQueries";
 import { apiClient } from "@/lib/api";
-import {
-  parseGeoJSON,
-  transformPipelineFeatures,
-  transformValveFeatures,
-  transformCatastropheFeatures,
-  transformConsumerFeatures,
-  transformCngStationFeatures,
-} from "@/lib/geoJsonParser";
+import { parseGeoJsonFeatures, readSurveyMapLayer } from "@/lib/surveyMapCache";
 import { formatColumnHeader, formatDateCell, isDateColumn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -83,22 +68,6 @@ export const ConsumerPointsEditor = () => {
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
   const [togglingIds, setTogglingIds] = useState<Set<number>>(new Set());
 
-  // API hooks - fetch GeoJSON for all infrastructure
-  const {
-    data: pipelinesGeoJSON,
-  } = usePipelineGeoJSON();
-
-  const {
-    data: valvesGeoJSON,
-  } = useValveGeoJSON();
-
-  const {
-    data: catastropheGeoJSON,
-  } = useCatastropheGeoJSON();
-
-  const {
-    data: cngStationGeoJSON,
-  } = useCngStationGeoJSON();
 
   // Handle map point click to show consumers at that point
   // const handleMapPointClick = (lat: number, lng: number) => {
@@ -125,27 +94,13 @@ export const ConsumerPointsEditor = () => {
 
   // Load consumers from survey-geojson endpoint
   useEffect(() => {
-    const controller = new AbortController();
+    let cancelled = false;
     async function loadConsumers() {
       setLoading(true);
       setError(null);
       try {
-        const json = await apiClient.getSurveyGeoJson("Consumer");
-        
-        let featureCollection: any = { type: "FeatureCollection", features: [] };
-        if (typeof json?.data === 'string') {
-          try {
-            featureCollection = JSON.parse(json.data);
-          } catch (e) {
-            console.error("Failed to parse GeoJSON string:", e);
-          }
-        } else if (json?.data?.type === 'FeatureCollection') {
-          featureCollection = json.data;
-        } else if (json?.type === 'FeatureCollection') {
-            featureCollection = json;
-        }
-
-        const features = Array.isArray(featureCollection?.features) ? featureCollection.features : [];
+        const features = parseGeoJsonFeatures(await readSurveyMapLayer("Consumer"));
+        if (cancelled) return;
         
         const normalized = features.map((f: any) => ({
           ...f.properties,
@@ -175,117 +130,23 @@ export const ConsumerPointsEditor = () => {
           setColumns(primitiveColumns);
         }
       } catch (e: any) {
+        if (cancelled) return;
         setError(e?.message || "Failed to load consumer data");
         setRows([]);
         setColumns([]);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
     loadConsumers();
-    return () => controller.abort();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const defaultSortKey = (columns.includes("id") ? "id" : columns[0]) as keyof DynamicRow | undefined;
   const { tableConfig, sortedAndPaginatedData } = useTable<DynamicRow>(rows, 10, defaultSortKey as any);
 
-  // Transform pipeline GeoJSON data
-  const transformedPipelines = useMemo(() => {
-    if (!pipelinesGeoJSON?.data) return [];
-    const geoJsonString = pipelinesGeoJSON.data;
-    const featureCollection = parseGeoJSON(geoJsonString);
-    if (!featureCollection || !featureCollection.features) return [];
-    return transformPipelineFeatures(featureCollection.features);
-  }, [pipelinesGeoJSON?.data]);
-
-  // Transform valve GeoJSON data
-  const transformedValves = useMemo(() => {
-    if (!valvesGeoJSON?.data) return [];
-    const geoJsonString = valvesGeoJSON.data;
-    const featureCollection = parseGeoJSON(geoJsonString);
-    if (!featureCollection || !featureCollection.features) return [];
-    return transformValveFeatures(featureCollection.features);
-  }, [valvesGeoJSON?.data]);
-
-  // Transform catastrophe GeoJSON data
-  const transformedCatastrophes = useMemo(() => {
-    if (!catastropheGeoJSON?.data) return [];
-    const geoJsonString = catastropheGeoJSON.data;
-    const featureCollection = parseGeoJSON(geoJsonString);
-    if (!featureCollection || !featureCollection.features) return [];
-    const catastrophes = transformCatastropheFeatures(featureCollection.features);
-    return catastrophes.map(c => ({
-      id: c.id,
-      name: c.type,
-      severity: c.severity,
-      status: c.isActive ? 'ACTIVE' : 'INACTIVE',
-      coordinates: { lat: c.lat, lng: c.lng },
-      isActive: c.isActive,
-      plotColor: c.plotColor,
-      plotColorInactive: c.plotColorInactive,
-      plotType: c.plotType,
-    }));
-  }, [catastropheGeoJSON?.data]);
-
-  // Transform CNG Station GeoJSON data
-  const transformedCngStations = useMemo(() => {
-    if (!cngStationGeoJSON?.data) return [];
-    const geoJsonString = cngStationGeoJSON.data;
-    const featureCollection = parseGeoJSON(geoJsonString);
-    if (!featureCollection || !featureCollection.features) return [];
-    const cngStations = transformConsumerFeatures(featureCollection.features);
-    return cngStations.map(c => ({
-      ...c,
-      coordinates: { lat: c.lat, lng: c.lng },
-      consumers: [],
-    }));
-  }, [cngStationGeoJSON?.data]);
-
-  // Derive map points
-  const mapConsumers: ConsumerPoint[] = useMemo(() => {
-    return rows.map((r) => {
-      // Extract Plot sub-object properties (new structure)
-      const plotData = r["Plot"] || {};
-
-      return {
-        id: String(r.id || r.SE_ID || ""),
-        name: String(r.Consumer_Name || "Consumer"),
-        code: String(r.Consumer_Code || ""),
-        mobile: String(r.Mobile || ""),
-        status: String(r.SE_VALUE || ""),
-        coordinates: {
-          lat: Number(r.lat || r.CONSUMER_LAT || 0),
-          lng: Number(r.lng || r.CONSUMER_LNG || 0),
-        },
-        consumers: r.consumers || [],
-        isActive: r["IsActive"] !== undefined ? r["IsActive"] : true,
-        plotColor: plotData.PLOT_COLOR || r["PLOT_COLOR"] || "#10b981",
-        plotColorInactive: plotData.PLOT_COLOR_INACTIVE || r["PLOT_COLOR_INACTIVE"] || "#9ca3af",
-        plotType: (plotData.PLOT_TYPE || r["PLOT_TYPE"]) as "line" | "round" | "square" | undefined,
-      };
-    });
-  }, [rows]);
-
-  // Devices from DeviceLog for context
-  const { data: deviceLogsResponse } = useDeviceLogs({ limit: 100 });
-  const mapDevices = useMemo(() => {
-    const items = Array.isArray(deviceLogsResponse?.data) ? deviceLogsResponse!.data : [];
-    return items.map((device: any) => ({
-      id: device.id,
-      name: device.name,
-      lat: Number(device.coordinates?.lat) || 0,
-      lng: Number(device.coordinates?.lng) || 0,
-      status:
-        String(device.status).toUpperCase() === "ACTIVE"
-          ? ("active" as const)
-          : String(device.status).toUpperCase() === "MAINTENANCE"
-            ? ("maintenance" as const)
-            : String(device.status).toUpperCase() === "ERROR"
-              ? ("error" as const)
-              : ("offline" as const),
-      lastPing: device.lastSeen || "Unknown",
-    }));
-  }, [deviceLogsResponse]);
 
   const handleToggleIsActive = async (seId: number, currentIsActive: boolean) => {
     setTogglingIds(prev => new Set(prev).add(seId));
@@ -359,31 +220,7 @@ export const ConsumerPointsEditor = () => {
           </CardHeader>
           <CardContent>
             <div className="h-[500px]">
-              {showRGIS ? (
-                <RGISMap
-                  devices={[]}
-                  pipelines={transformedPipelines}
-                  valves={transformedValves}
-                  consumers={[...mapConsumers, ...transformedCngStations] as any}
-                  showDevices={false}
-                  showPipelines={transformedPipelines.length > 0}
-                  showValves={transformedValves.length > 0}
-                  showConsumers={mapConsumers.length > 0 || transformedCngStations.length > 0}
-                  showSatellite={showSatellite}
-                />
-              ) : (
-                <LeafletMap
-                  devices={[]}
-                  pipelines={transformedPipelines}
-                  valves={transformedValves}
-                  consumers={[...mapConsumers, ...transformedCngStations] as any}
-                  showDevices={false}
-                  showPipelines={transformedPipelines.length > 0}
-                  showValves={transformedValves.length > 0}
-                  showConsumers={mapConsumers.length > 0 || transformedCngStations.length > 0}
-                  showSatellite={showSatellite}
-                />
-              )}
+              <SurveyAssetMap showRGIS={showRGIS} showSatellite={showSatellite} />
             </div>
           </CardContent>
         </Card>

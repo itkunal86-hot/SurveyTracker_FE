@@ -11,27 +11,19 @@ import {
   AlertCircle,
   RefreshCw,
 } from "lucide-react";
-import { LeafletMap } from "@/components/LeafletMap";
-import { RGISMap } from "@/components/RGISMap";
+import { SurveyAssetMap } from "@/components/SurveyAssetMap";
 import { CatastropheForm } from "./CatastropheForm";
 import { CatastropheList } from "./CatastropheList";
 import {
-  usePipelineGeoJSON,
-  useValveGeoJSON,
-  useConsumerGeoJSON,
-  useCatastropheGeoJSON,
-  useCngStationGeoJSON,
   useCreateCatastrophe,
   useUpdateCatastrophe,
 } from "@/hooks/useApiQueries";
+import { useSurveyMapCache } from "@/hooks/useSurveyMapCache";
 import {
   parseGeoJSON,
-  transformPipelineFeatures,
-  transformValveFeatures,
-  transformConsumerFeatures,
   transformCatastropheFeatures,
-  transformCngStationFeatures,
 } from "@/lib/geoJsonParser";
+import { refreshSurveyMapCache } from "@/lib/surveyMapCache";
 import apiClient from "@/lib/api";
 import { toast } from "sonner";
 
@@ -58,40 +50,7 @@ const CatastropheManagement = () => {
   const [loadingCatastrophes, setLoadingCatastrophes] = useState(false);
   const [catastrophesError, setCatastrophesError] = useState<Error | null>(null);
   const [showRGIS, setShowRGIS] = useState(true);
-
-  // API hooks - fetch GeoJSON from survey-geojson endpoint
-  const {
-    data: pipelinesGeoJSON,
-    isLoading: loadingPipelines,
-    error: pipelinesError,
-    refetch: refetchPipelines,
-  } = usePipelineGeoJSON();
-
-  const {
-    data: valvesGeoJSON,
-    isLoading: loadingValves,
-    error: valvesError,
-    refetch: refetchValves,
-  } = useValveGeoJSON();
-
-  const {
-    data: consumerGeoJSON,
-    isLoading: loadingConsumerPoints,
-    error: consumerPointsError,
-    refetch: refetchConsumerPoints,
-  } = useConsumerGeoJSON();
-
-  const {
-    data: catastropheGeoJSON,
-    isLoading: loadingCatastropheGeoJSON,
-    error: catastropheGeoJSONError,
-    refetch: refetchCatastropheGeoJSON,
-  } = useCatastropheGeoJSON();
-
-  const {
-    data: cngStationGeoJSON,
-    isLoading: loadingCngStations,
-  } = useCngStationGeoJSON();
+  const mapCache = useSurveyMapCache();
 
   const createCatastropheMutation = useCreateCatastrophe();
   const updateCatastropheMutation = useUpdateCatastrophe();
@@ -260,86 +219,12 @@ const CatastropheManagement = () => {
     setSelectedLocation({ lat, lng });
   }, []);
 
-  // Transform pipeline GeoJSON data
-  const mapPipelines = useMemo(() => {
-    debugger;
-    if (!pipelinesGeoJSON?.data) return [];
-
-    const geoJsonString = pipelinesGeoJSON.data;
-    const featureCollection = parseGeoJSON(geoJsonString);
-
-    if (!featureCollection || !featureCollection.features) {
-      return [];
-    }
-
-    return transformPipelineFeatures(featureCollection.features);
-  }, [pipelinesGeoJSON?.data]);
-
-  // Transform valve GeoJSON data
-  const mapValves = useMemo(() => {
-    if (!valvesGeoJSON?.data) return [];
-
-    const geoJsonString = valvesGeoJSON.data;
-    const featureCollection = parseGeoJSON(geoJsonString);
-
-    if (!featureCollection || !featureCollection.features) {
-      return [];
-    }
-
-    return transformValveFeatures(featureCollection.features);
-  }, [valvesGeoJSON?.data]);
-
-  // Transform consumer GeoJSON data
-  const mapConsumers = useMemo(() => {
-    if (!consumerGeoJSON?.data) return [];
-
-    const geoJsonString = consumerGeoJSON.data;
-    const featureCollection = parseGeoJSON(geoJsonString);
-
-    if (!featureCollection || !featureCollection.features) {
-      return [];
-    }
-
-    const consumers = transformConsumerFeatures(featureCollection.features);
-    return consumers.map(c => ({
-      ...c,
-      coordinates: { lat: c.lat, lng: c.lng },
-      consumers: [],
-    }));
-  }, [consumerGeoJSON?.data]);
-
-  // Transform catastrophe GeoJSON data for map display
   const mapCatastrophes = useMemo(() => {
-    if (!catastropheGeoJSON?.data) return [];
-
-    const geoJsonString = catastropheGeoJSON.data;
-    const featureCollection = parseGeoJSON(geoJsonString);
-
-    if (!featureCollection || !featureCollection.features) {
-      return [];
-    }
-
+    if (!mapCache.layers.catastrophe) return [];
+    const featureCollection = parseGeoJSON(mapCache.layers.catastrophe);
+    if (!featureCollection?.features) return [];
     return transformCatastropheFeatures(featureCollection.features);
-  }, [catastropheGeoJSON?.data]);
-
-  // Transform CNG Station GeoJSON data
-  const mapCngStations = useMemo(() => {
-    if (!cngStationGeoJSON?.data) return [];
-
-    const geoJsonString = cngStationGeoJSON.data;
-    const featureCollection = parseGeoJSON(geoJsonString);
-
-    if (!featureCollection || !featureCollection.features) {
-      return [];
-    }
-
-    const consumers = transformConsumerFeatures(featureCollection.features);
-    return consumers.map(c => ({
-      ...c,
-      coordinates: { lat: c.lat, lng: c.lng },
-      consumers: [],
-    }));
-  }, [cngStationGeoJSON?.data]);
+  }, [mapCache.layers.catastrophe]);
 
   // Update catastrophes grid to use GeoJSON data
   useEffect(() => {
@@ -366,14 +251,11 @@ const CatastropheManagement = () => {
   }, [mapCatastrophes]);
 
   const handleRefresh = () => {
-    refetchCatastropheGeoJSON();
-    refetchPipelines();
-    refetchValves();
-    refetchConsumerPoints();
+    void refreshSurveyMapCache();
+    void fetchCatastrophes();
   };
 
-  const isLoading =
-    loadingCatastropheGeoJSON || loadingPipelines || loadingValves || loadingConsumerPoints;
+  const isLoading = mapCache.status === "loading" || loadingCatastrophes;
 
   return (
     <div className="p-6 space-y-6">
@@ -532,59 +414,12 @@ const CatastropheManagement = () => {
             </CardHeader>
             <CardContent>
               <div className="h-96">
-                {showRGIS ? (
-                  <RGISMap
-                    devices={[]}
-                    pipelines={mapPipelines as any}
-                    valves={mapValves as any}
-                    consumers={[...mapConsumers, ...mapCngStations] as any}
-                    catastrophes={mapCatastrophes.map((c) => ({
-                      id: c.id,
-                      name: c.type,
-                      severity: c.severity,
-                      coordinates: { lat: c.lat, lng: c.lng },
-                      description: c.description,
-                      isActive: c.isActive,
-                      plotColor: c.plotColor,
-                      plotColorInactive: c.plotColorInactive,
-                      plotType: c.plotType,
-                    }))}
-                    showDevices={false}
-                    showPipelines={mapPipelines.some(p => (p.coordinates?.length ?? 0) >= 2)}
-                    showValves={mapValves.some(v => !!v.coordinates)}
-                    showConsumers={mapConsumers.length > 0 || mapCngStations.length > 0}
-                    showCatastrophes={mapCatastrophes.length > 0}
-                    onMapClick={handleMapClick}
-                    selectedLocation={selectedLocation}
-                    disableAutoFit={!!selectedLocation}
-                  />
-                ) : (
-                  <LeafletMap
-                    devices={[]}
-                    pipelines={mapPipelines as any}
-                    valves={mapValves as any}
-                    consumers={[...mapConsumers, ...mapCngStations] as any}
-                    showDevices={false}
-                    showPipelines={mapPipelines.some(p => (p.coordinates?.length ?? 0) >= 2)}
-                    showValves={mapValves.some(v => !!v.coordinates)}
-                    showConsumers={mapConsumers.length > 0 || mapCngStations.length > 0}
-                    catastrophes={mapCatastrophes.map((c) => ({
-                      id: c.id,
-                      name: c.type,
-                      severity: c.severity,
-                      coordinates: { lat: c.lat, lng: c.lng },
-                      description: c.description,
-                      isActive: c.isActive,
-                      plotColor: c.plotColor,
-                      plotColorInactive: c.plotColorInactive,
-                      plotType: c.plotType,
-                    }))}
-                    showCatastrophes={mapCatastrophes.length > 0}
-                    onMapClick={handleMapClick}
-                    selectedLocation={selectedLocation}
-                    disableAutoFit={!!selectedLocation}
-                  />
-                )}
+                <SurveyAssetMap
+                  showRGIS={showRGIS}
+                  onMapClick={handleMapClick}
+                  selectedLocation={selectedLocation}
+                  disableAutoFit={!!selectedLocation}
+                />
               </div>
             </CardContent>
           </Card>

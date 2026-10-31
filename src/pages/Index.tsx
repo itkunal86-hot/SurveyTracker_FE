@@ -20,6 +20,7 @@ import { AlertsNotifications } from "@/components/survey/AlertsNotifications";
 import { SurveyReports } from "@/components/survey/SurveyReports";
 import SettingsMaster from "@/components/admin/SettingsMaster";
 import { getMetaConfig } from "@/lib/meta";
+import { ensureSurveyMapCache } from "@/lib/surveyMapCache";
 
 const Index = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -27,6 +28,10 @@ const Index = () => {
   const [userRole, setUserRole] = useState<"admin" | "manager" | "survey">("admin");
   const [activeTab, setActiveTab] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated) void ensureSurveyMapCache();
+  }, [isAuthenticated]);
 
   // Restore auth state from session on initial load
   useEffect(() => {

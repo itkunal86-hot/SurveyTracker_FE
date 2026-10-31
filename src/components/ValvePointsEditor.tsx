@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LeafletMap } from "@/components/LeafletMap";
-import { RGISMap } from "@/components/RGISMap";
+import { SurveyAssetMap } from "@/components/SurveyAssetMap";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -19,23 +18,8 @@ import { Pagination } from "@/components/ui/pagination";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { MapPin, AlertTriangle, Loader2, Power } from "lucide-react";
 import { useTable } from "@/hooks/use-table";
-import {
-  useDeviceLogs,
-  usePipelineGeoJSON,
-  useValveGeoJSON,
-  useConsumerGeoJSON,
-  useCatastropheGeoJSON,
-  useCngStationGeoJSON,
-} from "@/hooks/useApiQueries";
 import { API_BASE_PATH, apiClient } from "@/lib/api";
-import {
-  parseGeoJSON,
-  transformPipelineFeatures,
-  transformValveFeatures,
-  transformConsumerFeatures,
-  transformCatastropheFeatures,
-  transformCngStationFeatures,
-} from "@/lib/geoJsonParser";
+import { parseGeoJsonFeatures, readSurveyMapLayer } from "@/lib/surveyMapCache";
 import { formatColumnHeader, formatDateCell, isDateColumn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
@@ -82,62 +66,15 @@ export const ValvePointsEditor = () => {
   const [error, setError] = useState<string | null>(null);
   const [togglingIds, setTogglingIds] = useState<Set<number>>(new Set());
 
-  // API hooks - fetch GeoJSON for all infrastructure
-  const {
-    data: pipelinesGeoJSON,
-    isLoading: loadingPipelines,
-  } = usePipelineGeoJSON();
-
-  const {
-    data: valvesGeoJSON,
-    isLoading: loadingValves,
-  } = useValveGeoJSON();
-
-  const {
-    data: consumerGeoJSON,
-    isLoading: loadingConsumers,
-  } = useConsumerGeoJSON();
-
-  const {
-    data: catastropheGeoJSON,
-    isLoading: loadingCatastrophes,
-  } = useCatastropheGeoJSON();
-
-  const {
-    data: cngStationGeoJSON,
-    isLoading: loadingCngStations,
-  } = useCngStationGeoJSON();
-
-  const [pipelineRows, setPipelineRows] = useState<DynamicRow[]>([]);
-  const [pipelineError, setPipelineError] = useState<string | null>(null);
-
-  // Load valves table from survey-geojson endpoint
+  // Load valves table from the shared map cache
   useEffect(() => {
-    const controller = new AbortController();
+    let cancelled = false;
     async function loadValves() {
       setLoading(true);
       setError(null);
       try {
-        const url = `${API_BASE_PATH}/SurveyEntries/survey-geojson?atName=Valve`;
-        //const url = `https://localhost:7215/api/SurveyEntries/survey-geojson?atName=Valve`;
-        const res = await fetch(url, { signal: controller.signal });
-        if (!res.ok) {
-          throw new Error(`Request failed: ${res.status}`);
-        }
-        const json = await res.json();
-
-        // Parse the GeoJSON from the data field
-        let geojson: any = null;
-        if (json?.data) {
-          try {
-            geojson = typeof json.data === 'string' ? JSON.parse(json.data) : json.data;
-          } catch (parseError) {
-            throw new Error("Failed to parse GeoJSON data");
-          }
-        }
-
-        // Extract features from GeoJSON
-        const features = geojson?.features || [];
+        const features = parseGeoJsonFeatures(await readSurveyMapLayer("Valve"));
+        if (cancelled) return;
         const normalized = features.map((feature: any, idx: number) => {
           const props = feature.properties || {};
           const coords = feature.geometry?.coordinates || [0, 0];
@@ -172,179 +109,22 @@ export const ValvePointsEditor = () => {
           : [];
         setColumns(cols);
       } catch (e: any) {
+        if (cancelled) return;
         setError(e?.message || "Failed to load data");
         setRows([]);
         setColumns([]);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
     loadValves();
-    return () => controller.abort();
-  }, []);
-
-  // Load pipelines for map layer from required endpoint
-  useEffect(() => {
-    const controller = new AbortController();
-    async function loadPipelines() {
-      setPipelineError(null);
-      try {
-        const url = `${API_BASE_PATH}/AssetProperties/ByType/pipeline`;
-        //const url = `https://localhost:7215/api/AssetProperties/ByType/pipeline`;
-        const res = await fetch(url, { signal: controller.signal });
-        if (!res.ok) throw new Error(`Request failed: ${res.status}`);
-        const json = await res.json();
-        const arr: DynamicRow[] = Array.isArray(json?.data)
-          ? json.data
-          : Array.isArray(json)
-            ? json
-            : [];
-        setPipelineRows(arr.map((it) => ({ ...it })));
-      } catch (e: any) {
-        setPipelineRows([]);
-        setPipelineError(e?.message || "Failed to load pipeline data");
-      }
-    }
-    loadPipelines();
-    return () => controller.abort();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const defaultSortKey = (columns.includes("id") ? "id" : columns[0]) as keyof DynamicRow | undefined;
   const { tableConfig, sortedAndPaginatedData } = useTable<DynamicRow>(rows, 5, defaultSortKey as any);
-
-  // Derive valves for map layer from dynamic rows
-  const mapValves: MapValve[] = useMemo(() => {
-    return rows.map((r) => {
-      const rawType = String(r["SE_VALUE"] ?? r["Type"] ?? r["type"] ?? "").toLowerCase();
-      const mappedType: MapValve["type"] = rawType.includes("emergency") ? "emergency" : rawType.includes("isolation") ? "isolation" : "station";
-      const status: MapValve["status"] = "open"; // Default status for valve stations
-      const segment = String(r["SE_ID"] ?? r["Linked Segment"] ?? r["segmentId"] ?? "Unknown");
-      const id = String(r["SE_ID"] ?? r["id"] ?? r["ID"] ?? "");
-      const latitude = Number(r.latitude) || 0;
-      const longitude = Number(r.longitude) || 0;
-      const coordinates = latitude && longitude ? { lat: latitude, lng: longitude } : undefined;
-      const name = r["bulb_station"] || `Valve ${id}`;
-      const isActive = r["IsActive"] !== undefined ? r["IsActive"] : true;
-      const plotColor = r["PLOT_COLOR"] || "#ef4444"; // Use API color, default to red
-      const plotColorInactive = r["PLOT_COLOR_INACTIVE"] || "#9ca3af"; // Use API color, default to grey
-      const plotType = r["PLOT_TYPE"] as "line" | "round" | "square" | undefined;
-      return { id, type: mappedType, status, segmentId: segment, coordinates, name, isActive, plotColor, plotColorInactive, plotType };
-    });
-  }, [rows]);
-
-  // Devices from DeviceLog for the selected survey (via hook)
-  const { data: deviceLogsResponse } = useDeviceLogs({ limit: 100 });
-  const mapDevices = useMemo(() => {
-    const items = Array.isArray(deviceLogsResponse?.data) ? deviceLogsResponse!.data : [];
-    return items.map((device: any) => ({
-      id: device.id,
-      name: device.name,
-      lat: Number(device.coordinates?.lat) || 0,
-      lng: Number(device.coordinates?.lng) || 0,
-      status:
-        String(device.status).toUpperCase() === "ACTIVE"
-          ? ("active" as const)
-          : String(device.status).toUpperCase() === "MAINTENANCE"
-            ? ("maintenance" as const)
-            : String(device.status).toUpperCase() === "ERROR"
-              ? ("error" as const)
-              : ("offline" as const),
-      lastPing: device.lastSeen || "Unknown",
-    }));
-  }, [deviceLogsResponse]);
-
-  // Pipelines mapped minimally for LeafletMap (geometry may fall back to defaults)
-  const mapPipelines: MapPipelineSegment[] = useMemo(() => {
-    return pipelineRows.map((r, idx) => {
-      const id = String(r["id"] ?? r["ID"] ?? r["segmentId"] ?? r["SegmentId"] ?? `PS-${idx + 1}`);
-      const diameterVal = Number(r["diameter"] ?? r["Diameter"] ?? r["pipeDiameter"] ?? r["PipeDiameter"] ?? 200);
-      const depthVal = Number(r["depth"] ?? r["Depth"] ?? r["installationDepth"] ?? r["InstallationDepth"] ?? 1.5);
-      const status: MapPipelineSegment["status"] = "normal";
-      const isActive = r["IsActive"] !== undefined ? r["IsActive"] : true;
-      const plotColor = r["PLOT_COLOR"] || "#3b82f6"; // Use API color, default to blue
-      const plotColorInactive = r["PLOT_COLOR_INACTIVE"] || "#9ca3af"; // Use API color, default to grey
-      const plotType = r["PLOT_TYPE"] as "line" | "round" | "square" | undefined;
-      return {
-        id,
-        diameter: Number.isFinite(diameterVal) ? diameterVal : 200,
-        depth: Number.isFinite(depthVal) ? depthVal : 1.5,
-        status,
-        isActive,
-        plotColor,
-        plotColorInactive,
-        plotType,
-      };
-    });
-  }, [pipelineRows]);
-
-  // Transform pipeline GeoJSON data
-  const transformedPipelines = useMemo(() => {
-    if (!pipelinesGeoJSON?.data) return [];
-    const geoJsonString = pipelinesGeoJSON.data;
-    const featureCollection = parseGeoJSON(geoJsonString);
-    if (!featureCollection || !featureCollection.features) return [];
-    return transformPipelineFeatures(featureCollection.features);
-  }, [pipelinesGeoJSON?.data]);
-
-  // Transform consumer GeoJSON data
-  const transformedConsumers = useMemo(() => {
-    if (!consumerGeoJSON?.data) return [];
-    const geoJsonString = consumerGeoJSON.data;
-    const featureCollection = parseGeoJSON(geoJsonString);
-    if (!featureCollection || !featureCollection.features) return [];
-    const consumers = transformConsumerFeatures(featureCollection.features);
-    return consumers.map(c => ({
-      ...c,
-      coordinates: { lat: c.lat, lng: c.lng },
-      consumers: [],
-    }));
-  }, [consumerGeoJSON?.data]);
-
-  // Transform catastrophe GeoJSON data
-  const transformedCatastrophes = useMemo(() => {
-    if (!catastropheGeoJSON?.data) return [];
-    const geoJsonString = catastropheGeoJSON.data;
-    const featureCollection = parseGeoJSON(geoJsonString);
-    if (!featureCollection || !featureCollection.features) return [];
-    const catastrophes = transformCatastropheFeatures(featureCollection.features);
-    return catastrophes.map(c => ({
-      id: c.id,
-      name: c.type,
-      severity: c.severity,
-      status: c.isActive ? 'ACTIVE' : 'INACTIVE',
-      coordinates: { lat: c.lat, lng: c.lng },
-      isActive: c.isActive,
-      plotColor: c.plotColor,
-      plotColorInactive: c.plotColorInactive,
-      plotType: c.plotType,
-    }));
-  }, [catastropheGeoJSON?.data]);
-
-  // Transform CNG Station GeoJSON data
-  const transformedCngStations = useMemo(() => {
-    if (!cngStationGeoJSON?.data) return [];
-    const geoJsonString = cngStationGeoJSON.data;
-    const featureCollection = parseGeoJSON(geoJsonString);
-    if (!featureCollection || !featureCollection.features) return [];
-    const consumers = transformConsumerFeatures(featureCollection.features);
-    return consumers.map(c => ({
-      ...c,
-      coordinates: { lat: c.lat, lng: c.lng },
-      consumers: [],
-    }));
-  }, [cngStationGeoJSON?.data]);
-
-  const mapPipelineData = transformedPipelines;
-  const mapConsumers = transformedConsumers;
-  const mapCatastrophes = transformedCatastrophes;
-  const mapCngStations = transformedCngStations;
-
-  const showDevices = mapDevices.length > 0;
-  const showPipelinesOnMap = mapPipelineData.length > 0;
-  const showValvesOnMap = mapValves.length > 0;
-  const showConsumersOnMap = mapConsumers.length > 0;
-  const showCatastrophesOnMap = mapCatastrophes.length > 0;
-  const showCngStationsOnMap = mapCngStations.length > 0;
 
   const handleToggleIsActive = async (seId: number, currentIsActive: boolean) => {
     setTogglingIds(prev => new Set(prev).add(seId));
@@ -418,31 +198,7 @@ export const ValvePointsEditor = () => {
           </CardHeader>
           <CardContent>
             <div className="h-96">
-              {showRGIS ? (
-                <RGISMap
-                  devices={[]}
-                  pipelines={mapPipelineData}
-                  valves={mapValves}
-                  consumers={[...mapConsumers, ...mapCngStations] as any}
-                  showDevices={false}
-                  showPipelines={showPipelinesOnMap}
-                  showValves={showValvesOnMap}
-                  showConsumers={showConsumersOnMap || showCngStationsOnMap}
-                  showSatellite={showSatellite}
-                />
-              ) : (
-                <LeafletMap
-                  devices={[]}
-                  pipelines={mapPipelineData}
-                  valves={mapValves}
-                  consumers={[...mapConsumers, ...mapCngStations] as any}
-                  showDevices={false}
-                  showPipelines={showPipelinesOnMap}
-                  showValves={showValvesOnMap}
-                  showConsumers={showConsumersOnMap || showCngStationsOnMap}
-                  showSatellite={showSatellite}
-                />
-              )}
+              <SurveyAssetMap showRGIS={showRGIS} showSatellite={showSatellite} />
             </div>
           </CardContent>
         </Card>

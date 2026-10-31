@@ -4,27 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { LeafletMap } from "@/components/LeafletMap";
-import { RGISMap } from "@/components/RGISMap";
+import { SurveyAssetMap } from "@/components/SurveyAssetMap";
 import {
   Layers,
   RefreshCw,
   AlertCircle,
 } from "lucide-react";
-import {
-  usePipelineGeoJSON,
-  useValveGeoJSON,
-  useConsumerGeoJSON,
-  useCngStationGeoJSON,
-} from "@/hooks/useApiQueries";
+import { useSurveyMapCache } from "@/hooks/useSurveyMapCache";
 import {
   parseGeoJSON,
-  transformPipelineFeatures,
   transformValveFeatures,
-  transformConsumerFeatures,
-  transformCngStationFeatures,
 } from "@/lib/geoJsonParser";
-import { useSurveyContext } from "@/contexts/SurveyContext";
+import { refreshSurveyMapCache } from "@/lib/surveyMapCache";
 
 // Legacy interfaces for backward compatibility with LeafletMap
 interface DeviceLocation {
@@ -98,115 +89,27 @@ export const MapDashboard = () => {
   // Selection state for highlighting
   const [selectedElement, setSelectedElement] = useState<{ type: "pipeline" | "valve" | "consumer"; id: string } | null>(null);
 
-  // Get current survey context
-  const { currentSurvey } = useSurveyContext();
-
-  // API hooks - fetch GeoJSON from survey-geojson endpoint
-  const {
-    data: pipelinesGeoJSON,
-    isLoading: loadingPipelines,
-    error: pipelinesError,
-    refetch: refetchPipelines,
-  } = usePipelineGeoJSON();
-
-  const {
-    data: valvesGeoJSON,
-    isLoading: loadingValves,
-    error: valvesError,
-    refetch: refetchValves,
-  } = useValveGeoJSON();
-
-  const {
-    data: consumerGeoJSON,
-    isLoading: loadingConsumerPoints,
-    error: consumerPointsError,
-    refetch: refetchConsumerPoints,
-  } = useConsumerGeoJSON();
-
-  const {
-    data: cngStationGeoJSON,
-    isLoading: loadingCngStations,
-    error: cngStationsError,
-    refetch: refetchCngStations,
-  } = useCngStationGeoJSON();
-
-  // Transform pipeline GeoJSON data
-  const transformedPipelines: PipelineSegment[] = useMemo(() => {
-    if (!showPipelines || !pipelinesGeoJSON?.data) return [];
-
-    const geoJsonString = pipelinesGeoJSON.data;
-    const featureCollection = parseGeoJSON(geoJsonString);
-
-    if (!featureCollection || !featureCollection.features) {
-      return [];
-    }
-
-    return transformPipelineFeatures(featureCollection.features);
-  }, [pipelinesGeoJSON?.data, showPipelines]);
-
-  // Transform valve GeoJSON data
-  const transformedValves: ValvePoint[] = useMemo(() => {
-    if (!showValves || !valvesGeoJSON?.data) return [];
-
-    const geoJsonString = valvesGeoJSON.data;
-    const featureCollection = parseGeoJSON(geoJsonString);
-
-    if (!featureCollection || !featureCollection.features) {
-      return [];
-    }
-
+  const mapCache = useSurveyMapCache();
+  const pipelineTotal = mapCache.counts.pipeline;
+  const consumerTotal = mapCache.counts.consumer;
+  const pipelinesAreBulk = pipelineTotal > 300;
+  const consumersAreBulk = consumerTotal > 300;
+  const displayPipelines: PipelineSegment[] = [];
+  const displayConsumerPoints: ConsumerPoint[] = [];
+  const displayValves = useMemo(() => {
+    if (!showValves || !mapCache.layers.valve) return [];
+    const featureCollection = parseGeoJSON(mapCache.layers.valve);
+    if (!featureCollection?.features) return [];
     return transformValveFeatures(featureCollection.features);
-  }, [valvesGeoJSON?.data, showValves]);
-
-  // Transform consumer GeoJSON data
-  const transformedConsumerPoints: ConsumerPoint[] = useMemo(() => {
-    if (!showConsumerPoints || !consumerGeoJSON?.data) return [];
-
-    const geoJsonString = consumerGeoJSON.data;
-    const featureCollection = parseGeoJSON(geoJsonString);
-
-    if (!featureCollection || !featureCollection.features) {
-      return [];
-    }
-
-    return transformConsumerFeatures(featureCollection.features);
-  }, [consumerGeoJSON?.data, showConsumerPoints]);
-
-  // Transform CNG Station GeoJSON data
-  const transformedCngStations: ConsumerPoint[] = useMemo(() => {
-    if (!cngStationGeoJSON?.data) return [];
-
-    const geoJsonString = cngStationGeoJSON.data;
-    const featureCollection = parseGeoJSON(geoJsonString);
-
-    if (!featureCollection || !featureCollection.features) {
-      return [];
-    }
-
-    const cngStations = transformCngStationFeatures(featureCollection.features);
-    return cngStations.map(c => ({
-      ...c,
-      coordinates: { lat: c.lat, lng: c.lng },
-      consumers: [],
-    }));
-  }, [cngStationGeoJSON?.data]);
-
-  // Use transformed data as display data
-  const displayPipelines = transformedPipelines;
-  const displayValves = transformedValves;
-  const displayConsumerPoints = transformedConsumerPoints;
-  const displayCngStations = transformedCngStations;
+  }, [mapCache.layers.valve, showValves]);
 
   const handleRefresh = () => {
-    refetchPipelines();
-    refetchValves();
-    refetchConsumerPoints();
-    refetchCngStations();
+    void refreshSurveyMapCache();
   };
 
-  const isLoading =
-    loadingPipelines || loadingValves || loadingConsumerPoints || loadingCngStations;
-  const hasError = pipelinesError || valvesError || consumerPointsError || cngStationsError;
+  const isLoading = mapCache.status === "loading";
+  const hasError = mapCache.status === "error";
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -354,7 +257,7 @@ export const MapDashboard = () => {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">
-                Pipeline Network ({displayPipelines.length})
+                Pipeline Network ({pipelineTotal})
               </CardTitle>
               <Badge variant="secondary" className="text-xs">
                 Geo-referenced
@@ -362,8 +265,12 @@ export const MapDashboard = () => {
             </div>
           </CardHeader>
           <CardContent className="space-y-3 max-h-64 overflow-y-auto">
-            {displayPipelines.length === 0 ? (
+            {pipelineTotal === 0 ? (
               <p className="text-xs text-muted-foreground">No pipelines available</p>
+            ) : pipelinesAreBulk ? (
+              <p className="text-xs text-muted-foreground">
+                {pipelineTotal.toLocaleString()} segments are drawn on the map. Open Pipeline in the menu to browse them.
+              </p>
             ) : (
               displayPipelines.map((pipeline) => (
                 <div
@@ -430,12 +337,16 @@ export const MapDashboard = () => {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">
-              Consumer Points ({displayConsumerPoints.length})
+              Consumer Points ({consumerTotal})
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 max-h-64 overflow-y-auto">
-            {displayConsumerPoints.length === 0 ? (
+            {consumerTotal === 0 ? (
               <p className="text-xs text-muted-foreground">No consumer points available</p>
+            ) : consumersAreBulk ? (
+              <p className="text-xs text-muted-foreground">
+                {consumerTotal.toLocaleString()} consumer points are drawn on the map. Open Consumer Point in the menu to browse them.
+              </p>
             ) : (
               displayConsumerPoints.map((consumer) => (
                 <div
@@ -475,89 +386,15 @@ export const MapDashboard = () => {
 
       {/* Map Area */}
       <div className="flex-1 relative">
-        {showRGIS ? (
-          <RGISMap
-            devices={[]}
-            pipelines={displayPipelines as any}
-            valves={displayValves as any}
-            consumers={[
-              ...displayConsumerPoints.map((cp: any) => ({
-                id: cp.id,
-                name: cp.name,
-                code: cp.consumerCode,
-                mobile: cp.mobile,
-                status: cp.status,
-                coordinates: { lat: cp.lat, lng: cp.lng },
-                consumers: [],
-                isActive: cp.isActive,
-                plotColor: cp.plotColor,
-                plotColorInactive: cp.plotColorInactive,
-                plotType: cp.plotType,
-              })),
-              ...displayCngStations.map((cs: any) => ({
-                id: cs.id,
-                name: cs.name,
-                code: cs.consumerCode,
-                mobile: cs.mobile,
-                status: cs.status,
-                coordinates: { lat: cs.lat, lng: cs.lng },
-                consumers: [],
-                isActive: cs.isActive,
-                plotColor: cs.plotColor || "#a855f7",
-                plotColorInactive: cs.plotColorInactive || "#d1d5db",
-                plotType: cs.plotType,
-              })),
-            ] as any}
-            showDevices={false}
-            showPipelines={showPipelines}
-            showValves={showValves}
-            showConsumers={showConsumerPoints || displayCngStations.length > 0}
-            showSatellite={showSatellite}
-            highlightedElementId={selectedElement?.id}
-            highlightedElementType={selectedElement?.type as any}
-          />
-        ) : (
-          <LeafletMap
-            devices={[]}
-            pipelines={displayPipelines as any}
-            valves={displayValves as any}
-            consumers={[
-              ...displayConsumerPoints.map((cp: any) => ({
-                id: cp.id,
-                name: cp.name,
-                code: cp.consumerCode,
-                mobile: cp.mobile,
-                status: cp.status,
-                coordinates: { lat: cp.lat, lng: cp.lng },
-                consumers: [],
-                isActive: cp.isActive,
-                plotColor: cp.plotColor,
-                plotColorInactive: cp.plotColorInactive,
-                plotType: cp.plotType,
-              })),
-              ...displayCngStations.map((cs: any) => ({
-                id: cs.id,
-                name: cs.name,
-                code: cs.consumerCode,
-                mobile: cs.mobile,
-                status: cs.status,
-                coordinates: { lat: cs.lat, lng: cs.lng },
-                consumers: [],
-                isActive: cs.isActive,
-                plotColor: cs.plotColor || "#a855f7",
-                plotColorInactive: cs.plotColorInactive || "#d1d5db",
-                plotType: cs.plotType,
-              })),
-            ] as any}
-            showDevices={false}
-            showPipelines={showPipelines}
-            showValves={showValves}
-            showConsumers={showConsumerPoints || displayCngStations.length > 0}
-            showSatellite={showSatellite}
-            highlightedElementId={selectedElement?.id}
-            highlightedElementType={selectedElement?.type as any}
-          />
-        )}
+        <SurveyAssetMap
+          showRGIS={showRGIS}
+          showSatellite={showSatellite}
+          hiddenLayers={[
+            ...(!showPipelines ? ["pipeline" as const] : []),
+            ...(!showValves ? ["valve" as const] : []),
+            ...(!showConsumerPoints ? ["consumer" as const] : []),
+          ]}
+        />
 
 
         {/* Enhanced Map Overlay Info */}
@@ -566,7 +403,7 @@ export const MapDashboard = () => {
             <div className="font-medium text-base mb-2">Infrastructure Status</div>
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-              <span>Pipeline: {displayPipelines.length}</span>
+              <span>Pipeline: {pipelineTotal}</span>
             </div>
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 bg-red-500 rounded-full"></div>
@@ -574,7 +411,7 @@ export const MapDashboard = () => {
             </div>
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-              <span>Customer: {displayConsumerPoints.length}</span>
+              <span>Customer: {consumerTotal}</span>
             </div>
           </div>
         </div>

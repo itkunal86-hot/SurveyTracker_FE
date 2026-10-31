@@ -1,6 +1,4 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LeafletMap } from "@/components/LeafletMap";
-import { RGISMap } from "@/components/RGISMap";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -19,7 +17,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { MapPin, AlertTriangle, Layers, RefreshCw, AlertCircle } from "lucide-react";
 import { useTable } from "@/hooks/use-table";
 import { useEffect, useMemo, useState } from "react";
-import { usePipelineGeoJSON, useValveGeoJSON, useConsumerGeoJSON, useCngStationGeoJSON } from "@/hooks/useApiQueries";
+import { useSurveyMapCache } from "@/hooks/useSurveyMapCache";
+import { refreshSurveyMapCache } from "@/lib/surveyMapCache";
+import { SurveyAssetMap } from "@/components/SurveyAssetMap";
 import { API_BASE_PATH } from "@/lib/api";
 import {
   parseGeoJSON,
@@ -108,10 +108,6 @@ export const CatastrophePointsEditor = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Pipelines state and error
-  const [pipelineRows, setPipelineRows] = useState<DynamicRow[]>([]);
-  const [pipelineError, setPipelineError] = useState<string | null>(null);
-
   // Map type and layer controls
   const [showRGIS, setShowRGIS] = useState(true);
   const [showSatellite, setShowSatellite] = useState(false);
@@ -119,60 +115,8 @@ export const CatastrophePointsEditor = () => {
   const [showValves, setShowValves] = useState(true);
   const [showConsumerPoints, setShowConsumerPoints] = useState(true);
 
-  // API hooks - fetch GeoJSON from survey-geojson endpoint
-  const {
-    data: pipelinesGeoJSON,
-    isLoading: loadingPipelinesGeoJSON,
-    error: pipelinesGeoJSONError,
-    refetch: refetchPipelines,
-  } = usePipelineGeoJSON();
+  const mapCache = useSurveyMapCache();
 
-  const {
-    data: valvesGeoJSON,
-    isLoading: loadingValvesGeoJSON,
-    error: valvesGeoJSONError,
-    refetch: refetchValves,
-  } = useValveGeoJSON();
-
-  const {
-    data: consumerGeoJSON,
-    isLoading: loadingConsumerGeoJSON,
-    error: consumerGeoJSONError,
-    refetch: refetchConsumerPoints,
-  } = useConsumerGeoJSON();
-
-  const {
-    data: cngStationGeoJSON,
-    isLoading: loadingCngStations,
-    error: cngStationsError,
-    refetch: refetchCngStations,
-  } = useCngStationGeoJSON();
-
-  // Load pipelines for map layer from required endpoint
-  useEffect(() => {
-    const controller = new AbortController();
-    async function loadPipelines() {
-      setPipelineError(null);
-      try {
-        const url = `${API_BASE_PATH}/AssetProperties/ByType/pipeline`;
-        //const url = `https://localhost:7215/api/AssetProperties/ByType/pipeline`;
-        const res = await fetch(url, { signal: controller.signal });
-        if (!res.ok) throw new Error(`Request failed: ${res.status}`);
-        const json = await res.json();
-        const arr: DynamicRow[] = Array.isArray(json?.data)
-          ? json.data
-          : Array.isArray(json)
-            ? json
-            : [];
-        setPipelineRows(arr.map((it) => ({ ...it })));
-      } catch (e: any) {
-        setPipelineRows([]);
-        setPipelineError(e?.message || "Failed to load pipeline data");
-      }
-    }
-    loadPipelines();
-    return () => controller.abort();
-  }, []);
 
   // Devices from DeviceLog for the active survey
   // const { data: deviceLogsResponse } = useDeviceLogs({ limit: 100 });
@@ -196,94 +140,6 @@ export const CatastrophePointsEditor = () => {
   // }, [deviceLogsResponse]);
 
   // Transform pipeline GeoJSON data
-  const transformedPipelines: PipelineSegment[] = useMemo(() => {
-    if (!showPipelines || !pipelinesGeoJSON?.data) return [];
-
-    const geoJsonString = pipelinesGeoJSON.data;
-    const featureCollection = parseGeoJSON(geoJsonString);
-
-    if (!featureCollection || !featureCollection.features) {
-      return [];
-    }
-
-    return transformPipelineFeatures(featureCollection.features);
-  }, [pipelinesGeoJSON?.data, showPipelines]);
-
-  // Transform valve GeoJSON data
-  const transformedValves: ValvePoint[] = useMemo(() => {
-    if (!showValves || !valvesGeoJSON?.data) return [];
-
-    const geoJsonString = valvesGeoJSON.data;
-    const featureCollection = parseGeoJSON(geoJsonString);
-
-    if (!featureCollection || !featureCollection.features) {
-      return [];
-    }
-
-    return transformValveFeatures(featureCollection.features);
-  }, [valvesGeoJSON?.data, showValves]);
-
-  // Transform consumer GeoJSON data
-  const transformedConsumerPoints: ConsumerPoint[] = useMemo(() => {
-    if (!consumerGeoJSON?.data) return [];
-
-    const geoJsonString = consumerGeoJSON.data;
-    const featureCollection = parseGeoJSON(geoJsonString);
-
-    if (!featureCollection || !featureCollection.features) {
-      return [];
-    }
-
-    const consumers = transformConsumerFeatures(featureCollection.features);
-    return consumers.map(c => ({
-      ...c,
-      coordinates: { lat: c.lat, lng: c.lng },
-      consumers: [],
-    }));
-  }, [consumerGeoJSON?.data]);
-
-  // Transform CNG Station GeoJSON data
-  const transformedCngStations: ConsumerPoint[] = useMemo(() => {
-    if (!cngStationGeoJSON?.data) return [];
-
-    const geoJsonString = cngStationGeoJSON.data;
-    const featureCollection = parseGeoJSON(geoJsonString);
-
-    if (!featureCollection || !featureCollection.features) {
-      return [];
-    }
-
-    const consumers = transformConsumerFeatures(featureCollection.features);
-    return consumers.map(c => ({
-      ...c,
-      coordinates: { lat: c.lat, lng: c.lng },
-      consumers: [],
-    }));
-  }, [cngStationGeoJSON?.data]);
-
-  // Pipelines mapped minimally for LeafletMap (geometry may fall back to defaults)
-  const mapPipelines: MapPipelineSegment[] = useMemo(() => {
-    return pipelineRows.map((r, idx) => {
-      const id = String(r["id"] ?? r["ID"] ?? r["segmentId"] ?? r["SegmentId"] ?? `PS-${idx + 1}`);
-      const diameterVal = Number(r["diameter"] ?? r["Diameter"] ?? r["pipeDiameter"] ?? r["PipeDiameter"] ?? 200);
-      const depthVal = Number(r["depth"] ?? r["Depth"] ?? r["installationDepth"] ?? r["InstallationDepth"] ?? 1.5);
-      const status: MapPipelineSegment["status"] = "normal";
-      const isActive = r["IsActive"] !== undefined ? r["IsActive"] : true;
-      const plotColor = r["PLOT_COLOR"] || "#3b82f6";
-      const plotColorInactive = r["PLOT_COLOR_INACTIVE"] || "#9ca3af";
-      const plotType = r["PLOT_TYPE"] as "line" | "round" | "square" | undefined;
-      return {
-        id,
-        diameter: Number.isFinite(diameterVal) ? diameterVal : 200,
-        depth: Number.isFinite(depthVal) ? depthVal : 1.5,
-        status,
-        isActive,
-        plotColor,
-        plotColorInactive,
-        plotType,
-      };
-    });
-  }, [pipelineRows]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -329,14 +185,11 @@ export const CatastrophePointsEditor = () => {
   const { tableConfig, sortedAndPaginatedData } = useTable<DynamicRow>(rows, 5, defaultSortKey as any);
 
   const handleRefresh = () => {
-    refetchPipelines();
-    refetchValves();
-    refetchConsumerPoints();
+    void refreshSurveyMapCache();
   };
 
-  const isLoading =
-    loadingPipelinesGeoJSON || loadingValvesGeoJSON || loadingConsumerGeoJSON;
-  const hasError = pipelinesGeoJSONError || valvesGeoJSONError || consumerGeoJSONError;
+  const isLoading = mapCache.status === "loading";
+  const hasError = mapCache.status === "error";
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -367,65 +220,6 @@ export const CatastrophePointsEditor = () => {
     }
   };
 
-  // Derive simple valves for map layer from dynamic rows (best-effort mapping)
-  const mapValves: MapValve[] = useMemo(() => {
-    return rows.map((r, idx) => {
-      // Extract Plot sub-object properties (new structure)
-      const plotData = r["Plot"] || {};
-
-      const rawType = String(r["Type"] ?? r["type"] ?? r["Category"] ?? "").toLowerCase();
-      const mappedType: MapValve["type"] = rawType.includes("emergency") ? "emergency" : rawType.includes("isolation") ? "isolation" : "control";
-      const status: MapValve["status"] = rawType.includes("critical") ? "closed" : rawType.includes("maintenance") ? "maintenance" : "open";
-      const segment = String(r["Linked Segment"] ?? r["segmentId"] ?? r["Segment"] ?? "Unknown");
-      const id = String(r["id"] ?? r["ID"] ?? `ROW_${idx}`);
-      const isActive = r["IsActive"] !== undefined ? r["IsActive"] : true;
-      const plotColor = plotData.PLOT_COLOR || r["PLOT_COLOR"] || "#ef4444";
-      const plotColorInactive = plotData.PLOT_COLOR_INACTIVE || r["PLOT_COLOR_INACTIVE"] || "#9ca3af";
-      const plotType = (plotData.PLOT_TYPE || r["PLOT_TYPE"]) as "line" | "round" | "square" | undefined;
-      return { id, type: mappedType, status, segmentId: segment, isActive, plotColor, plotColorInactive, plotType };
-    });
-  }, [rows]);
-
-  // Derive catastrophe points for map markers from dynamic rows
-  const mapCatastrophes: MapCatastrophe[] = useMemo(() => {
-    const toNum = (v: any) => {
-      const n = Number(v);
-      return Number.isFinite(n) ? n : NaN;
-    };
-    return rows.map((r, idx) => {
-      // Extract Plot sub-object properties (new structure)
-      const plotData = r["Plot"] || {};
-
-      const id = String(r["id"] ?? r["ID"] ?? `CATA_${idx + 1}`);
-      const name = String(r["name"] ?? r["title"] ?? r["Type"] ?? r["type"] ?? id);
-      const severity = String(r["severity"] ?? r["Severity"] ?? r["level"] ?? r["Level"] ?? "");
-      const status = String(r["status"] ?? r["Status"] ?? "REPORTED");
-      const isActive = r["IsActive"] !== undefined ? r["IsActive"] : true;
-      const plotColor = plotData.PLOT_COLOR || r["PLOT_COLOR"] || "#f97316";
-      const plotColorInactive = plotData.PLOT_COLOR_INACTIVE || r["PLOT_COLOR_INACTIVE"] || "#9ca3af";
-      const plotType = (plotData.PLOT_TYPE || r["PLOT_TYPE"]) as "line" | "round" | "square" | undefined;
-      let coordinates: { lat: number; lng: number } | undefined;
-
-      const candidates: any[] = [
-        r["coordinates"],
-        r["location"],
-        r["Location"],
-        { lat: r["lat"], lng: r["lng"] },
-        { lat: r["latitude"], lng: r["longitude"] },
-        { lat: r["Latitude"], lng: r["Longitude"] },
-      ];
-      for (const c of candidates) {
-        const lat = toNum(c?.lat);
-        const lng = toNum(c?.lng ?? c?.lon ?? c?.longitude);
-        if (Number.isFinite(lat) && Number.isFinite(lng)) {
-          coordinates = { lat, lng };
-          break;
-        }
-      }
-
-      return { id, name, severity, status, coordinates, isActive, plotColor, plotColorInactive, plotType };
-    });
-  }, [rows]);
 
   return (
     <div className="flex h-screen bg-background">
@@ -544,7 +338,7 @@ export const CatastrophePointsEditor = () => {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">
-                Pipeline Network ({transformedPipelines.length})
+                Pipeline Network ({mapCache.counts.pipeline})
               </CardTitle>
               <Badge variant="secondary" className="text-xs">
                 Geo-referenced
@@ -552,10 +346,12 @@ export const CatastrophePointsEditor = () => {
             </div>
           </CardHeader>
           <CardContent className="space-y-3 max-h-64 overflow-y-auto">
-            {transformedPipelines.length === 0 ? (
+            {mapCache.counts.pipeline === 0 ? (
               <p className="text-xs text-muted-foreground">No pipelines available</p>
             ) : (
-              transformedPipelines.map((pipeline) => (
+              <p className="text-xs text-muted-foreground">{mapCache.counts.pipeline.toLocaleString()} segments are drawn on the map.</p>
+            )}
+            {false && ([] as any[]).map((pipeline) => (
                 <div
                   key={pipeline.id}
                   className="flex items-center justify-between p-3 border border-border rounded-lg"
@@ -575,8 +371,7 @@ export const CatastrophePointsEditor = () => {
                     {pipeline.status.toUpperCase()}
                   </Badge>
                 </div>
-              ))
-            )}
+              ))}
           </CardContent>
         </Card>
 
@@ -584,14 +379,16 @@ export const CatastrophePointsEditor = () => {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">
-              Valves & Isolation Points ({transformedValves.length})
+              Valves & Isolation Points ({mapCache.counts.valve})
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 max-h-64 overflow-y-auto">
-            {transformedValves.length === 0 ? (
+            {mapCache.counts.valve === 0 ? (
               <p className="text-xs text-muted-foreground">No valves available</p>
             ) : (
-              transformedValves.map((valve) => (
+              <p className="text-xs text-muted-foreground">{mapCache.counts.valve.toLocaleString()} valves are drawn on the map.</p>
+            )}
+            {false && ([] as any[]).map((valve) => (
                 <div
                   key={valve.id}
                   className="flex items-center justify-between p-3 border border-border rounded-lg"
@@ -606,8 +403,7 @@ export const CatastrophePointsEditor = () => {
                     {valve.status.toUpperCase()}
                   </Badge>
                 </div>
-              ))
-            )}
+              ))}
           </CardContent>
         </Card>
 
@@ -615,14 +411,16 @@ export const CatastrophePointsEditor = () => {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">
-              Consumer Points ({transformedConsumerPoints.length})
+              Consumer Points ({mapCache.counts.consumer})
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 max-h-64 overflow-y-auto">
-            {transformedConsumerPoints.length === 0 ? (
+            {mapCache.counts.consumer === 0 ? (
               <p className="text-xs text-muted-foreground">No consumer points available</p>
             ) : (
-              transformedConsumerPoints.map((consumer) => (
+              <p className="text-xs text-muted-foreground">{mapCache.counts.consumer.toLocaleString()} consumer points are drawn on the map.</p>
+            )}
+            {false && ([] as any[]).map((consumer) => (
                 <div
                   key={consumer.id}
                   className="flex items-center justify-between p-3 border border-border rounded-lg"
@@ -647,8 +445,7 @@ export const CatastrophePointsEditor = () => {
                     {consumer.status?.toUpperCase() || "ACTIVE"}
                   </Badge>
                 </div>
-              ))
-            )}
+              ))}
           </CardContent>
         </Card>
       </div>
@@ -757,33 +554,15 @@ export const CatastrophePointsEditor = () => {
             </CardHeader>
             <CardContent className="p-0">
               <div className="h-96 w-full">
-                {showRGIS ? (
-                  <RGISMap
-                    devices={[]}
-                    pipelines={transformedPipelines}
-                    valves={transformedValves}
-                    consumers={[...transformedConsumerPoints, ...transformedCngStations] as any}
-                    showDevices={false}
-                    showPipelines={showPipelines}
-                    showValves={showValves}
-                    showConsumers={showConsumerPoints || transformedCngStations.length > 0}
-                    showSatellite={showSatellite}
-                  />
-                ) : (
-                  <LeafletMap
-                    devices={[]}
-                    pipelines={mapPipelines}
-                    valves={mapValves}
-                    consumers={[...transformedConsumerPoints, ...transformedCngStations] as any}
-                    showDevices={false}
-                    showPipelines={showPipelines}
-                    showValves={showValves}
-                    showConsumers={showConsumerPoints || transformedCngStations.length > 0}
-                    catastrophes={mapCatastrophes}
-                    showCatastrophes={mapCatastrophes.some((c) => c.coordinates && Number.isFinite(c.coordinates.lat) && Number.isFinite(c.coordinates.lng))}
-                    showSatellite={showSatellite}
-                  />
-                )}
+                <SurveyAssetMap
+                  showRGIS={showRGIS}
+                  showSatellite={showSatellite}
+                  hiddenLayers={[
+                    ...(!showPipelines ? ["pipeline" as const] : []),
+                    ...(!showValves ? ["valve" as const] : []),
+                    ...(!showConsumerPoints ? ["consumer" as const] : []),
+                  ]}
+                />
               </div>
             </CardContent>
           </Card>

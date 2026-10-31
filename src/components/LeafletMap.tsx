@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import L, { type LatLngBounds, type LatLngExpression } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { colorNameToHex, resolveColor } from "@/lib/colorUtils";
+import type { GeoJsonMapLayer } from "@/lib/surveyMapCache";
 
 // Fix for default markers in Leaflet with Vite
 delete (L.Icon.Default.prototype as unknown as { _getIconUrl: unknown })._getIconUrl;
@@ -14,6 +15,7 @@ L.Icon.Default.mergeOptions({
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
 });
 
+const NO_GEOJSON_LAYERS: GeoJsonMapLayer[] = [];
 const DEFAULT_CENTER: [number, number] = [23.8315, 91.2868];
 const DEFAULT_ZOOM = 12;
 
@@ -170,6 +172,9 @@ interface ConsumerPoint {
 interface LeafletMapProps {
   devices: DeviceLocation[];
   pipelines: PipelineSegment[];
+  pipelineGeoJsonText?: string | null;
+  consumerGeoJsonText?: string | null;
+  geoJsonLayers?: GeoJsonMapLayer[];
   valves: ValvePoint[];
   consumers?: ConsumerPoint[];
   showDevices: boolean;
@@ -205,6 +210,9 @@ const getPipelineColor = (status: PipelineSegment["status"], isActive?: boolean,
 export const LeafletMap = ({
   devices,
   pipelines,
+  pipelineGeoJsonText = null,
+  consumerGeoJsonText = null,
+  geoJsonLayers = NO_GEOJSON_LAYERS,
   valves,
   consumers = [],
   showDevices,
@@ -316,7 +324,7 @@ export const LeafletMap = ({
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
 
-    const map = L.map(mapRef.current).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+    const map = L.map(mapRef.current, { preferCanvas: true }).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
 
     // Create street layer
     const streetLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -463,7 +471,229 @@ export const LeafletMap = ({
   }, [catastrophes, showCatastrophes, catastrophesLayer]);
 
   useEffect(() => {
-    if (!pipelinesLayer) return;
+    const map = mapInstanceRef.current;
+    if (!map || !showPipelines || !pipelineGeoJsonText) return;
+
+    let geojson: { features?: Array<{ geometry?: { type?: string; coordinates?: any } }> };
+    try {
+      geojson = JSON.parse(pipelineGeoJsonText);
+    } catch {
+      return;
+    }
+    const features = geojson.features || [];
+
+    const CanvasLines = L.Layer.extend({
+      onAdd(this: any, leafletMap: L.Map) {
+        this._map = leafletMap;
+        this._canvas = L.DomUtil.create("canvas", "leaflet-pipeline-canvas");
+        this._canvas.style.pointerEvents = "none";
+        leafletMap.getPanes().overlayPane.appendChild(this._canvas);
+        this._draw = () => {
+          if (this._frame) return;
+          this._frame = requestAnimationFrame(() => {
+            this._frame = 0;
+            this._paint();
+          });
+        };
+        this._paint = () => {
+          const size = leafletMap.getSize();
+          const dpr = window.devicePixelRatio || 1;
+          const canvas = this._canvas as HTMLCanvasElement;
+          canvas.width = size.x * dpr;
+          canvas.height = size.y * dpr;
+          canvas.style.width = `${size.x}px`;
+          canvas.style.height = `${size.y}px`;
+          L.DomUtil.setPosition(canvas, leafletMap.containerPointToLayerPoint([0, 0]));
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return;
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          ctx.clearRect(0, 0, size.x, size.y);
+          ctx.strokeStyle = "#3b82f6";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          for (let f = 0; f < features.length; f++) {
+            const geometry = features[f]?.geometry;
+            const coords = geometry?.coordinates;
+            if (!coords) continue;
+            const lines = geometry?.type === "LineString" ? [coords] : coords;
+            for (let li = 0; li < lines.length; li++) {
+              const line = lines[li];
+              if (!line || line.length < 2) continue;
+              for (let i = 0; i < line.length; i++) {
+                const point = leafletMap.latLngToContainerPoint([line[i][1], line[i][0]]);
+                if (i === 0) ctx.moveTo(point.x, point.y);
+                else ctx.lineTo(point.x, point.y);
+              }
+            }
+          }
+          ctx.stroke();
+        };
+        leafletMap.on("move zoom viewreset resize", this._draw);
+        this._draw();
+      },
+      onRemove(this: any, leafletMap: L.Map) {
+        leafletMap.off("move zoom viewreset resize", this._draw);
+        if (this._frame) cancelAnimationFrame(this._frame);
+        L.DomUtil.remove(this._canvas);
+      },
+    });
+
+    const layer = new (CanvasLines as any)();
+    layer.addTo(map);
+
+    if (!disableAutoFit && !selectedLocation) {
+      let minLat = Infinity;
+      let maxLat = -Infinity;
+      let minLng = Infinity;
+      let maxLng = -Infinity;
+      for (let f = 0; f < features.length; f++) {
+        const geometry = features[f]?.geometry;
+        const coords = geometry?.coordinates;
+        if (!coords) continue;
+        const lines = geometry?.type === "LineString" ? [coords] : coords;
+        for (let li = 0; li < lines.length; li++) {
+          const line = lines[li];
+          for (let i = 0; i < line.length; i++) {
+            const lng = line[i][0];
+            const lat = line[i][1];
+            if (lat < minLat) minLat = lat;
+            if (lat > maxLat) maxLat = lat;
+            if (lng < minLng) minLng = lng;
+            if (lng > maxLng) maxLng = lng;
+          }
+        }
+      }
+      if (Number.isFinite(minLat)) {
+        map.fitBounds(
+          [
+            [minLat, minLng],
+            [maxLat, maxLng],
+          ],
+          { padding: [32, 32], maxZoom: 16 },
+        );
+      }
+    }
+
+    return () => {
+      map.removeLayer(layer);
+    };
+  }, [pipelineGeoJsonText, showPipelines, disableAutoFit, selectedLocation]);
+
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || geoJsonLayers.length === 0) return;
+
+    const parsed = geoJsonLayers.flatMap((layer) => {
+      try {
+        const geojson = JSON.parse(layer.text) as { features?: any[] };
+        return [{ ...layer, features: geojson.features || [] }];
+      } catch {
+        return [];
+      }
+    });
+
+    const CanvasAssets = L.Layer.extend({
+      onAdd(this: any, leafletMap: L.Map) {
+        this._canvas = L.DomUtil.create("canvas", "leaflet-survey-assets");
+        this._canvas.style.pointerEvents = "none";
+        leafletMap.getPanes().overlayPane.appendChild(this._canvas);
+        this._draw = () => {
+          if (this._frame) return;
+          this._frame = requestAnimationFrame(() => {
+            this._frame = 0;
+            const size = leafletMap.getSize();
+            const dpr = window.devicePixelRatio || 1;
+            const canvas = this._canvas as HTMLCanvasElement;
+            canvas.width = size.x * dpr;
+            canvas.height = size.y * dpr;
+            canvas.style.width = `${size.x}px`;
+            canvas.style.height = `${size.y}px`;
+            L.DomUtil.setPosition(canvas, leafletMap.containerPointToLayerPoint([0, 0]));
+            const ctx = canvas.getContext("2d");
+            if (!ctx) return;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.clearRect(0, 0, size.x, size.y);
+            for (const layer of parsed) {
+              const [r, g, b] = layer.color;
+              if (layer.kind === "line") {
+                ctx.strokeStyle = `rgb(${r}, ${g}, ${b})`;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+              } else {
+                ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+              }
+              for (const feature of layer.features) {
+                const geometry = feature?.geometry;
+                const coords = geometry?.coordinates;
+                if (!coords) continue;
+                if (layer.kind === "point" && geometry.type === "Point") {
+                  const point = leafletMap.latLngToContainerPoint([coords[1], coords[0]]);
+                  ctx.fillRect(point.x - 2, point.y - 2, 4, 4);
+                  continue;
+                }
+                if (layer.kind !== "line") continue;
+                const lines = geometry.type === "LineString" ? [coords] : coords;
+                for (const line of lines) {
+                  if (!line || line.length < 2) continue;
+                  for (let i = 0; i < line.length; i++) {
+                    const point = leafletMap.latLngToContainerPoint([line[i][1], line[i][0]]);
+                    if (i === 0) ctx.moveTo(point.x, point.y);
+                    else ctx.lineTo(point.x, point.y);
+                  }
+                }
+              }
+              if (layer.kind === "line") ctx.stroke();
+            }
+          });
+        };
+        leafletMap.on("moveend zoomend viewreset resize", this._draw);
+        this._draw();
+      },
+      onRemove(this: any, leafletMap: L.Map) {
+        leafletMap.off("moveend zoomend viewreset resize", this._draw);
+        if (this._frame) cancelAnimationFrame(this._frame);
+        L.DomUtil.remove(this._canvas);
+      },
+    });
+
+    const layer = new (CanvasAssets as any)();
+    layer.addTo(map);
+
+    if (!disableAutoFit && !selectedLocation) {
+      let minLat = Infinity;
+      let maxLat = -Infinity;
+      let minLng = Infinity;
+      let maxLng = -Infinity;
+      const lines = parsed.find((layer) => layer.kind === "line");
+      const source = lines?.features || parsed[0]?.features || [];
+      for (const feature of source) {
+        const geometry = feature?.geometry;
+        const coords = geometry?.coordinates;
+        if (!coords) continue;
+        const parts = geometry.type === "Point" ? [[coords]] : geometry.type === "LineString" ? [coords] : coords;
+        for (const part of parts) {
+          for (const coord of part) {
+            const lng = coord[0];
+            const lat = coord[1];
+            if (lat < minLat) minLat = lat;
+            if (lat > maxLat) maxLat = lat;
+            if (lng < minLng) minLng = lng;
+            if (lng > maxLng) maxLng = lng;
+          }
+        }
+      }
+      if (Number.isFinite(minLat)) {
+        map.fitBounds([[minLat, minLng], [maxLat, maxLng]], { padding: [32, 32], maxZoom: 16 });
+      }
+    }
+
+    return () => {
+      map.removeLayer(layer);
+    };
+  }, [geoJsonLayers, disableAutoFit, selectedLocation]);
+
+  useEffect(() => {
+    if (!pipelinesLayer || pipelineGeoJsonText) return;
 
     pipelinesLayer.clearLayers();
 
@@ -501,7 +731,7 @@ export const LeafletMap = ({
         pipelinesLayer.addLayer(polyline);
       });
     }
-  }, [pipelines, pipelineRoutes, showPipelines, pipelinesLayer]);
+  }, [pipelines, pipelineRoutes, pipelineGeoJsonText, showPipelines, pipelinesLayer]);
 
   useEffect(() => {
     if (!valvesLayer) return;
@@ -650,7 +880,69 @@ export const LeafletMap = ({
   }, [highlightedElementId, highlightedElementType, pipelines, valves, consumers, pipelineRoutes, valvePositions, highlightLayer]);
 
   useEffect(() => {
-    if (!consumersLayer) return;
+    const map = mapInstanceRef.current;
+    if (!map || !showConsumers || !consumerGeoJsonText) return;
+
+    let geojson: { features?: Array<{ geometry?: { type?: string; coordinates?: any } }> };
+    try {
+      geojson = JSON.parse(consumerGeoJsonText);
+    } catch {
+      return;
+    }
+    const features = geojson.features || [];
+
+    const CanvasPoints = L.Layer.extend({
+      onAdd(this: any, leafletMap: L.Map) {
+        this._canvas = L.DomUtil.create("canvas", "leaflet-consumer-canvas");
+        this._canvas.style.pointerEvents = "none";
+        leafletMap.getPanes().overlayPane.appendChild(this._canvas);
+        this._draw = () => {
+          if (this._frame) return;
+          this._frame = requestAnimationFrame(() => {
+            this._frame = 0;
+            const size = leafletMap.getSize();
+            const dpr = window.devicePixelRatio || 1;
+            const canvas = this._canvas as HTMLCanvasElement;
+            canvas.width = size.x * dpr;
+            canvas.height = size.y * dpr;
+            canvas.style.width = `${size.x}px`;
+            canvas.style.height = `${size.y}px`;
+            L.DomUtil.setPosition(canvas, leafletMap.containerPointToLayerPoint([0, 0]));
+            const ctx = canvas.getContext("2d");
+            if (!ctx) return;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.clearRect(0, 0, size.x, size.y);
+            ctx.fillStyle = "#22c55e";
+            for (let f = 0; f < features.length; f++) {
+              const geometry = features[f]?.geometry;
+              if (geometry?.type !== "Point" || !geometry.coordinates) continue;
+              const point = leafletMap.latLngToContainerPoint([
+                geometry.coordinates[1],
+                geometry.coordinates[0],
+              ]);
+              ctx.fillRect(point.x - 1.5, point.y - 1.5, 3, 3);
+            }
+          });
+        };
+        leafletMap.on("move zoom viewreset resize", this._draw);
+        this._draw();
+      },
+      onRemove(this: any, leafletMap: L.Map) {
+        leafletMap.off("move zoom viewreset resize", this._draw);
+        if (this._frame) cancelAnimationFrame(this._frame);
+        L.DomUtil.remove(this._canvas);
+      },
+    });
+
+    const layer = new (CanvasPoints as any)();
+    layer.addTo(map);
+    return () => {
+      map.removeLayer(layer);
+    };
+  }, [consumerGeoJsonText, showConsumers]);
+
+  useEffect(() => {
+    if (!consumersLayer || consumerGeoJsonText) return;
     consumersLayer.clearLayers();
 
     if (showConsumers && consumers) {
@@ -711,14 +1003,14 @@ export const LeafletMap = ({
         consumersLayer.addLayer(marker);
       });
     }
-  }, [consumers, showConsumers, consumersLayer]);
+  }, [consumers, consumerGeoJsonText, showConsumers, consumersLayer]);
 
 
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
 
-    if (disableAutoFit || selectedLocation || userInteractedRef.current) {
+    if (disableAutoFit || selectedLocation || userInteractedRef.current || pipelineGeoJsonText || geoJsonLayers.length > 0) {
       return;
     }
 
@@ -790,7 +1082,7 @@ export const LeafletMap = ({
     map.fitBounds(bounds, { padding: [32, 32], maxZoom: 17 });
     lastBoundsRef.current = bounds;
     lastCenterRef.current = null;
-  }, [devicePositions, pipelineRoutes, valvePositions, catastrophePositions, showDevices, showPipelines, showValves, showConsumers, showCatastrophes, disableAutoFit, selectedLocation]);
+  }, [devicePositions, pipelineRoutes, valvePositions, catastrophePositions, showDevices, showPipelines, showValves, showConsumers, showCatastrophes, disableAutoFit, selectedLocation, pipelineGeoJsonText, geoJsonLayers]);
 
   return (
     <div className="w-full h-full relative">
